@@ -3,6 +3,7 @@ import {
   MapContainer,
   Marker,
   Popup,
+  Polyline,
   TileLayer,
   useMap,
 } from "react-leaflet";
@@ -19,14 +20,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function RecenterMap({ trucks, selectedTruck }) {
+function RecenterMap({ trucks, selectedTruck, replayPoint, isReplayPlaying }) {
   const map = useMap();
-
   const hasInitialized = useRef(false);
   const lastTruckRef = useRef(null);
 
   useEffect(() => {
-    // FIRST LOAD ONLY
     if (!hasInitialized.current && trucks.length > 0) {
       const first = trucks[0];
       map.setView([first.latitude, first.longitude], 11);
@@ -35,15 +34,21 @@ function RecenterMap({ trucks, selectedTruck }) {
   }, [trucks, map]);
 
   useEffect(() => {
-    // ONLY recenter if user selects a NEW truck
     if (
       selectedTruck &&
-      selectedTruck.truck_number !== lastTruckRef.current
+      selectedTruck.truck_number !== lastTruckRef.current &&
+      !isReplayPlaying
     ) {
       map.setView([selectedTruck.latitude, selectedTruck.longitude], 15);
       lastTruckRef.current = selectedTruck.truck_number;
     }
-  }, [selectedTruck, map]);
+  }, [selectedTruck, isReplayPlaying, map]);
+
+  useEffect(() => {
+    if (isReplayPlaying && replayPoint) {
+      map.panTo(replayPoint);
+    }
+  }, [replayPoint, isReplayPlaying, map]);
 
   return null;
 }
@@ -56,7 +61,18 @@ function getStatusClass(status) {
   if (s.includes("pour")) return "status-pouring";
   if (s.includes("return")) return "status-returning";
   if (s.includes("idle")) return "status-idle";
+  if (s.includes("service")) return "status-default";
   return "status-default";
+}
+
+function formatMetric(value, suffix = " min") {
+  if (value === null || value === undefined || value === "") return "-";
+  return `${value}${suffix}`;
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined || isNaN(Number(value))) return "0%";
+  return `${Number(value).toFixed(1)}%`;
 }
 
 export default function TruckMap() {
@@ -64,11 +80,18 @@ export default function TruckMap() {
   const [truckNumber, setTruckNumber] = useState("");
   const [jobNumber, setJobNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [orderedQty, setOrderedQty] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedTruckNumber, setSelectedTruckNumber] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [truckHistory, setTruckHistory] = useState([]);
+  const [truckEvents, setTruckEvents] = useState([]);
+  const [truckDetails, setTruckDetails] = useState(null);
+  const [truckMetrics, setTruckMetrics] = useState(null);
+  const [isReplayPlaying, setIsReplayPlaying] = useState(false);
+  const [replayIndex, setReplayIndex] = useState(0);
 
   async function fetchTrucks() {
     try {
@@ -101,6 +124,46 @@ export default function TruckMap() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    async function fetchSelectedTruckData() {
+      if (!selectedTruckNumber) {
+        setTruckHistory([]);
+        setTruckEvents([]);
+        setTruckDetails(null);
+        setTruckMetrics(null);
+        return;
+      }
+
+      try {
+        const [historyRes, eventsRes, detailsRes, metricsRes] = await Promise.all([
+          fetch(`${API_BASE}/trucks/history/${selectedTruckNumber}?limit=25`),
+          fetch(`${API_BASE}/trucks/events/${selectedTruckNumber}?limit=20`),
+          fetch(`${API_BASE}/trucks/details/${selectedTruckNumber}`),
+          fetch(`${API_BASE}/trucks/metrics/${selectedTruckNumber}`),
+        ]);
+
+        const historyData = await historyRes.json();
+        const eventsData = await eventsRes.json();
+        const detailsData = await detailsRes.json();
+        const metricsData = await metricsRes.json();
+
+        setTruckHistory(historyData);
+        setTruckEvents(eventsData);
+        setTruckDetails(detailsData);
+        setTruckMetrics(metricsData);
+      } catch (err) {
+        console.error("Failed to fetch selected truck data:", err);
+      }
+    }
+
+    fetchSelectedTruckData();
+  }, [selectedTruckNumber]);
+
+  useEffect(() => {
+    setReplayIndex(0);
+    setIsReplayPlaying(false);
+  }, [selectedTruckNumber]);
+
   const filteredTrucks = useMemo(() => {
     return trucks.filter((truck) => {
       const matchesSearch =
@@ -131,6 +194,45 @@ export default function TruckMap() {
     return ["All", ...unique];
   }, [trucks]);
 
+  const routePositions = useMemo(() => {
+    if (!truckHistory || truckHistory.length === 0) return [];
+
+    return [...truckHistory]
+      .reverse()
+      .filter(
+        (point) =>
+          point.latitude !== null &&
+          point.longitude !== null &&
+          !isNaN(Number(point.latitude)) &&
+          !isNaN(Number(point.longitude))
+      )
+      .map((point) => [Number(point.latitude), Number(point.longitude)]);
+  }, [truckHistory]);
+
+  const replayPoint =
+    routePositions.length > 0 &&
+    replayIndex >= 0 &&
+    replayIndex < routePositions.length
+      ? routePositions[replayIndex]
+      : null;
+
+  useEffect(() => {
+    if (!isReplayPlaying) return;
+    if (routePositions.length <= 1) return;
+
+    const id = setInterval(() => {
+      setReplayIndex((prev) => {
+        if (prev >= routePositions.length - 1) {
+          setIsReplayPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 700);
+
+    return () => clearInterval(id);
+  }, [isReplayPlaying, routePositions]);
+
   async function assignJob(e) {
     e.preventDefault();
 
@@ -149,6 +251,7 @@ export default function TruckMap() {
           truck_number: truckNumber,
           job_number: jobNumber,
           address,
+          ordered_qty: orderedQty === "" ? 0 : Number(orderedQty),
         }),
       });
 
@@ -160,6 +263,23 @@ export default function TruckMap() {
       setMessage(`Assigned ${address} to truck ${truckNumber}`);
       setAddress("");
       setJobNumber("");
+      setOrderedQty("");
+
+      await fetchTrucks();
+
+      if (selectedTruckNumber === truckNumber) {
+        const [historyRes, eventsRes, detailsRes, metricsRes] = await Promise.all([
+          fetch(`${API_BASE}/trucks/history/${truckNumber}?limit=25`),
+          fetch(`${API_BASE}/trucks/events/${truckNumber}?limit=20`),
+          fetch(`${API_BASE}/trucks/details/${truckNumber}`),
+          fetch(`${API_BASE}/trucks/metrics/${truckNumber}`),
+        ]);
+
+        setTruckHistory(await historyRes.json());
+        setTruckEvents(await eventsRes.json());
+        setTruckDetails(await detailsRes.json());
+        setTruckMetrics(await metricsRes.json());
+      }
     } catch (err) {
       console.error(err);
       setMessage("Failed to assign job.");
@@ -182,6 +302,56 @@ export default function TruckMap() {
 
       if (selectedTruckNumber === truckNum) {
         setSelectedTruckNumber("");
+        setTruckHistory([]);
+        setTruckEvents([]);
+        setTruckDetails(null);
+        setTruckMetrics(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function completeJob(truckNum) {
+    try {
+      const res = await fetch(`${API_BASE}/jobs/complete/${truckNum}`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Complete job failed:", text);
+        return;
+      }
+
+      setMessage(`Completed job for truck ${truckNum}`);
+
+      setTrucks((prev) =>
+        prev.map((t) =>
+          t.truck_number === truckNum
+            ? { ...t, job_number: "", status: "Idle" }
+            : t
+        )
+      );
+
+      if (selectedTruckNumber === truckNum) {
+        setJobNumber("");
+      }
+
+      await fetchTrucks();
+
+      if (selectedTruckNumber === truckNum) {
+        const [historyRes, eventsRes, detailsRes, metricsRes] = await Promise.all([
+          fetch(`${API_BASE}/trucks/history/${truckNum}?limit=25`),
+          fetch(`${API_BASE}/trucks/events/${truckNum}?limit=20`),
+          fetch(`${API_BASE}/trucks/details/${truckNum}`),
+          fetch(`${API_BASE}/trucks/metrics/${truckNum}`),
+        ]);
+
+        setTruckHistory(await historyRes.json());
+        setTruckEvents(await eventsRes.json());
+        setTruckDetails(await detailsRes.json());
+        setTruckMetrics(await metricsRes.json());
       }
     } catch (err) {
       console.error(err);
@@ -193,6 +363,9 @@ export default function TruckMap() {
     setTruckNumber(truck.truck_number);
     setJobNumber(truck.job_number || "");
   }
+
+  const selectedJob = truckDetails?.job || null;
+  const selectedLiveTruck = truckDetails?.truck || null;
 
   return (
     <div className="fleet-shell">
@@ -241,7 +414,7 @@ export default function TruckMap() {
         <div className="toolbar">
           <input
             className="toolbar-search"
-            placeholder="Search truck, point, order, job, or driver"
+            placeholder="Search truck, order, job, or status"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -295,6 +468,13 @@ export default function TruckMap() {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="123 Main St, Dallas, TX"
+                />
+
+                <label>Ordered Qty</label>
+                <input
+                  value={orderedQty}
+                  onChange={(e) => setOrderedQty(e.target.value)}
+                  placeholder="Ex: 50"
                 />
 
                 <button type="submit" className="primary-btn">
@@ -380,6 +560,8 @@ export default function TruckMap() {
                 <RecenterMap
                   trucks={filteredTrucks}
                   selectedTruck={selectedTruck}
+                  replayPoint={replayPoint}
+                  isReplayPlaying={isReplayPlaying}
                 />
 
                 {filteredTrucks.map((truck) => (
@@ -401,6 +583,27 @@ export default function TruckMap() {
                     </Popup>
                   </Marker>
                 ))}
+
+                {routePositions.length > 1 && (
+                  <Polyline
+                    positions={routePositions}
+                    pathOptions={{
+                      color: "#f97316",
+                      weight: 4,
+                      opacity: 0.85,
+                    }}
+                  />
+                )}
+
+                {replayPoint && (
+                  <Marker position={replayPoint}>
+                    <Popup>
+                      Replay Position
+                      <br />
+                      Point {replayIndex + 1} of {routePositions.length}
+                    </Popup>
+                  </Marker>
+                )}
               </MapContainer>
             </div>
           </div>
@@ -441,7 +644,246 @@ export default function TruckMap() {
                     <span>Last Updated</span>
                     <strong>{selectedTruck.last_updated || "-"}</strong>
                   </div>
+
+                  <div className="asset-actions">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() => completeJob(selectedTruck.truck_number)}
+                    >
+                      Complete Job
+                    </button>
+                  </div>
                 </div>
+              )}
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-title">Job Location</div>
+
+              {!selectedJob && (
+                <div className="empty-state">No active job assigned.</div>
+              )}
+
+              {selectedJob && (
+                <div className="asset-details">
+                  <div className="asset-row">
+                    <span>Address</span>
+                    <strong>{selectedJob.address || "-"}</strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Job Number</span>
+                    <strong>{selectedJob.job_number || "-"}</strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Ordered</span>
+                    <strong>{selectedJob.ordered_qty ?? 0}</strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Delivered</span>
+                    <strong>{selectedJob.delivered_qty ?? 0}</strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Assigned</span>
+                    <strong>{selectedJob.assigned_at || "-"}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-title">Current Truck Location</div>
+
+              {!selectedLiveTruck && (
+                <div className="empty-state">No live truck selected.</div>
+              )}
+
+              {selectedLiveTruck && (
+                <div className="asset-details">
+                  <div className="asset-row">
+                    <span>Location</span>
+                    <strong>
+                      {selectedLiveTruck.latitude}, {selectedLiveTruck.longitude}
+                    </strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Last GPS Signal</span>
+                    <strong>
+                      {truckDetails?.last_gps_signal_minutes_ago ?? "-"} min ago
+                    </strong>
+                  </div>
+                  <div className="asset-row">
+                    <span>Status</span>
+                    <strong>{selectedLiveTruck.status || "-"}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-title">Job Metrics</div>
+
+              {!selectedTruck && (
+                <div className="empty-state">
+                  Select a truck to view metrics.
+                </div>
+              )}
+
+              {selectedTruck && (
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {formatPercent(truckMetrics?.delivered_percent)}
+                    </div>
+                    <div className="metric-label">Delivered</div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {truckMetrics?.delivered_qty ?? 0}/{truckMetrics?.ordered_qty ?? 0}
+                    </div>
+                    <div className="metric-label">Delivered / Ordered</div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {formatMetric(truckMetrics?.time_to_job_minutes)}
+                    </div>
+                    <div className="metric-label">Time to Job</div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {formatMetric(truckMetrics?.waiting_minutes)}
+                    </div>
+                    <div className="metric-label">Waiting</div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {formatMetric(truckMetrics?.pouring_minutes)}
+                    </div>
+                    <div className="metric-label">Pouring</div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-value">
+                      {formatMetric(truckMetrics?.after_pour_minutes)}
+                    </div>
+                    <div className="metric-label">After Pour</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-title">Recent Activity</div>
+
+              {!selectedTruck && (
+                <div className="empty-state">
+                  Select a truck to view history.
+                </div>
+              )}
+
+              {selectedTruck && routePositions.length > 1 && (
+                <div className="route-summary">
+                  Showing recent route with {routePositions.length} points
+                </div>
+              )}
+
+              {selectedTruck && (
+                <div className="history-list">
+                  {truckEvents.length === 0 && truckHistory.length === 0 && (
+                    <div className="empty-state">No history yet.</div>
+                  )}
+
+                  {truckEvents.map((event, index) => (
+                    <div key={`event-${index}`} className="history-item">
+                      <div className="history-type">
+                        {event.event_type.replaceAll("_", " ")}
+                      </div>
+                      <div className="history-details">{event.details}</div>
+                      <div className="history-time">{event.created_at}</div>
+                    </div>
+                  ))}
+
+                  {truckHistory.map((item, index) => (
+                    <div key={`history-${index}`} className="history-item">
+                      <div className="history-type">GPS update</div>
+                      <div className="history-details">
+                        {item.status || "-"} | Job {item.job_number || "-"}
+                        <br />
+                        {item.latitude}, {item.longitude}
+                      </div>
+                      <div className="history-time">{item.recorded_at}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-title">Route Replay</div>
+
+              {!selectedTruck && (
+                <div className="empty-state">
+                  Select a truck to replay its route.
+                </div>
+              )}
+
+              {selectedTruck && routePositions.length <= 1 && (
+                <div className="empty-state">
+                  Not enough route points yet to replay.
+                </div>
+              )}
+
+              {selectedTruck && routePositions.length > 1 && (
+                <>
+                  <div className="replay-stats">
+                    Point {replayIndex + 1} of {routePositions.length}
+                  </div>
+
+                  <input
+                    className="replay-slider"
+                    type="range"
+                    min="0"
+                    max={routePositions.length - 1}
+                    value={replayIndex}
+                    onChange={(e) => {
+                      setReplayIndex(Number(e.target.value));
+                      setIsReplayPlaying(false);
+                    }}
+                  />
+
+                  <div className="replay-controls">
+                    <button
+                      className="primary-btn"
+                      type="button"
+                      onClick={() => setIsReplayPlaying(true)}
+                    >
+                      Play Replay
+                    </button>
+
+                    <button
+                      className="secondary-btn"
+                      type="button"
+                      onClick={() => setIsReplayPlaying(false)}
+                    >
+                      Pause
+                    </button>
+
+                    <button
+                      className="secondary-btn"
+                      type="button"
+                      onClick={() => {
+                        setIsReplayPlaying(false);
+                        setReplayIndex(0);
+                      }}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </>
               )}
             </div>
 
