@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const API_BASE = "https://fleet.btcfleet.app";
-const LOCAL_API_BASE = "https://fleet.btcfleet.app";
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
 
 export default function AdminPage({ token }) {
   const [drivers, setDrivers] = useState([]);

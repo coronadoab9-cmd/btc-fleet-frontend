@@ -10,7 +10,7 @@ import {
 import L from "leaflet";
 
 const API_BASE = "https://fleet.btcfleet.app";
-const LOCAL_API_BASE = "https://fleet.btcfleet.app";
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
 
 const PLANT_OPTIONS = [
   "BTS-01A - CX",
