@@ -1,16 +1,31 @@
 import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import TruckMap from "./components/TruckMap";
 import LoginPage from "./components/LoginPage";
 import AdminPage from "./components/AdminPage";
+import ETicketPage from "./pages/ETicketPage";
 import "./index.css";
 
 const API_BASE = "https://fleet.btcfleet.app";
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/eticket/:token" element={<ETicketPage />} />
+        <Route path="/*" element={<ProtectedApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function ProtectedApp() {
   const [auth, setAuth] = useState(() => {
     const raw = localStorage.getItem("btc_admin_auth");
     return raw ? JSON.parse(raw) : null;
   });
+
   const [activeTab, setActiveTab] = useState("operations");
   const [loading, setLoading] = useState(true);
 
@@ -67,12 +82,14 @@ export default function App() {
       <div className="top-nav">
         <div className="top-nav-left">
           <div className="app-title">BTC Fleet</div>
+
           <button
             className={`tab-btn ${activeTab === "operations" ? "active" : ""}`}
             onClick={() => setActiveTab("operations")}
           >
             Operations
           </button>
+
           <button
             className={`tab-btn ${activeTab === "admin" ? "active" : ""}`}
             onClick={() => setActiveTab("admin")}

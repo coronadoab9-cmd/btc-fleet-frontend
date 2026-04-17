@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 
 const API_BASE = "https://fleet.btcfleet.app";
+const LOCAL_API_BASE = "https://fleet.btcfleet.app";
 
 export default function AdminPage({ token }) {
   const [drivers, setDrivers] = useState([]);
   const [devices, setDevices] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [etickets, setEtickets] = useState([]);
 
   const [driverName, setDriverName] = useState("");
   const [driverPin, setDriverPin] = useState("");
@@ -31,19 +33,29 @@ export default function AdminPage({ token }) {
     }
   }
 
+  function formatSignedDate(value) {
+    if (!value) return "-";
+    try {
+      return new Date(value).toLocaleString();
+    } catch {
+      return value;
+    }
+  }
+
   async function load() {
     setLoading(true);
 
     try {
       const headers = { "X-Admin-Token": token };
 
-      const [driversRes, devicesRes, sessionsRes] = await Promise.all([
+      const [driversRes, devicesRes, sessionsRes, eticketsRes] = await Promise.all([
         fetch(`${API_BASE}/admin/drivers`, { headers }),
         fetch(`${API_BASE}/admin/devices`, { headers }),
         fetch(`${API_BASE}/admin/sessions`, { headers }),
+        fetch(`${LOCAL_API_BASE}/api/etickets`),
       ]);
 
-      if (!driversRes.ok || !devicesRes.ok || !sessionsRes.ok) {
+      if (!driversRes.ok || !devicesRes.ok || !sessionsRes.ok || !eticketsRes.ok) {
         setFlash("Failed to load admin data", "error");
         setLoading(false);
         return;
@@ -52,6 +64,7 @@ export default function AdminPage({ token }) {
       setDrivers(await driversRes.json());
       setDevices(await devicesRes.json());
       setSessions(await sessionsRes.json());
+      setEtickets(await eticketsRes.json());
     } catch {
       setFlash("Could not reach server", "error");
     } finally {
@@ -96,32 +109,6 @@ export default function AdminPage({ token }) {
       setFlash("Could not reach server", "error");
     }
   }
-
-  async function deleteDevice(uuid) {
-  const confirmed = window.confirm("Delete this tablet/device completely?");
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/admin/devices/${uuid}`, {
-      method: "DELETE",
-      headers: {
-        "X-Admin-Token": token,
-      },
-    });
-
-    const data = await safeJson(res);
-
-    if (!res.ok) {
-      setFlash(data.detail || "Failed to delete device", "error");
-      return;
-    }
-
-    setFlash("Device deleted", "success");
-    await load();
-  } catch {
-    setFlash("Could not reach server", "error");
-  }
-}
 
   async function updateDriver(driver) {
     const newName = prompt("Driver name", driver.name);
@@ -243,6 +230,56 @@ export default function AdminPage({ token }) {
     } catch {
       setFlash("Could not reach server", "error");
     }
+  }
+
+  async function deleteDevice(uuid) {
+    const confirmed = window.confirm("Delete this tablet/device completely?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/devices/${uuid}`, {
+        method: "DELETE",
+        headers: {
+          "X-Admin-Token": token,
+        },
+      });
+
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        setFlash(data.detail || "Failed to delete device", "error");
+        return;
+      }
+
+      setFlash("Device deleted", "success");
+      await load();
+    } catch {
+      setFlash("Could not reach server", "error");
+    }
+  }
+
+  async function copyETicketLink(eticket) {
+    const link = `http://localhost:5173/eticket/${eticket.token}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setFlash("eTicket link copied", "success");
+    } catch {
+      setFlash("Could not copy link", "error");
+    }
+  }
+
+  function openETicket(eticket) {
+    const link = `http://localhost:5173/eticket/${eticket.token}`;
+    window.open(link, "_blank");
+  }
+
+  function downloadPdf(eticket) {
+    const link = `${LOCAL_API_BASE}/api/etickets/${eticket.token}/pdf`;
+    window.open(link, "_blank");
+  }
+
+  function getETicketStatusClass(status) {
+    return status === "signed" ? "status-plant" : "status-route";
   }
 
   return (
@@ -392,6 +429,62 @@ export default function AdminPage({ token }) {
 
         <div className="panel-card admin-span-2">
           <div className="panel-title">
+            eTickets {loading ? "• Loading..." : `• ${etickets.length}`}
+          </div>
+
+          <div className="admin-list">
+            {etickets.length === 0 && <div className="empty-state">No eTickets yet.</div>}
+
+            {etickets.map((t) => (
+              <div key={t.id} className="admin-list-item">
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <strong>{t.ticket_number || `Ticket ${t.id}`}</strong>
+                  <span className={`status-pill ${getETicketStatusClass(t.status)}`}>
+                    {t.status || "pending"}
+                  </span>
+                </div>
+
+                <div>Customer: {t.customer_name || "-"}</div>
+                <div>Address: {t.address || "-"}</div>
+                <div>Truck: {t.truck_number || "-"}</div>
+                <div>Product: {t.product || "-"}</div>
+                <div>Quantity: {t.quantity ?? "-"}</div>
+                <div>Signed By: {t.signed_name || "-"}</div>
+                <div>Signed At: {formatSignedDate(t.signed_at)}</div>
+                <div>Acceptance: {t.ticket_acceptance || "-"}</div>
+
+                <div className="admin-actions">
+                  <button
+                    className="secondary-btn"
+                    onClick={() => copyETicketLink(t)}
+                  >
+                    Copy Link
+                  </button>
+
+                  <button
+                    className="secondary-btn"
+                    onClick={() => openETicket(t)}
+                  >
+                    Open
+                  </button>
+
+                  {t.status === "signed" && (
+                    <button
+                      className="primary-btn"
+                      style={{ marginTop: 0, width: "auto", padding: "8px 12px" }}
+                      onClick={() => downloadPdf(t)}
+                    >
+                      PDF
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel-card admin-span-2">
+          <div className="panel-title">
             Driver Sessions / Timestamps {loading ? "• Loading..." : `• ${sessions.length}`}
           </div>
 
@@ -409,6 +502,12 @@ export default function AdminPage({ token }) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="panel-card admin-span-2">
+          <button className="primary-btn" onClick={load}>
+            Refresh Admin Data
+          </button>
         </div>
       </div>
     </div>

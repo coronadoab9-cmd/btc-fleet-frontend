@@ -10,6 +10,15 @@ import {
 import L from "leaflet";
 
 const API_BASE = "https://fleet.btcfleet.app";
+const LOCAL_API_BASE = "https://fleet.btcfleet.app";
+
+const PLANT_OPTIONS = [
+  "BTS-01A - CX",
+  "BTS-002 - BM",
+  "BTS-003 - Sherman",
+  "BTP-001",
+  "BTP-004",
+];
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -93,11 +102,24 @@ function formatSpeed(value) {
   return `${num.toFixed(1)} mph`;
 }
 
+function makeTicketNumber(truckNumber, jobNumber) {
+  const stamp = Date.now().toString();
+  const truckPart =
+    String(truckNumber || "000").replace(/\D/g, "").slice(0, 4) || "000";
+  const jobPart =
+    String(jobNumber || "000").replace(/\D/g, "").slice(0, 6) || "000";
+  return `${truckPart}${jobPart}${stamp.slice(-6)}`;
+}
+
 export default function TruckMap() {
   const [trucks, setTrucks] = useState([]);
   const [truckNumber, setTruckNumber] = useState("");
   const [jobNumber, setJobNumber] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [plant, setPlant] = useState("BTS-01A - CX");
+  const [product, setProduct] = useState("");
   const [orderedQty, setOrderedQty] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -111,6 +133,14 @@ export default function TruckMap() {
   const [replayIndex, setReplayIndex] = useState(0);
   const [dispatchStatus, setDispatchStatus] = useState("Idle");
   const [dispatchStatusMessage, setDispatchStatusMessage] = useState("");
+
+  const [eticketCustomer, setEticketCustomer] = useState("");
+  const [eticketPlant, setEticketPlant] = useState("BTS-01A - CX");
+  const [eticketProduct, setEticketProduct] = useState("");
+  const [eticketQuantity, setEticketQuantity] = useState("");
+  const [eticketTicketNumber, setEticketTicketNumber] = useState("");
+  const [creatingETicket, setCreatingETicket] = useState(false);
+  const [eticketDraftsByTruck, setEticketDraftsByTruck] = useState({});
 
   const auth = useMemo(() => {
     const raw = localStorage.getItem("btc_admin_auth");
@@ -253,6 +283,60 @@ export default function TruckMap() {
     return () => clearInterval(id);
   }, [isReplayPlaying, routePositions]);
 
+  const selectedJob = truckDetails?.job || null;
+  const selectedDetailsTruck = truckDetails?.truck || null;
+
+  useEffect(() => {
+    if (!selectedTruckNumber) return;
+    setEticketDraftsByTruck((prev) => ({
+      ...prev,
+      [selectedTruckNumber]: {
+        customer: eticketCustomer,
+        plant: eticketPlant,
+        product: eticketProduct,
+        quantity: eticketQuantity,
+        ticketNumber: eticketTicketNumber,
+      },
+    }));
+  }, [
+    selectedTruckNumber,
+    eticketCustomer,
+    eticketPlant,
+    eticketProduct,
+    eticketQuantity,
+    eticketTicketNumber,
+  ]);
+
+  useEffect(() => {
+    if (!selectedTruck) return;
+
+    const draft = eticketDraftsByTruck[selectedTruck.truck_number] || {};
+    const autoTicketNumber = makeTicketNumber(
+      selectedTruck.truck_number,
+      selectedJob?.job_number || jobNumber || ""
+    );
+
+    setEticketTicketNumber(draft.ticketNumber || autoTicketNumber);
+    setEticketCustomer(draft.customer || selectedJob?.customer_name || "");
+    setEticketPlant(draft.plant || selectedJob?.plant || "BTS-01A - CX");
+    setEticketProduct(draft.product || selectedJob?.product || "");
+    setEticketQuantity(
+      draft.quantity ||
+        (selectedJob?.ordered_qty !== null &&
+        selectedJob?.ordered_qty !== undefined &&
+        selectedJob?.ordered_qty !== ""
+          ? String(selectedJob.ordered_qty)
+          : orderedQty || "")
+    );
+
+    if (selectedJob?.address) setAddress(selectedJob.address);
+    if (selectedJob?.job_number) setJobNumber(selectedJob.job_number);
+    if (selectedJob?.customer_name) setCustomerName(selectedJob.customer_name);
+    if (selectedJob?.customer_email) setCustomerEmail(selectedJob.customer_email);
+    if (selectedJob?.plant) setPlant(selectedJob.plant);
+    if (selectedJob?.product) setProduct(selectedJob.product);
+  }, [selectedTruckNumber, truckDetails]);
+
   async function assignJob(e) {
     e.preventDefault();
 
@@ -269,7 +353,11 @@ export default function TruckMap() {
       body: JSON.stringify({
         truck_number: truckNumber,
         job_number: jobNumber,
+        customer_name: customerName,
+        customer_email: customerEmail,
         address,
+        plant,
+        product,
         ordered_qty: orderedQty === "" ? 0 : Number(orderedQty),
       }),
     });
@@ -280,11 +368,14 @@ export default function TruckMap() {
     }
 
     setMessage(`Assigned ${address} to truck ${truckNumber}`);
-    setAddress("");
-    setJobNumber("");
-    setOrderedQty("");
-
     await fetchTrucks();
+
+    if (truckNumber === selectedTruckNumber) {
+      const detailsRes = await fetch(`${API_BASE}/trucks/details/${truckNumber}`);
+      const metricsRes = await fetch(`${API_BASE}/trucks/metrics/${truckNumber}`);
+      setTruckDetails(await detailsRes.json());
+      setTruckMetrics(await metricsRes.json());
+    }
   }
 
   async function deleteTruck(truckNum) {
@@ -342,14 +433,72 @@ export default function TruckMap() {
     setTruckEvents(await eventsRes.json());
   }
 
+  async function createETicket() {
+    if (!selectedTruck) {
+      setMessage("Select a truck first to create an eTicket.");
+      return;
+    }
+
+    if (!eticketCustomer.trim()) {
+      setMessage("Enter customer name for the eTicket.");
+      return;
+    }
+
+    if (!(selectedJob?.address || address)) {
+      setMessage("Enter or assign an address first.");
+      return;
+    }
+
+    if (!eticketProduct.trim()) {
+      setMessage("Enter product/mix for the eTicket.");
+      return;
+    }
+
+    setCreatingETicket(true);
+
+    const payload = {
+      ticket_number:
+        eticketTicketNumber.trim() ||
+        makeTicketNumber(selectedTruck.truck_number, selectedJob?.job_number || jobNumber || ""),
+      customer_name: eticketCustomer.trim(),
+      address: selectedJob?.address || address || "Job Address",
+      plant: eticketPlant.trim() || "BTS-01A - CX",
+      truck_number: selectedTruck.truck_number,
+      product: eticketProduct.trim(),
+      quantity: eticketQuantity === "" ? 0 : Number(eticketQuantity),
+    };
+
+    try {
+      const res = await fetch(`${LOCAL_API_BASE}/api/etickets/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.detail || "Failed to create eTicket");
+        setCreatingETicket(false);
+        return;
+      }
+
+      await navigator.clipboard.writeText(data.link);
+      setMessage(`eTicket created and copied: ${data.link}`);
+    } catch {
+      setMessage("Could not create eTicket");
+    } finally {
+      setCreatingETicket(false);
+    }
+  }
+
   function selectTruck(truck) {
     setSelectedTruckNumber(truck.truck_number);
     setTruckNumber(truck.truck_number);
     setJobNumber(truck.job_number || "");
   }
-
-  const selectedJob = truckDetails?.job || null;
-  const selectedDetailsTruck = truckDetails?.truck || null;
 
   return (
     <div className="fleet-shell">
@@ -360,10 +509,7 @@ export default function TruckMap() {
 
             <form onSubmit={assignJob}>
               <label>Truck</label>
-              <select
-                value={truckNumber}
-                onChange={(e) => setTruckNumber(e.target.value)}
-              >
+              <select value={truckNumber} onChange={(e) => setTruckNumber(e.target.value)}>
                 <option value="">Select truck</option>
                 {truckOptions.map((num) => (
                   <option key={num} value={num}>
@@ -373,22 +519,43 @@ export default function TruckMap() {
               </select>
 
               <label>Job Number</label>
+              <input value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} />
+
+              <label>Customer Name</label>
               <input
-                value={jobNumber}
-                onChange={(e) => setJobNumber(e.target.value)}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Enter customer / contractor"
+              />
+
+              <label>Customer Email</label>
+              <input
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="customer@example.com"
               />
 
               <label>Address</label>
+              <input value={address} onChange={(e) => setAddress(e.target.value)} />
+
+              <label>Plant</label>
+              <select value={plant} onChange={(e) => setPlant(e.target.value)}>
+                {PLANT_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+
+              <label>Product / Mix</label>
               <input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                value={product}
+                onChange={(e) => setProduct(e.target.value)}
+                placeholder="Ex: 3600 PSI 5.5SK SLAG AIR"
               />
 
               <label>Ordered Qty</label>
-              <input
-                value={orderedQty}
-                onChange={(e) => setOrderedQty(e.target.value)}
-              />
+              <input value={orderedQty} onChange={(e) => setOrderedQty(e.target.value)} />
 
               <button type="submit" className="primary-btn">
                 Assign Address
@@ -401,17 +568,12 @@ export default function TruckMap() {
           <div className="panel-card">
             <div className="panel-title">Dispatcher Controls</div>
 
-            {!selectedTruck && (
-              <div className="empty-state">Select a truck to update its status.</div>
-            )}
+            {!selectedTruck && <div className="empty-state">Select a truck to update its status.</div>}
 
             {selectedTruck && (
               <>
                 <label>Status</label>
-                <select
-                  value={dispatchStatus}
-                  onChange={(e) => setDispatchStatus(e.target.value)}
-                >
+                <select value={dispatchStatus} onChange={(e) => setDispatchStatus(e.target.value)}>
                   <option value="Idle">Idle</option>
                   <option value="At Plant">At Plant</option>
                   <option value="En Route">En Route</option>
@@ -432,6 +594,69 @@ export default function TruckMap() {
 
                 <button type="button" className="primary-btn" onClick={updateDispatchStatus}>
                   Update Truck Status
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="panel-card">
+            <div className="panel-title">Create eTicket</div>
+
+            {!selectedTruck && <div className="empty-state">Select a truck first.</div>}
+
+            {selectedTruck && (
+              <>
+                <label>Ticket Number</label>
+                <input
+                  value={eticketTicketNumber}
+                  onChange={(e) => setEticketTicketNumber(e.target.value)}
+                />
+
+                <label>Customer Name</label>
+                <input
+                  value={eticketCustomer}
+                  onChange={(e) => setEticketCustomer(e.target.value)}
+                  placeholder="Enter customer / contractor"
+                />
+
+                <label>Address</label>
+                <input
+                  value={selectedJob?.address || address || ""}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+
+                <label>Plant</label>
+                <select value={eticketPlant} onChange={(e) => setEticketPlant(e.target.value)}>
+                  {PLANT_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+
+                <label>Truck</label>
+                <input value={selectedTruck.truck_number} readOnly />
+
+                <label>Product / Mix</label>
+                <input
+                  value={eticketProduct}
+                  onChange={(e) => setEticketProduct(e.target.value)}
+                  placeholder="Ex: 3600 PSI 5.5SK SLAG AIR"
+                />
+
+                <label>Quantity</label>
+                <input
+                  value={eticketQuantity}
+                  onChange={(e) => setEticketQuantity(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={createETicket}
+                  disabled={creatingETicket}
+                >
+                  {creatingETicket ? "Creating..." : "Create eTicket"}
                 </button>
               </>
             )}
@@ -465,9 +690,7 @@ export default function TruckMap() {
               {filteredTrucks.map((truck) => (
                 <div
                   key={truck.truck_number}
-                  className={`truck-card ${
-                    selectedTruckNumber === truck.truck_number ? "selected" : ""
-                  }`}
+                  className={`truck-card ${selectedTruckNumber === truck.truck_number ? "selected" : ""}`}
                   onClick={() => selectTruck(truck)}
                 >
                   <div className="truck-card-top">
@@ -487,9 +710,7 @@ export default function TruckMap() {
                   </div>
 
                   {truck.is_stale && (
-                    <div className="stale-badge">
-                      Stale signal: {truck.stale_minutes ?? "-"} min
-                    </div>
+                    <div className="stale-badge">Stale signal: {truck.stale_minutes ?? "-"} min</div>
                   )}
 
                   <div className="truck-actions">
@@ -523,11 +744,7 @@ export default function TruckMap() {
 
         <div className="map-panel">
           <div className="map-shell">
-            <MapContainer
-              center={[32.7767, -96.797]}
-              zoom={10}
-              style={{ height: "100%", width: "100%" }}
-            >
+            <MapContainer center={[32.7767, -96.797]} zoom={10} style={{ height: "100%", width: "100%" }}>
               <TileLayer
                 attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -549,9 +766,7 @@ export default function TruckMap() {
                 <Marker
                   key={truck.truck_number}
                   position={[truck.latitude, truck.longitude]}
-                  eventHandlers={{
-                    click: () => selectTruck(truck),
-                  }}
+                  eventHandlers={{ click: () => selectTruck(truck) }}
                 >
                   <Popup>
                     <div>
@@ -574,11 +789,7 @@ export default function TruckMap() {
               {routePositions.length > 1 && (
                 <Polyline
                   positions={routePositions}
-                  pathOptions={{
-                    color: "#f97316",
-                    weight: 4,
-                    opacity: 0.85,
-                  }}
+                  pathOptions={{ color: "#f97316", weight: 4, opacity: 0.85 }}
                 />
               )}
 
@@ -652,8 +863,24 @@ export default function TruckMap() {
             {selectedJob && (
               <div className="asset-details">
                 <div className="asset-row">
+                  <span>Customer</span>
+                  <strong>{selectedJob.customer_name || "-"}</strong>
+                </div>
+                <div className="asset-row">
+                  <span>Email</span>
+                  <strong>{selectedJob.customer_email || "-"}</strong>
+                </div>
+                <div className="asset-row">
                   <span>Address</span>
                   <strong>{selectedJob.address || "-"}</strong>
+                </div>
+                <div className="asset-row">
+                  <span>Plant</span>
+                  <strong>{selectedJob.plant || "-"}</strong>
+                </div>
+                <div className="asset-row">
+                  <span>Product</span>
+                  <strong>{selectedJob.product || "-"}</strong>
                 </div>
                 <div className="asset-row">
                   <span>Job Number</span>
@@ -789,19 +1016,11 @@ export default function TruckMap() {
                 />
 
                 <div className="replay-controls">
-                  <button
-                    className="primary-btn"
-                    type="button"
-                    onClick={() => setIsReplayPlaying(true)}
-                  >
+                  <button className="primary-btn" type="button" onClick={() => setIsReplayPlaying(true)}>
                     Play Replay
                   </button>
 
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={() => setIsReplayPlaying(false)}
-                  >
+                  <button className="secondary-btn" type="button" onClick={() => setIsReplayPlaying(false)}>
                     Pause
                   </button>
 
