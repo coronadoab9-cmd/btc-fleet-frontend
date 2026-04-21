@@ -9,8 +9,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 
-const API_BASE = "https://fleet.btcfleet.app";
-const LOCAL_API_BASE = "http://127.0.0.1:8000";
+import { getApiBase } from "../lib/api";
 
 const PLANT_OPTIONS = [
   "BTS-01A - CX",
@@ -148,7 +147,7 @@ export default function TruckMap() {
   }, []);
 
   async function fetchTrucks() {
-    const res = await fetch(`${API_BASE}/trucks/live`);
+    const res = await fetch(`${getApiBase()}/trucks/live`);
     const data = await res.json();
 
     const cleaned = data
@@ -186,10 +185,10 @@ export default function TruckMap() {
       }
 
       const [historyRes, eventsRes, detailsRes, metricsRes] = await Promise.all([
-        fetch(`${API_BASE}/trucks/history/${selectedTruckNumber}?limit=25`),
-        fetch(`${API_BASE}/trucks/events/${selectedTruckNumber}?limit=20`),
-        fetch(`${API_BASE}/trucks/details/${selectedTruckNumber}`),
-        fetch(`${API_BASE}/trucks/metrics/${selectedTruckNumber}`),
+        fetch(`${getApiBase()}/trucks/history/${selectedTruckNumber}?limit=25`),
+        fetch(`${getApiBase()}/trucks/events/${selectedTruckNumber}?limit=20`),
+        fetch(`${getApiBase()}/trucks/details/${selectedTruckNumber}`),
+        fetch(`${getApiBase()}/trucks/metrics/${selectedTruckNumber}`),
       ]);
 
       setTruckHistory(await historyRes.json());
@@ -345,7 +344,7 @@ export default function TruckMap() {
       return;
     }
 
-    const res = await fetch(`${API_BASE}/jobs/assign`, {
+    const res = await fetch(`${getApiBase()}/jobs/assign`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -371,15 +370,15 @@ export default function TruckMap() {
     await fetchTrucks();
 
     if (truckNumber === selectedTruckNumber) {
-      const detailsRes = await fetch(`${API_BASE}/trucks/details/${truckNumber}`);
-      const metricsRes = await fetch(`${API_BASE}/trucks/metrics/${truckNumber}`);
+      const detailsRes = await fetch(`${getApiBase()}/trucks/details/${truckNumber}`);
+      const metricsRes = await fetch(`${getApiBase()}/trucks/metrics/${truckNumber}`);
       setTruckDetails(await detailsRes.json());
       setTruckMetrics(await metricsRes.json());
     }
   }
 
   async function deleteTruck(truckNum) {
-    const res = await fetch(`${API_BASE}/trucks/${truckNum}`, {
+    const res = await fetch(`${getApiBase()}/trucks/${truckNum}`, {
       method: "DELETE",
     });
     if (!res.ok) return;
@@ -387,15 +386,15 @@ export default function TruckMap() {
   }
 
   async function completeJob(truckNum) {
-    const res = await fetch(`${API_BASE}/jobs/complete/${truckNum}`, {
+    const res = await fetch(`${getApiBase()}/jobs/complete/${truckNum}`, {
       method: "POST",
     });
     if (!res.ok) return;
     await fetchTrucks();
 
     if (selectedTruckNumber === truckNum) {
-      const detailsRes = await fetch(`${API_BASE}/trucks/details/${truckNum}`);
-      const metricsRes = await fetch(`${API_BASE}/trucks/metrics/${truckNum}`);
+      const detailsRes = await fetch(`${getApiBase()}/trucks/details/${truckNum}`);
+      const metricsRes = await fetch(`${getApiBase()}/trucks/metrics/${truckNum}`);
       setTruckDetails(await detailsRes.json());
       setTruckMetrics(await metricsRes.json());
     }
@@ -404,7 +403,7 @@ export default function TruckMap() {
   async function updateDispatchStatus() {
     if (!selectedTruckNumber || !auth?.token) return;
 
-    const res = await fetch(`${API_BASE}/dispatch/trucks/${selectedTruckNumber}/status`, {
+    const res = await fetch(`${getApiBase()}/dispatch/trucks/${selectedTruckNumber}/status`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -427,8 +426,8 @@ export default function TruckMap() {
     setDispatchStatusMessage("");
     await fetchTrucks();
 
-    const detailsRes = await fetch(`${API_BASE}/trucks/details/${selectedTruckNumber}`);
-    const eventsRes = await fetch(`${API_BASE}/trucks/events/${selectedTruckNumber}?limit=20`);
+    const detailsRes = await fetch(`${getApiBase()}/trucks/details/${selectedTruckNumber}`);
+    const eventsRes = await fetch(`${getApiBase()}/trucks/events/${selectedTruckNumber}?limit=20`);
     setTruckDetails(await detailsRes.json());
     setTruckEvents(await eventsRes.json());
   }
@@ -469,7 +468,7 @@ export default function TruckMap() {
     };
 
     try {
-      const res = await fetch(`${LOCAL_API_BASE}/api/etickets/create`, {
+      const res = await fetch(`${getApiBase()}/api/etickets/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

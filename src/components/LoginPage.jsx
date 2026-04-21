@@ -1,38 +1,39 @@
 import { useState } from "react";
-
-const API_BASE = "https://fleet.btcfleet.app";
+import { apiFetch } from "../lib/api";
 
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  async function submit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setMessage("");
+    setError("");
+    setSubmitting(true);
 
     try {
-      const res = await fetch(`${API_BASE}/admin/login`, {
+      const data = await apiFetch("/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username,
+          username: username.trim().toLowerCase(),
           password,
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setMessage(data.detail || "Login failed");
+      if (!data?.token) {
+        setError("Login succeeded but no auth token was returned");
         return;
       }
 
-      onLogin(data);
-    } catch {
-      setMessage("Could not reach server");
+      onLogin?.(data);
+    } catch (err) {
+      setError(err.message || "Could not connect to the login service");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -41,12 +42,14 @@ export default function LoginPage({ onLogin }) {
       <div className="login-card">
         <div className="login-title">BTC Fleet Admin Login</div>
 
-        <form onSubmit={submit} className="login-form">
+        <form className="login-form" onSubmit={handleSubmit}>
           <label>Username</label>
           <input
+            type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="adam.coronado"
+            autoComplete="username"
           />
 
           <label>Password</label>
@@ -54,26 +57,35 @@ export default function LoginPage({ onLogin }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder="Enter password"
+            autoComplete="current-password"
           />
 
-          <button type="submit" className="primary-btn">
-            Sign In
+          {error ? (
+            <div
+              style={{
+                background: "rgba(220,38,38,0.15)",
+                border: "1px solid rgba(220,38,38,0.4)",
+                color: "#fecaca",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                marginTop: "8px",
+                fontWeight: 600,
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <button className="primary-btn" type="submit" disabled={submitting}>
+            {submitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        {message && <div className="message-box">{message}</div>}
-
         <div className="login-help">
-          Default seeded admins:
+          Use your BTC Fleet admin credentials.
           <br />
-          adam.coronado
-          <br />
-          todd.lewis
-          <br />
-          mickey.schoenhals
-          <br />
-          Default password in backend seed: <strong>ChangeMe123!</strong>
+          Example username format: <strong>adam.coronado</strong>
         </div>
       </div>
     </div>

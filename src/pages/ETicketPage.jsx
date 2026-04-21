@@ -1,378 +1,1125 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch, buildEticketPdfUrl } from "../lib/api";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_QR_BATCH = "https://btcfleet.app/qr/batch-weights";
+const API_QR_TERMS = "https://btcfleet.app/qr/terms";
+const CENTRAL_TZ = "America/Chicago";
 
-function formatSignedDate(value) {
+function getPoint(event, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+}
+
+function formatCentralDateTime(value) {
   if (!value) return "-";
   try {
-    return new Date(value).toLocaleString();
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: CENTRAL_TZ,
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(value));
   } catch {
     return value;
   }
 }
 
-function formatCoord(value) {
-  if (value === null || value === undefined || value === "") return "Unavailable";
-  const num = Number(value);
-  if (Number.isNaN(num)) return "Unavailable";
-  return num.toFixed(6);
+function parseMixDetails(product = "") {
+  const text = String(product || "").toUpperCase();
+  const strengthMatch = text.match(/(\d{4})\s*PSI/);
+  const sackMatch = text.match(/(\d+(?:\.\d+)?)\s*SK/);
+  const hasSlag = text.includes("SLAG");
+  const hasAsh = text.includes("ASH");
+  const noAir = text.includes("NO AIR");
+  const hasAir = text.includes("AIR") && !noAir;
+
+  return {
+    strength: strengthMatch ? `${strengthMatch[1]} PSI` : "-",
+    slump: "4.5 in ± 1.5 in",
+    airContent: noAir
+      ? "No Air / still ± 1.5%"
+      : hasAir
+      ? "4.5% ± 1.5%"
+      : "4.5% ± 1.5%",
+    description: `${sackMatch ? sackMatch[1] : "-"} SK | ${
+      hasSlag ? "Slag" : hasAsh ? "Ash" : "Standard"
+    } | ${noAir ? "No Air" : "Air"}`,
+  };
 }
 
-function formatWaterAdded(value) {
-  if (value === null || value === undefined || value === "") return "0";
-  const num = Number(value);
-  if (Number.isNaN(num)) return value;
-  return Number.isInteger(num) ? String(num) : num.toFixed(1);
+function SummaryRow({ label, value }) {
+  return (
+    <div className="asset-row">
+      <span>{label}</span>
+      <strong>{value || "-"}</strong>
+    </div>
+  );
+}
+
+function InfoNotice({ children }) {
+  return (
+    <div
+      style={{
+        background: "var(--panel-2)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: 14,
+        color: "#d7e7f7",
+        lineHeight: 1.5,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function QrCard({ title, url }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        background: "var(--panel-2)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: 16,
+        display: "grid",
+        justifyItems: "center",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 800,
+          color: "#fff",
+          marginBottom: 12,
+          fontSize: 18,
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          background: "#fff",
+          width: 150,
+          height: 150,
+          borderRadius: 12,
+          display: "grid",
+          placeItems: "center",
+          marginBottom: 10,
+          overflow: "hidden",
+        }}
+      >
+        <img
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+            url
+          )}`}
+          alt={title}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+
+      <div
+        style={{
+          color: "var(--muted)",
+          fontSize: 12,
+          wordBreak: "break-all",
+        }}
+      >
+        {url}
+      </div>
+    </div>
+  );
 }
 
 export default function ETicketPage() {
-  const { token } = useParams();
+  const token = useMemo(() => {
+    const parts = window.location.pathname.split("/");
+    return parts[parts.length - 1] || "";
+  }, []);
+
+  const waterSignatureRef = useRef(null);
+  const finalSignatureRef = useRef(null);
+  const videoRef = useRef(null);
+  const photoCanvasRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const drawingWaterRef = useRef(false);
+  const drawingFinalRef = useRef(false);
+  const lastWaterPointRef = useRef({ x: 0, y: 0 });
+  const lastFinalPointRef = useRef({ x: 0, y: 0 });
 
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [signing, setSigning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [signed, setSigned] = useState(false);
   const [error, setError] = useState("");
-  const [locationStatus, setLocationStatus] = useState("");
-
+  const [success, setSuccess] = useState("");
   const [step, setStep] = useState(1);
+  const [nowTick, setNowTick] = useState(Date.now());
 
-  const [contractorName, setContractorName] = useState("");
-  const [waterChoice, setWaterChoice] = useState("Water Allowed");
-  const [waterAdded, setWaterAdded] = useState("");
+  const [printedName, setPrintedName] = useState("");
+  const [curbLineSignature, setCurbLineSignature] = useState(
+    "Customer / Contractor Signature"
+  );
+  const [waterAllowed] = useState(25);
+  const [waterAdded, setWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted");
+  const [confirmWater, setConfirmWater] = useState(false);
+  const [locationData, setLocationData] = useState({
+    latitude: null,
+    longitude: null,
+  });
+
+  const [waterSignatureDrawn, setWaterSignatureDrawn] = useState(false);
+  const [waterSignatureDataUrl, setWaterSignatureDataUrl] = useState("");
+  const [finalSignatureDrawn, setFinalSignatureDrawn] = useState(false);
+  const [finalSignatureDataUrl, setFinalSignatureDataUrl] = useState("");
+
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [cameraStarted, setCameraStarted] = useState(false);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   async function loadTicket() {
     setLoading(true);
     setError("");
-
     try {
-      const res = await fetch(`${API_BASE}/api/etickets/${token}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.detail || "Ticket not found");
-        setLoading(false);
-        return;
-      }
-
+      const data = await apiFetch(`/api/etickets/${token}`);
       setTicket(data);
-    } catch {
-      setError("Could not load ticket");
+      setPrintedName(data.signed_name || "");
+      setSigned(data.status === "signed");
+      setFinalSignatureDataUrl(data.signature_data_url || "");
+      setPhotoPreview(data.photo_data_url || "");
+      setWaterAdded(Number(data.water_added || 0));
+      if (data.signature_data_url) {
+        setFinalSignatureDrawn(true);
+      }
+    } catch (err) {
+      setError(err.message || "Ticket not found");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadTicket();
+    if (token) {
+      loadTicket();
+    }
   }, [token]);
 
-  function getBrowserLocation() {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve({
-          latitude: null,
-          longitude: null,
-          status: "Geolocation not supported",
+  useEffect(() => {
+    if (signed || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocationData({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
         });
-        return;
-      }
+      },
+      () => {}
+    );
+  }, [signed]);
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            status: "Location captured",
-          });
-        },
-        () => {
-          resolve({
-            latitude: null,
-            longitude: null,
-            status: "Location unavailable",
-          });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
-    });
+  function setupCanvas(canvas, bg = "#0b1a2b") {
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const width = Math.max(Math.floor(rect.width), 300);
+    const height = Math.max(Math.floor(rect.height), 120);
+
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
   }
 
-  async function signTicket() {
-    if (!contractorName.trim()) {
-      setError("Please enter contractor/customer name");
+  useEffect(() => {
+    if (signed) return;
+
+    setupCanvas(waterSignatureRef.current);
+    setupCanvas(finalSignatureRef.current);
+
+    if (waterSignatureDataUrl && waterSignatureRef.current) {
+      const img = new Image();
+      img.onload = () => {
+        const c = waterSignatureRef.current;
+        const ctx = c.getContext("2d");
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        ctx.drawImage(img, 0, 0, c.width / ratio, c.height / ratio);
+      };
+      img.src = waterSignatureDataUrl;
+    }
+
+    if (finalSignatureDataUrl && finalSignatureRef.current) {
+      const img = new Image();
+      img.onload = () => {
+        const c = finalSignatureRef.current;
+        const ctx = c.getContext("2d");
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        ctx.drawImage(img, 0, 0, c.width / ratio, c.height / ratio);
+      };
+      img.src = finalSignatureDataUrl;
+    }
+  }, [signed, step]); // keeps signature stable while drawing
+
+  const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
+
+  const loadTimeMs = useMemo(() => {
+    if (!ticket?.load_time) return null;
+    const ms = new Date(ticket.load_time).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }, [ticket?.load_time]);
+
+  const configuredLimitMinutes = 90;
+
+  const remainingMinutes = useMemo(() => {
+    if (!loadTimeMs) return configuredLimitMinutes;
+    const elapsedMs = nowTick - loadTimeMs;
+    return Math.max(
+      0,
+      Math.round((configuredLimitMinutes * 60000 - elapsedMs) / 60000)
+    );
+  }, [loadTimeMs, nowTick]);
+
+  function startSignature(event, canvasRef, drawingRef, lastPointRef) {
+    const canvas = canvasRef.current;
+    if (!canvas || signed) return;
+
+    drawingRef.current = true;
+    canvas.setPointerCapture?.(event.pointerId);
+
+    const pt = getPoint(event, canvas);
+    lastPointRef.current = pt;
+
+    const ctx = canvas.getContext("2d");
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
+  }
+
+  function moveSignature(
+    event,
+    canvasRef,
+    drawingRef,
+    lastPointRef,
+    setDrawn
+  ) {
+    if (!drawingRef.current || signed) return;
+
+    event.preventDefault?.();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const pt = getPoint(event, canvas);
+
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+
+    lastPointRef.current = pt;
+    setDrawn(true);
+  }
+
+  function endSignature(event, canvasRef, drawingRef, setDataUrl) {
+    if (!drawingRef.current) return;
+
+    const canvas = canvasRef.current;
+    drawingRef.current = false;
+    canvas?.releasePointerCapture?.(event.pointerId);
+
+    if (canvas) {
+      setDataUrl(canvas.toDataURL("image/png"));
+    }
+  }
+
+  function clearCanvas(canvasRef, setterDrawn, setterData) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    setupCanvas(canvas);
+    setterDrawn(false);
+    setterData("");
+  }
+
+  async function attachStreamToVideo() {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+
+    if (!video || !stream) return false;
+
+    try {
+      video.srcObject = stream;
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute("playsinline", "true");
+
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+
+      await video.play();
+      return true;
+    } catch (err) {
+      console.error("attachStreamToVideo error:", err);
+      return false;
+    }
+  }
+
+  async function startCamera() {
+    setError("");
+    stopCamera();
+
+    if (!window.isSecureContext) {
+      setError(
+        "Camera requires HTTPS or localhost. This tablet is opening the eTicket over insecure HTTP."
+      );
       return;
     }
 
-    setSigning(true);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError(
+        "This browser/device does not support camera access. Please use another device or browser."
+      );
+      return;
+    }
+
+    const attempts = [
+      {
+        video: {
+          facingMode: { ideal: "user" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      },
+      {
+        video: {
+          facingMode: "user",
+        },
+        audio: false,
+      },
+      {
+        video: true,
+        audio: false,
+      },
+    ];
+
+    let lastError = null;
+
+    for (const constraints of attempts) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        if (!videoRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          setError("Camera preview could not be initialized.");
+          return;
+        }
+
+        videoRef.current.srcObject = stream;
+        videoRef.current.playsInline = true;
+        videoRef.current.muted = true;
+
+        await videoRef.current.play();
+
+        setCameraStarted(true);
+        return;
+      } catch (err) {
+        console.error("startCamera attempt failed:", err);
+        lastError = err;
+      }
+    }
+
+    let message = "Could not open camera.";
+
+    if (lastError?.name === "NotAllowedError") {
+      message =
+        "Camera permission was denied. Please allow camera access and try again.";
+    } else if (lastError?.name === "NotFoundError") {
+      message = "No camera was found on this device.";
+    } else if (lastError?.name === "NotReadableError") {
+      message = "Camera is already being used by another app.";
+    } else if (lastError?.name === "OverconstrainedError") {
+      message = "This device could not satisfy the requested camera settings.";
+    } else if (lastError?.message) {
+      message = lastError.message;
+    }
+
+    setCameraStarted(false);
+    setError(message);
+  }
+
+  useEffect(() => {
+    if (!cameraStarted) return;
+    if (!streamRef.current) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (cancelled) return;
+      const ok = await attachStreamToVideo();
+      if (!ok && !cancelled) {
+        setError("Camera opened but preview could not start.");
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cameraStarted]);
+
+  function stopCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
+
+    setCameraStarted(false);
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    const canvas = photoCanvasRef.current;
+
+    if (!video || !canvas) {
+      setError("Camera is not ready.");
+      return;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+      setError("Camera preview is not ready yet. Wait 1 second and try again.");
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.92);
+    setPhotoPreview(imageData);
+    stopCamera();
+  }
+
+  function clearPhoto() {
+    setPhotoPreview("");
+  }
+
+  async function submitTicket() {
+    setSubmitting(true);
     setError("");
-    setLocationStatus("Getting location...");
+    setSuccess("");
 
     try {
-      const location = await getBrowserLocation();
-      setLocationStatus(location.status);
+      if (!printedName.trim()) {
+        throw new Error("Printed name is required");
+      }
+      if (!waterSignatureDrawn) {
+        throw new Error("Customer curb line signature is required");
+      }
+      if (!finalSignatureDrawn) {
+        throw new Error("Final signature is required");
+      }
+      if (!confirmWater) {
+        throw new Error("Please confirm the water amount");
+      }
+      if (!photoPreview) {
+        throw new Error("Signer photo is required");
+      }
 
-      const waterAddedNumber =
-        waterAdded === "" ? null : Number(waterAdded);
-
-      const res = await fetch(`${API_BASE}/api/etickets/${token}/sign`, {
+      await apiFetch(`/api/etickets/${token}/sign`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: contractorName.trim(),
-          latitude: location.latitude,
-          longitude: location.longitude,
-          water_choice: waterChoice,
-          water_added: waterAddedNumber,
-          ticket_acceptance: ticketAcceptance,
+          name: printedName.trim(),
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          water_choice: `${curbLineSignature} | ${waterAllowed} gal allowed`,
+          water_added: waterAdded,
+          ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
+          signature_data_url: finalSignatureDataUrl,
+          photo_data_url: photoPreview,
+          batch_weights_qr_url: API_QR_BATCH,
+          terms_qr_url: API_QR_TERMS,
+          load_time: ticket?.load_time,
+          time_limit_minutes: remainingMinutes,
+          curb_line_signature_data_url: waterSignatureDataUrl,
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setError(data.detail || data.message || "Could not sign ticket");
-        setSigning(false);
-        return;
-      }
-
       await loadTicket();
-    } catch {
-      setError("Could not sign ticket. Check that backend is running on 127.0.0.1:8000");
+      setSigned(true);
+      setSuccess("eTicket signed successfully");
+    } catch (err) {
+      setError(err.message || "Could not submit ticket");
     } finally {
-      setSigning(false);
+      setSubmitting(false);
     }
   }
 
-  function downloadPdf() {
-    window.open(`${API_BASE}/api/etickets/${token}/pdf`, "_blank");
-  }
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
 
   if (loading) {
-    return (
-      <div style={styles.page}>
-        <div style={styles.shell}>
-          <div style={styles.loading}>Loading ticket...</div>
-        </div>
-      </div>
-    );
+    return <div className="full-screen-center">Loading ticket...</div>;
   }
 
   if (error && !ticket) {
+    return <div className="full-screen-center">{error}</div>;
+  }
+
+  if (signed) {
     return (
-      <div style={styles.page}>
-        <div style={styles.shell}>
-          <div style={styles.errorTitle}>Ticket Error</div>
-          <div style={styles.errorText}>{error}</div>
+      <div className="app-shell" style={{ padding: 16 }}>
+        <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div className="panel-title">Signed eTicket</div>
+          {success ? <div className="message-box">{success}</div> : null}
+
+          <div className="asset-details">
+            <SummaryRow label="Ticket #" value={ticket.ticket_number} />
+            <SummaryRow label="Customer" value={ticket.customer_name} />
+            <SummaryRow label="Truck" value={ticket.truck_number} />
+            <SummaryRow label="Signed By" value={ticket.signed_name} />
+            <SummaryRow
+              label="Signed At (CDT)"
+              value={formatCentralDateTime(ticket.signed_at)}
+            />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}>
+            <button
+              className="primary-btn"
+              style={{ width: "auto", marginTop: 0 }}
+              onClick={() => window.open(buildEticketPdfUrl(token), "_blank")}
+            >
+              Open Signed PDF Copy
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const isSigned = ticket?.status === "signed";
-
   return (
-    <div style={styles.page}>
-      <div style={styles.shell}>
-        <div style={styles.header}>
-          <div>
-            <div style={styles.brand}>BTC Fleet eTicket</div>
-            <div style={styles.subtitle}>Customer Delivery Confirmation</div>
+    <div className="app-shell" style={{ padding: 14 }}>
+      <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="panel-title">BTC Fleet eTicket</div>
+        {error ? (
+          <div style={{ color: "#fecaca", marginBottom: 12, fontWeight: 700 }}>
+            {error}
           </div>
+        ) : null}
 
-          <div
-            style={{
-              ...styles.statusBadge,
-              ...(isSigned ? styles.statusSigned : styles.statusPending),
-            }}
-          >
-            {isSigned ? "Signed" : "Pending"}
-          </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            marginBottom: 18,
+            color: "var(--muted)",
+            fontWeight: 700,
+          }}
+        >
+          <span style={{ color: step === 1 ? "#fff" : "var(--muted)" }}>Ticket</span>
+          <span style={{ color: step === 2 ? "#fff" : "var(--muted)" }}>Water</span>
+          <span style={{ color: step === 3 ? "#fff" : "var(--muted)" }}>Submit</span>
         </div>
 
-        <div style={styles.progressBar}>
-          <StepDot active={step === 1} label="Ticket" />
-          <StepDot active={step === 2} label="Water" />
-          <StepDot active={step === 3} label="Submit" />
-        </div>
-
-        {!isSigned && (
+        {step === 1 && (
           <>
-            {step === 1 && (
-              <div style={styles.ticketPanel}>
-                <div style={styles.leftCard}>
-                  <Row label="Ticket #" value={ticket.ticket_number} />
-                  <Row label="Job Name" value={ticket.customer_name} />
-                  <Row label="Address" value={ticket.address} />
-                  <Row label="Mix / Truck" value={`${ticket.product} / ${ticket.truck_number}`} />
-                  <Row label="Description" value={ticket.product} />
-                  <Row label="Quantity" value={ticket.quantity} />
-                </div>
+            <div className="asset-details">
+              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
+              <SummaryRow label="Job Name" value={ticket.customer_name} />
+              <SummaryRow label="Address" value={ticket.address} />
+              <SummaryRow
+                label="Mix / Truck"
+                value={`${ticket.product || "-"} / ${ticket.truck_number || "-"}`}
+              />
+              <SummaryRow label="Description" value={mix.description} />
+              <SummaryRow label="Strength" value={mix.strength} />
+              <SummaryRow label="Slump" value={mix.slump} />
+              <SummaryRow label="Air" value={mix.airContent} />
+              <SummaryRow label="Load Size" value={`${ticket.quantity || 0} yards`} />
+              <SummaryRow
+                label="Quantity Delivered Total"
+                value={`${ticket.quantity || 0} yards`}
+              />
+              <SummaryRow label="Order Total" value={`${ticket.quantity || 0} yards`} />
+            </div>
 
-                <div style={styles.navButtons}>
-                  <button style={styles.orangeBtn} onClick={() => setStep(2)}>
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div style={styles.ticketPanel}>
-                <div style={styles.centerCard}>
-                  <div style={styles.blockTitle}>Load / Water Confirmation</div>
-
-                  <Row label="Load Time" value={new Date().toLocaleTimeString()} />
-                  <Row label="Time Limit" value="100 min" />
-
-                  <label style={styles.inputLabel}>Water Choice</label>
-                  <select
-                    style={styles.input}
-                    value={waterChoice}
-                    onChange={(e) => setWaterChoice(e.target.value)}
-                  >
-                    <option>Water Allowed</option>
-                    <option>Water Added</option>
-                    <option>No Water</option>
-                  </select>
-
-                  <label style={styles.inputLabel}>Water Added (gal)</label>
-                  <input
-                    style={styles.input}
-                    value={waterAdded}
-                    onChange={(e) => setWaterAdded(e.target.value)}
-                    placeholder="Enter gallons"
-                  />
-                </div>
-
-                <div style={styles.navButtons}>
-                  <button style={styles.secondaryBtn} onClick={() => setStep(1)}>
-                    Back
-                  </button>
-                  <button style={styles.orangeBtn} onClick={() => setStep(3)}>
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div style={styles.ticketPanel}>
-                <div style={styles.rightCard}>
-                  <div style={styles.blockTitle}>Final Confirmation</div>
-
-                  <label style={styles.inputLabel}>Contractor / Customer Signature</label>
-                  <input
-                    style={styles.input}
-                    value={contractorName}
-                    onChange={(e) => setContractorName(e.target.value)}
-                    placeholder="Enter printed name"
-                  />
-
-                  <label style={styles.inputLabel}>Ticket Acceptance</label>
-                  <select
-                    style={styles.input}
-                    value={ticketAcceptance}
-                    onChange={(e) => setTicketAcceptance(e.target.value)}
-                  >
-                    <option>Accepted</option>
-                    <option>Rejected</option>
-                  </select>
-
-                  <div style={styles.summaryBox}>
-                    <div>Water: {waterChoice}</div>
-                    <div>Water Added: {waterAdded || 0} gal</div>
-                    <div>Acceptance: {ticketAcceptance}</div>
-                  </div>
-
-                  {locationStatus ? (
-                    <div style={styles.locationStatus}>{locationStatus}</div>
-                  ) : null}
-
-                  {error ? <div style={styles.inlineError}>{error}</div> : null}
-                </div>
-
-                <div style={styles.navButtons}>
-                  <button style={styles.secondaryBtn} onClick={() => setStep(2)}>
-                    Back
-                  </button>
-                  <button
-                    style={styles.orangeBtn}
-                    onClick={signTicket}
-                    disabled={signing}
-                  >
-                    {signing ? "Submitting..." : "Submit"}
-                  </button>
-                </div>
-              </div>
-            )}
+            <button className="primary-btn" onClick={() => setStep(2)}>
+              Next
+            </button>
           </>
         )}
 
-        {isSigned && (
+        {step === 2 && (
           <>
-            <div style={styles.signedHeaderCard}>
-              <div style={styles.blockTitle}>Ticket Details</div>
-              <Row label="Ticket #" value={ticket.ticket_number} />
-              <Row label="Customer" value={ticket.customer_name} />
-              <Row label="Address" value={ticket.address} />
-              <Row label="Plant" value={ticket.plant} />
-              <Row label="Truck" value={ticket.truck_number} />
-              <Row label="Product" value={ticket.product} />
-              <Row label="Quantity" value={ticket.quantity} />
+            <div className="asset-details">
+              <SummaryRow
+                label="Load Time"
+                value={formatCentralDateTime(ticket.load_time)}
+              />
+              <SummaryRow label="Time Limit" value={`${configuredLimitMinutes} min`} />
+              <SummaryRow label="Remaining Time" value={`${remainingMinutes} min`} />
             </div>
 
-            <div style={styles.stamp}>
-              <div style={styles.stampCheck}>✓ CUSTOMER SIGNED</div>
+            <label>Curb Line Signature</label>
+            <select
+              value={curbLineSignature}
+              onChange={(e) => setCurbLineSignature(e.target.value)}
+            >
+              <option>Customer / Contractor Signature</option>
+              <option>Driver signed - no one available</option>
+            </select>
 
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Signed by:</span>
-                <span style={styles.stampValue}>{ticket.signed_name || "-"}</span>
+            <InfoNotice>
+              We are not responsible for any property damage.
+            </InfoNotice>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 14,
+                marginTop: 16,
+              }}
+            >
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: 16,
+                }}
+              >
+                <div style={{ color: "var(--muted)", marginBottom: 10 }}>
+                  Water Allowed
+                </div>
+                <div style={{ color: "#fff", fontSize: 26, fontWeight: 800 }}>
+                  {waterAllowed} gal
+                </div>
               </div>
 
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Signed at:</span>
-                <span style={styles.stampValue}>{formatSignedDate(ticket.signed_at)}</span>
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: 16,
+                }}
+              >
+                <div style={{ color: "var(--muted)", marginBottom: 10 }}>
+                  Water Added
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                  }}
+                >
+                  <button
+                    className="primary-btn"
+                    style={{ width: "auto", marginTop: 0 }}
+                    type="button"
+                    onClick={() => setWaterAdded((v) => Math.max(0, v - 1))}
+                  >
+                    -
+                  </button>
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontSize: 26,
+                      fontWeight: 800,
+                      minWidth: 90,
+                      textAlign: "center",
+                    }}
+                  >
+                    {waterAdded} gal
+                  </div>
+                  <button
+                    className="primary-btn"
+                    style={{ width: "auto", marginTop: 0 }}
+                    type="button"
+                    onClick={() => setWaterAdded((v) => v + 1)}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Latitude:</span>
-                <span style={styles.stampValue}>{formatCoord(ticket.signed_latitude)}</span>
-              </div>
-
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Longitude:</span>
-                <span style={styles.stampValue}>{formatCoord(ticket.signed_longitude)}</span>
-              </div>
-
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Water Choice:</span>
-                <span style={styles.stampValue}>{ticket.water_choice || "-"}</span>
-              </div>
-
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Water Added:</span>
-                <span style={styles.stampValue}>{formatWaterAdded(ticket.water_added)} gal</span>
-              </div>
-
-              <div style={styles.stampRow}>
-                <span style={styles.stampLabel}>Acceptance:</span>
-                <span style={styles.stampValue}>{ticket.ticket_acceptance || "-"}</span>
-              </div>
-
-              <div style={styles.stampAccepted}>Status: {ticket.ticket_acceptance || "Accepted"}</div>
             </div>
 
-            <div style={styles.downloadWrap}>
-              <button style={styles.orangeBtn} onClick={downloadPdf}>
-                Download Signed PDF Copy
+            <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
+              Customer Finger Signature
+            </div>
+            <canvas
+              ref={waterSignatureRef}
+              style={{
+                width: "100%",
+                height: 150,
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                touchAction: "none",
+                marginTop: 10,
+                background: "#0b1a2b",
+              }}
+              onPointerDown={(e) =>
+                startSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  lastWaterPointRef
+                )
+              }
+              onPointerMove={(e) =>
+                moveSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  lastWaterPointRef,
+                  setWaterSignatureDrawn
+                )
+              }
+              onPointerUp={(e) =>
+                endSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  setWaterSignatureDataUrl
+                )
+              }
+              onPointerLeave={(e) =>
+                endSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  setWaterSignatureDataUrl
+                )
+              }
+            />
+            <div style={{ marginTop: 8 }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() =>
+                  clearCanvas(
+                    waterSignatureRef,
+                    setWaterSignatureDrawn,
+                    setWaterSignatureDataUrl
+                  )
+                }
+              >
+                Clear Signature
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </button>
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={() => setStep(3)}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <div
+              style={{
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 16,
+                padding: 18,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 18,
+                  marginBottom: 8,
+                }}
+              >
+                Confirm Water
+              </div>
+              <div style={{ color: "#fff", fontWeight: 800, fontSize: 30 }}>
+                {waterAdded} gal
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginTop: 14,
+                  justifyContent: "center",
+                }}
+              >
+                <button
+                  className="primary-btn"
+                  style={{ width: "auto", marginTop: 0 }}
+                  onClick={() => setConfirmWater(true)}
+                >
+                  Yes
+                </button>
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={() => {
+                    setConfirmWater(false);
+                    setStep(2);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+
+            <label>Ticket Acceptance</label>
+            <select
+              value={ticketAcceptance}
+              onChange={(e) => setTicketAcceptance(e.target.value)}
+            >
+              <option>Accepted</option>
+              <option>Rejected</option>
+            </select>
+
+            <div style={{ marginTop: 18 }}>
+              <label>Printed Name</label>
+              <input
+                value={printedName}
+                onChange={(e) => setPrintedName(e.target.value)}
+                placeholder="Enter printed name"
+              />
+            </div>
+
+            <div style={{ marginTop: 18, display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <QrCard title="Batch Weights" url={API_QR_BATCH} />
+              <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                color: "#fff",
+                fontWeight: 800,
+                textAlign: "center",
+              }}
+            >
+              Final Signature
+            </div>
+            <canvas
+              ref={finalSignatureRef}
+              style={{
+                width: "100%",
+                height: 160,
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                touchAction: "none",
+                marginTop: 10,
+                background: "#0b1a2b",
+              }}
+              onPointerDown={(e) =>
+                startSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  lastFinalPointRef
+                )
+              }
+              onPointerMove={(e) =>
+                moveSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  lastFinalPointRef,
+                  setFinalSignatureDrawn
+                )
+              }
+              onPointerUp={(e) =>
+                endSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  setFinalSignatureDataUrl
+                )
+              }
+              onPointerLeave={(e) =>
+                endSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  setFinalSignatureDataUrl
+                )
+              }
+            />
+            <div style={{ marginTop: 8, textAlign: "center" }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() =>
+                  clearCanvas(
+                    finalSignatureRef,
+                    setFinalSignatureDrawn,
+                    setFinalSignatureDataUrl
+                  )
+                }
+              >
+                Clear Signature
+              </button>
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                color: "#fff",
+                fontWeight: 800,
+                textAlign: "center",
+              }}
+            >
+              Signer Photo
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                marginTop: 10,
+                justifyContent: "center",
+              }}
+            >
+              {!cameraStarted ? (
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={startCamera}
+                >
+                  Start Camera
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={capturePhoto}
+                  >
+                    Capture Photo
+                  </button>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={stopCamera}
+                  >
+                    Cancel Camera
+                  </button>
+                </>
+              )}
+
+              {photoPreview ? (
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={clearPhoto}
+                >
+                  Clear Photo
+                </button>
+              ) : null}
+            </div>
+
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                height: cameraStarted ? 260 : 0,
+                objectFit: "cover",
+                marginTop: cameraStarted ? 12 : 0,
+                borderRadius: 12,
+                background: "#000",
+                display: "block",
+                marginLeft: "auto",
+                marginRight: "auto",
+                overflow: "hidden",
+                opacity: cameraStarted ? 1 : 0,
+                pointerEvents: cameraStarted ? "auto" : "none",
+              }}
+            />
+
+            <canvas ref={photoCanvasRef} style={{ display: "none" }} />
+
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="Signer preview"
+                style={{
+                  width: "100%",
+                  maxWidth: 320,
+                  marginTop: 12,
+                  borderRadius: 12,
+                  display: "block",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                }}
+              />
+            ) : null}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => setStep(2)}
+              >
+                Back
+              </button>
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={submitTicket}
+                disabled={submitting}
+              >
+                {submitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           </>
@@ -381,283 +1128,3 @@ export default function ETicketPage() {
     </div>
   );
 }
-
-function StepDot({ active, label }) {
-  return (
-    <div style={styles.stepWrap}>
-      <div
-        style={{
-          ...styles.stepDot,
-          ...(active ? styles.stepDotActive : {}),
-        }}
-      />
-      <div style={styles.stepLabel}>{label}</div>
-    </div>
-  );
-}
-
-function Row({ label, value }) {
-  return (
-    <div style={styles.row}>
-      <div style={styles.rowLabel}>{label}</div>
-      <div style={styles.rowValue}>{value || "-"}</div>
-    </div>
-  );
-}
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#0B1A2B",
-    color: "#FFFFFF",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    padding: "20px 14px",
-    fontFamily: "Arial, sans-serif",
-  },
-  shell: {
-    width: "100%",
-    maxWidth: "880px",
-    background: "#132A44",
-    border: "1px solid #244A75",
-    borderRadius: "18px",
-    padding: "20px",
-    boxSizing: "border-box",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "16px",
-    marginBottom: "18px",
-  },
-  brand: {
-    fontSize: "28px",
-    fontWeight: "800",
-    color: "#F97316",
-    marginBottom: "4px",
-  },
-  subtitle: {
-    fontSize: "15px",
-    color: "#A9C1DA",
-  },
-  statusBadge: {
-    padding: "10px 14px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    fontSize: "13px",
-    whiteSpace: "nowrap",
-  },
-  statusPending: {
-    background: "rgba(249, 115, 22, 0.18)",
-    color: "#FFB37A",
-    border: "1px solid rgba(249, 115, 22, 0.45)",
-  },
-  statusSigned: {
-    background: "rgba(37, 194, 129, 0.18)",
-    color: "#7EF0BC",
-    border: "1px solid rgba(37, 194, 129, 0.45)",
-  },
-  progressBar: {
-    display: "flex",
-    gap: "20px",
-    marginBottom: "22px",
-    alignItems: "center",
-  },
-  stepWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  stepDot: {
-    width: "14px",
-    height: "14px",
-    borderRadius: "50%",
-    background: "#274664",
-    border: "1px solid #3B5F86",
-  },
-  stepDotActive: {
-    background: "#F97316",
-    border: "1px solid #FB923C",
-  },
-  stepLabel: {
-    color: "#A9C1DA",
-    fontSize: "13px",
-    fontWeight: "600",
-  },
-  ticketPanel: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-  leftCard: {
-    background: "#0F2238",
-    border: "1px solid #244A75",
-    borderRadius: "14px",
-    padding: "16px",
-  },
-  centerCard: {
-    background: "#0F2238",
-    border: "1px solid #244A75",
-    borderRadius: "14px",
-    padding: "16px",
-  },
-  rightCard: {
-    background: "#0F2238",
-    border: "1px solid #244A75",
-    borderRadius: "14px",
-    padding: "16px",
-  },
-  signedHeaderCard: {
-    background: "#0F2238",
-    border: "1px solid #244A75",
-    borderRadius: "14px",
-    padding: "16px",
-    marginBottom: "16px",
-  },
-  blockTitle: {
-    fontSize: "20px",
-    fontWeight: "700",
-    marginBottom: "14px",
-    color: "#FFFFFF",
-  },
-  row: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    padding: "10px 0",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  },
-  rowLabel: {
-    color: "#A9C1DA",
-    fontSize: "14px",
-    minWidth: "120px",
-  },
-  rowValue: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    textAlign: "right",
-    flex: 1,
-    wordBreak: "break-word",
-  },
-  inputLabel: {
-    display: "block",
-    fontSize: "14px",
-    color: "#A9C1DA",
-    marginBottom: "8px",
-    marginTop: "12px",
-  },
-  input: {
-    width: "100%",
-    height: "48px",
-    borderRadius: "10px",
-    border: "1px solid #244A75",
-    background: "#183556",
-    color: "#FFFFFF",
-    padding: "0 14px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-    outline: "none",
-  },
-  navButtons: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "10px",
-  },
-  orangeBtn: {
-    flex: 1,
-    height: "48px",
-    border: "none",
-    borderRadius: "10px",
-    background: "linear-gradient(90deg, #F97316, #FB923C)",
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  secondaryBtn: {
-    flex: 1,
-    height: "48px",
-    border: "1px solid #244A75",
-    borderRadius: "10px",
-    background: "#183556",
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  summaryBox: {
-    marginTop: "16px",
-    padding: "14px",
-    borderRadius: "12px",
-    background: "#183556",
-    border: "1px solid #244A75",
-    color: "#FFFFFF",
-    lineHeight: "1.8",
-  },
-  locationStatus: {
-    marginTop: "12px",
-    color: "#A9C1DA",
-    fontSize: "13px",
-  },
-  inlineError: {
-    marginTop: "12px",
-    color: "#FFB5BF",
-    fontSize: "14px",
-    fontWeight: "700",
-  },
-  stamp: {
-    background: "rgba(37, 194, 129, 0.10)",
-    border: "1px solid rgba(37, 194, 129, 0.45)",
-    borderRadius: "14px",
-    padding: "16px",
-  },
-  stampCheck: {
-    color: "#7EF0BC",
-    fontWeight: "800",
-    fontSize: "18px",
-    marginBottom: "12px",
-  },
-  stampRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "16px",
-    padding: "8px 0",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  },
-  stampLabel: {
-    color: "#A9C1DA",
-    fontSize: "14px",
-  },
-  stampValue: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    textAlign: "right",
-    wordBreak: "break-word",
-  },
-  stampAccepted: {
-    marginTop: "14px",
-    color: "#7EF0BC",
-    fontWeight: "700",
-    fontSize: "15px",
-  },
-  downloadWrap: {
-    marginTop: "16px",
-  },
-  loading: {
-    color: "#FFFFFF",
-    fontSize: "18px",
-  },
-  errorTitle: {
-    color: "#FFFFFF",
-    fontSize: "22px",
-    fontWeight: "700",
-    marginBottom: "10px",
-  },
-  errorText: {
-    color: "#FFB5BF",
-    fontSize: "16px",
-  },
-};

@@ -4,10 +4,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import TruckMap from "./components/TruckMap";
 import LoginPage from "./components/LoginPage";
 import AdminPage from "./components/AdminPage";
+import ETicketsPage from "./components/ETicketsPage";
 import ETicketPage from "./pages/ETicketPage";
+import { apiFetch } from "./lib/api";
 import "./index.css";
-
-const API_BASE = "https://fleet.btcfleet.app";
 
 export default function App() {
   return (
@@ -25,7 +25,6 @@ function ProtectedApp() {
     const raw = localStorage.getItem("btc_admin_auth");
     return raw ? JSON.parse(raw) : null;
   });
-
   const [activeTab, setActiveTab] = useState("operations");
   const [loading, setLoading] = useState(true);
 
@@ -37,16 +36,9 @@ function ProtectedApp() {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/admin/me`, {
-          headers: {
-            "X-Admin-Token": auth.token,
-          },
+        await apiFetch("/admin/me", {
+          headers: { "X-Admin-Token": auth.token },
         });
-
-        if (!res.ok) {
-          localStorage.removeItem("btc_admin_auth");
-          setAuth(null);
-        }
       } catch {
         localStorage.removeItem("btc_admin_auth");
         setAuth(null);
@@ -96,6 +88,13 @@ function ProtectedApp() {
           >
             Admin
           </button>
+
+          <button
+            className={`tab-btn ${activeTab === "etickets" ? "active" : ""}`}
+            onClick={() => setActiveTab("etickets")}
+          >
+            eTickets
+          </button>
         </div>
 
         <div className="top-nav-right">
@@ -108,8 +107,10 @@ function ProtectedApp() {
 
       {activeTab === "operations" ? (
         <TruckMap />
-      ) : (
+      ) : activeTab === "admin" ? (
         <AdminPage token={auth.token} />
+      ) : (
+        <ETicketsPage token={auth.token} />
       )}
     </div>
   );
