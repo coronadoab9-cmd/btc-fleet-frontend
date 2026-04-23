@@ -186,6 +186,38 @@ export default function ETicketPage() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [cameraStarted, setCameraStarted] = useState(false);
 
+  const fetchCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject("Geolocation is not supported on this device.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const nextLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+
+          setLocationData(nextLocation);
+          console.log("Location captured:", nextLocation);
+
+          resolve(nextLocation);
+        },
+        (geoError) => {
+          console.error("Geolocation error:", geoError);
+          reject(geoError?.message || "Could not get current location.");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
+    });
+  };
+
   useEffect(() => {
     const id = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(id);
@@ -219,16 +251,11 @@ export default function ETicketPage() {
   }, [token]);
 
   useEffect(() => {
-    if (signed || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocationData({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
-      },
-      () => {}
-    );
+    if (signed) return;
+
+    fetchCurrentLocation().catch((err) => {
+      console.log("Initial location fetch failed:", err);
+    });
   }, [signed]);
 
   function setupCanvas(canvas, bg = "#0b1a2b") {
@@ -279,7 +306,7 @@ export default function ETicketPage() {
       };
       img.src = finalSignatureDataUrl;
     }
-  }, [signed, step]); // keeps signature stable while drawing
+  }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
 
@@ -433,13 +460,17 @@ export default function ETicketPage() {
           return;
         }
 
-        videoRef.current.srcObject = stream;
-        videoRef.current.playsInline = true;
-        videoRef.current.muted = true;
-
-        await videoRef.current.play();
-
+        streamRef.current = stream;
         setCameraStarted(true);
+
+        const ok = await attachStreamToVideo();
+
+        if (!ok) {
+          stopCamera();
+          setError("Camera opened but preview could not start.");
+          return;
+        }
+
         return;
       } catch (err) {
         console.error("startCamera attempt failed:", err);
@@ -465,28 +496,6 @@ export default function ETicketPage() {
     setCameraStarted(false);
     setError(message);
   }
-
-  useEffect(() => {
-    if (!cameraStarted) return;
-    if (!streamRef.current) return;
-
-    let cancelled = false;
-
-    const run = async () => {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      if (cancelled) return;
-      const ok = await attachStreamToVideo();
-      if (!ok && !cancelled) {
-        setError("Camera opened but preview could not start.");
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cameraStarted]);
 
   function stopCamera() {
     if (streamRef.current) {
@@ -553,13 +562,23 @@ export default function ETicketPage() {
         throw new Error("Signer photo is required");
       }
 
+      let currentLocation;
+
+      try {
+        currentLocation = await fetchCurrentLocation();
+      } catch (locationErr) {
+        throw new Error(
+          "Location is required before signing. Please allow location access and try again."
+        );
+      }
+
       await apiFetch(`/api/etickets/${token}/sign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: printedName.trim(),
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
           water_choice: `${curbLineSignature} | ${waterAllowed} gal allowed`,
           water_added: waterAdded,
           ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
