@@ -53,6 +53,23 @@ function parseMixDetails(product = "") {
   };
 }
 
+function capturePhotoFromVideo() {
+  const video = videoRef.current;
+  const canvas = photoCanvasRef.current;
+
+  if (!video || !canvas) return "";
+
+  if (!video.videoWidth || !video.videoHeight) return "";
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  return canvas.toDataURL("image/jpeg", 0.92);
+}
+
 function SummaryRow({ label, value }) {
   return (
     <div className="asset-row">
@@ -165,7 +182,6 @@ export default function ETicketPage() {
   const [step, setStep] = useState(1);
   const [nowTick, setNowTick] = useState(Date.now());
 
-  const [printedName, setPrintedName] = useState("");
   const [curbLineSignature, setCurbLineSignature] = useState(
     "Customer / Contractor Signature"
   );
@@ -222,6 +238,12 @@ export default function ETicketPage() {
     const id = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (step === 3 && !signed && !cameraStarted){
+      startCamera();
+    }
+  }, [step, signed, cameraStarted]);
 
   async function loadTicket() {
     setLoading(true);
@@ -546,52 +568,39 @@ export default function ETicketPage() {
     setSuccess("");
 
     try {
-      if (!printedName.trim()) {
-        throw new Error("Printed name is required");
-      }
-      if (!waterSignatureDrawn) {
-        throw new Error("Customer curb line signature is required");
-      }
-      if (!finalSignatureDrawn) {
-        throw new Error("Final signature is required");
-      }
-      if (!confirmWater) {
-        throw new Error("Please confirm the water amount");
-      }
-      if (!photoPreview) {
-        throw new Error("Signer photo is required");
+      if (!waterSignatureDrawn) throw new Error("Customer curb line signature is required");
+      if (!finalSignatureDrawn) throw new Error("Final signature is required");
+      if (!confirmWater) throw new Error("Please confirm the water amount");
+      if (!locationData.latitude || !locationData.longitude) {
+        throw new Error("Location is required before signing. Please allow location access and try again.");
       }
 
-      let currentLocation;
-
-      try {
-        currentLocation = await fetchCurrentLocation();
-      } catch (locationErr) {
-        throw new Error(
-          "Location is required before signing. Please allow location access and try again."
-        );
+      const signerPhoto = capturePhotoFromVideo();
+      if (!signerPhoto) {
+        throw new Error("Signer photo could not be captured. Please make sure camera permission is allowed.");
       }
 
       await apiFetch(`/api/etickets/${token}/sign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: printedName.trim(),
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
+          name: "Signed on site",
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
           water_choice: `${curbLineSignature} | ${waterAllowed} gal allowed`,
           water_added: waterAdded,
           ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
-          photo_data_url: photoPreview,
+          curb_line_signature_data_url: waterSignatureDataUrl,
+          photo_data_url: signerPhoto,
           batch_weights_qr_url: API_QR_BATCH,
           terms_qr_url: API_QR_TERMS,
           load_time: ticket?.load_time,
           time_limit_minutes: remainingMinutes,
-          curb_line_signature_data_url: waterSignatureDataUrl,
         }),
       });
 
+      stopCamera();
       await loadTicket();
       setSigned(true);
       setSuccess("eTicket signed successfully");
@@ -940,15 +949,6 @@ export default function ETicketPage() {
               <option>Accepted</option>
               <option>Rejected</option>
             </select>
-
-            <div style={{ marginTop: 18 }}>
-              <label>Printed Name</label>
-              <input
-                value={printedName}
-                onChange={(e) => setPrintedName(e.target.value)}
-                placeholder="Enter printed name"
-              />
-            </div>
 
             <div style={{ marginTop: 18, display: "flex", gap: 16, flexWrap: "wrap" }}>
               <QrCard title="Batch Weights" url={API_QR_BATCH} />
