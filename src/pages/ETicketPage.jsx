@@ -406,17 +406,18 @@ export default function ETicketPage() {
   }
 
   function startWaterPress(amount) {
-    stopWaterPress();
+    if (holdAmountRef.current !== 0) return;
 
     holdAmountRef.current = amount;
     holdStartedRef.current = false;
+    holdStartTimeRef.current = 0;
 
     holdTimeoutRef.current = setTimeout(() => {
       holdStartedRef.current = true;
       holdStartTimeRef.current = Date.now();
 
       holdIntervalRef.current = setInterval(() => {
-        changeWaterAdded(getAcceleratedWaterStep(holdAmountRef.current));
+        changeWaterAdded(getAcceleratedWaterStep(amount));
       }, 90);
     }, 350);
   }
@@ -433,7 +434,10 @@ export default function ETicketPage() {
     }
   }
 
-  function finishWaterPress(amount) {
+  function finishWaterPress() {
+    if (holdAmountRef.current === 0) return;
+
+    const amount = holdAmountRef.current;
     const wasHolding = holdStartedRef.current;
 
     stopWaterPress();
@@ -442,7 +446,9 @@ export default function ETicketPage() {
       changeWaterAdded(amount);
     }
 
+    holdAmountRef.current = 0;
     holdStartedRef.current = false;
+    holdStartTimeRef.current = 0;
   }
 
   async function attachStreamToVideo() {
@@ -847,10 +853,10 @@ export default function ETicketPage() {
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
-                      finishWaterPress(-0.01);
+                      finishWaterPress();
                     }}
-                    onPointerLeave={() => finishWaterPress(-0.01)}
-                    onPointerCancel={() => finishWaterPress(-0.01)}
+                    onPointerLeave={finishWaterPress}
+                    onPointerCancel={finishWaterPress}
                   >
                     -
                   </button>
@@ -885,10 +891,10 @@ export default function ETicketPage() {
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
-                      finishWaterPress(0.01);
+                      finishWaterPress();
                     }}
-                    onPointerLeave={() => finishWaterPress(0.01)}
-                    onPointerCancel={() => finishWaterPress(0.01)}
+                    onPointerLeave={finishWaterPress}
+                    onPointerCancel={finishWaterPress}
                   >
                     +
                   </button>
