@@ -13,6 +13,10 @@ function getPoint(event, canvas) {
   };
 }
 
+function formatGallons(value) {
+  return `${Number(value || 0).toFixed(2)} gal`;
+}
+
 function formatCentralDateTime(value) {
   if (!value) return "-";
   try {
@@ -150,6 +154,7 @@ export default function ETicketPage() {
   const videoRef = useRef(null);
   const photoCanvasRef = useRef(null);
   const streamRef = useRef(null);
+  const holdIntervalRef = useRef(null);
 
   const drawingWaterRef = useRef(false);
   const drawingFinalRef = useRef(false);
@@ -379,6 +384,30 @@ export default function ETicketPage() {
     setterData("");
   }
 
+  function changeWaterAdded(amount) {
+    setWaterAdded((v) => {
+      const next = Number(v || 0) + amount;
+      return Math.max(0, Math.round(next * 100) / 100);
+    });
+  }
+
+  function startWaterHold(amount) {
+    changeWaterAdded(amount);
+
+    stopWaterHold();
+
+    holdIntervalRef.current = setInterval(() => {
+      changeWaterAdded(amount);
+    }, 80);
+  }
+
+  function stopWaterHold() {
+    if (holdIntervalRef.current) {
+      clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+  }
+
   async function attachStreamToVideo() {
     const video = videoRef.current;
     const stream = streamRef.current;
@@ -564,8 +593,8 @@ export default function ETicketPage() {
           name: "Signed on site",
           latitude: finalLocation.latitude,
           longitude: finalLocation.longitude,
-          water_choice: `${curbLineSignature} | ${waterAllowed} gal allowed`,
-          water_added: waterAdded,
+          water_choice: `${curbLineSignature} | ${formatGallons(waterAllowed)} allowed`,
+          water_added: Number(waterAdded).toFixed(2),
           ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
           curb_line_signature_data_url: waterSignatureDataUrl,
@@ -589,7 +618,10 @@ export default function ETicketPage() {
   }
 
   useEffect(() => {
-    return () => stopCamera();
+    return () => {
+      stopCamera();
+      stopWaterHold();
+    };
   }, []);
 
   if (loading) {
@@ -736,7 +768,7 @@ export default function ETicketPage() {
                   Water Allowed
                 </div>
                 <div style={{ color: "#fff", fontSize: 26, fontWeight: 800 }}>
-                  {waterAllowed} gal
+                  {formatGallons(waterAllowed)}
                 </div>
               </div>
 
@@ -764,7 +796,11 @@ export default function ETicketPage() {
                     className="primary-btn"
                     style={{ width: "auto", marginTop: 0 }}
                     type="button"
-                    onClick={() => setWaterAdded((v) => Math.max(0, v - 1))}
+                    onMouseDown={() => startWaterHold(-0.01)}
+                    onMouseUp={stopWaterHold}
+                    onMouseLeave={stopWaterHold}
+                    onTouchStart={() => startWaterHold(-0.01)}
+                    onTouchEnd={stopWaterHold}
                   >
                     -
                   </button>
@@ -774,18 +810,22 @@ export default function ETicketPage() {
                       color: "#fff",
                       fontSize: 26,
                       fontWeight: 800,
-                      minWidth: 90,
+                      minWidth: 110,
                       textAlign: "center",
                     }}
                   >
-                    {waterAdded} gal
+                    {formatGallons(waterAdded)}
                   </div>
 
                   <button
                     className="primary-btn"
                     style={{ width: "auto", marginTop: 0 }}
                     type="button"
-                    onClick={() => setWaterAdded((v) => v + 1)}
+                    onMouseDown={() => startWaterHold(0.01)}
+                    onMouseUp={stopWaterHold}
+                    onMouseLeave={stopWaterHold}
+                    onTouchStart={() => startWaterHold(0.01)}
+                    onTouchEnd={stopWaterHold}
                   >
                     +
                   </button>
@@ -871,7 +911,15 @@ export default function ETicketPage() {
               <button
                 className="primary-btn"
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  if (!waterSignatureDrawn) {
+                    setError("Curb line signature is required");
+                    return;
+                  }
+
+                  setError("");
+                  setStep(3);
+                }}
               >
                 Next
               </button>
@@ -903,7 +951,7 @@ export default function ETicketPage() {
               </div>
 
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 30 }}>
-                {waterAdded} gal
+                {formatGallons(waterAdded)}
               </div>
 
               <div
