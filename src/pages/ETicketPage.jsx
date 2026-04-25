@@ -392,13 +392,13 @@ export default function ETicketPage() {
   }
 
   function startWaterHold(amount) {
-    changeWaterAdded(amount);
-
     stopWaterHold();
 
+    changeWaterAdded(amount);
+
     holdIntervalRef.current = setInterval(() => {
-      changeWaterAdded(amount * 5);
-    }, 50);
+      changeWaterAdded(amount * 25);
+    }, 75);
   }
 
   function stopWaterHold() {
@@ -796,11 +796,13 @@ export default function ETicketPage() {
                     className="primary-btn"
                     style={{ width: "auto", marginTop: 0 }}
                     type="button"
-                    onMouseDown={() => startWaterHold(-0.01)}
-                    onMouseUp={stopWaterHold}
-                    onMouseLeave={stopWaterHold}
-                    onTouchStart={() => startWaterHold(-0.01)}
-                    onTouchEnd={stopWaterHold}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      startWaterHold(-0.01);
+                    }}
+                    onPointerUp={stopWaterHold}
+                    onPointerLeave={stopWaterHold}
+                    onPointerCancel={stopWaterHold}
                   >
                     -
                   </button>
@@ -821,11 +823,13 @@ export default function ETicketPage() {
                     className="primary-btn"
                     style={{ width: "auto", marginTop: 0 }}
                     type="button"
-                    onMouseDown={() => startWaterHold(0.01)}
-                    onMouseUp={stopWaterHold}
-                    onMouseLeave={stopWaterHold}
-                    onTouchStart={() => startWaterHold(0.01)}
-                    onTouchEnd={stopWaterHold}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      startWaterHold(0.01);
+                    }}
+                    onPointerUp={stopWaterHold}
+                    onPointerLeave={stopWaterHold}
+                    onPointerCancel={stopWaterHold}
                   >
                     +
                   </button>
