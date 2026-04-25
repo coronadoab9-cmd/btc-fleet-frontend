@@ -400,9 +400,10 @@ export default function ETicketPage() {
     const elapsed = Date.now() - holdStartTimeRef.current;
     const direction = baseAmount > 0 ? 1 : -1;
 
-    if (elapsed > 3000) return direction * 0.1;
-    if (elapsed > 1500) return direction * 0.05;
-    return direction * 0.01;
+    if (elapsed > 4000) return direction * 5;
+    if (elapsed > 2500) return direction * 3;
+    if (elapsed > 1200) return direction * 2;
+    return direction * 1;
   }
 
   function startWaterPress(amount) {
@@ -410,16 +411,15 @@ export default function ETicketPage() {
 
     holdAmountRef.current = amount;
     holdStartedRef.current = false;
-    holdStartTimeRef.current = 0;
+    holdStartTimeRef.current = Date.now();
 
     holdTimeoutRef.current = setTimeout(() => {
       holdStartedRef.current = true;
-      holdStartTimeRef.current = Date.now();
 
       holdIntervalRef.current = setInterval(() => {
         changeWaterAdded(getAcceleratedWaterStep(amount));
-      }, 90);
-    }, 350);
+      }, 160);
+    }, 400);
   }
 
   function stopWaterPress() {
@@ -849,7 +849,7 @@ export default function ETicketPage() {
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterPress(-0.01);
+                      startWaterPress(-1);
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
@@ -887,7 +887,7 @@ export default function ETicketPage() {
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterPress(0.01);
+                      startWaterPress(1);
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
