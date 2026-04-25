@@ -154,7 +154,12 @@ export default function ETicketPage() {
   const videoRef = useRef(null);
   const photoCanvasRef = useRef(null);
   const streamRef = useRef(null);
+
+  const holdTimeoutRef = useRef(null);
   const holdIntervalRef = useRef(null);
+  const holdStartedRef = useRef(false);
+  const holdStartTimeRef = useRef(0);
+  const holdAmountRef = useRef(0);
 
   const drawingWaterRef = useRef(false);
   const drawingFinalRef = useRef(false);
@@ -391,21 +396,53 @@ export default function ETicketPage() {
     });
   }
 
-  function startWaterHold(amount) {
-    stopWaterHold();
+  function getAcceleratedWaterStep(baseAmount) {
+    const elapsed = Date.now() - holdStartTimeRef.current;
+    const direction = baseAmount > 0 ? 1 : -1;
 
-    changeWaterAdded(amount);
-
-    holdIntervalRef.current = setInterval(() => {
-      changeWaterAdded(amount * 25);
-    }, 75);
+    if (elapsed > 3000) return direction * 0.1;
+    if (elapsed > 1500) return direction * 0.05;
+    return direction * 0.01;
   }
 
-  function stopWaterHold() {
+  function startWaterPress(amount) {
+    stopWaterPress();
+
+    holdAmountRef.current = amount;
+    holdStartedRef.current = false;
+
+    holdTimeoutRef.current = setTimeout(() => {
+      holdStartedRef.current = true;
+      holdStartTimeRef.current = Date.now();
+
+      holdIntervalRef.current = setInterval(() => {
+        changeWaterAdded(getAcceleratedWaterStep(holdAmountRef.current));
+      }, 90);
+    }, 350);
+  }
+
+  function stopWaterPress() {
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
+  }
+
+  function finishWaterPress(amount) {
+    const wasHolding = holdStartedRef.current;
+
+    stopWaterPress();
+
+    if (!wasHolding) {
+      changeWaterAdded(amount);
+    }
+
+    holdStartedRef.current = false;
   }
 
   async function attachStreamToVideo() {
@@ -620,7 +657,7 @@ export default function ETicketPage() {
   useEffect(() => {
     return () => {
       stopCamera();
-      stopWaterHold();
+      stopWaterPress();
     };
   }, []);
 
@@ -794,15 +831,26 @@ export default function ETicketPage() {
                 >
                   <button
                     className="primary-btn"
-                    style={{ width: "auto", marginTop: 0 }}
+                    style={{
+                      width: 64,
+                      height: 52,
+                      marginTop: 0,
+                      fontSize: 26,
+                      fontWeight: 900,
+                      touchAction: "none",
+                      userSelect: "none",
+                    }}
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterHold(-0.01);
+                      startWaterPress(-0.01);
                     }}
-                    onPointerUp={stopWaterHold}
-                    onPointerLeave={stopWaterHold}
-                    onPointerCancel={stopWaterHold}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      finishWaterPress(-0.01);
+                    }}
+                    onPointerLeave={() => finishWaterPress(-0.01)}
+                    onPointerCancel={() => finishWaterPress(-0.01)}
                   >
                     -
                   </button>
@@ -810,9 +858,9 @@ export default function ETicketPage() {
                   <div
                     style={{
                       color: "#fff",
-                      fontSize: 26,
-                      fontWeight: 800,
-                      minWidth: 110,
+                      fontSize: 28,
+                      fontWeight: 900,
+                      minWidth: 130,
                       textAlign: "center",
                     }}
                   >
@@ -821,15 +869,26 @@ export default function ETicketPage() {
 
                   <button
                     className="primary-btn"
-                    style={{ width: "auto", marginTop: 0 }}
+                    style={{
+                      width: 64,
+                      height: 52,
+                      marginTop: 0,
+                      fontSize: 26,
+                      fontWeight: 900,
+                      touchAction: "none",
+                      userSelect: "none",
+                    }}
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterHold(0.01);
+                      startWaterPress(0.01);
                     }}
-                    onPointerUp={stopWaterHold}
-                    onPointerLeave={stopWaterHold}
-                    onPointerCancel={stopWaterHold}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      finishWaterPress(0.01);
+                    }}
+                    onPointerLeave={() => finishWaterPress(0.01)}
+                    onPointerCancel={() => finishWaterPress(0.01)}
                   >
                     +
                   </button>
