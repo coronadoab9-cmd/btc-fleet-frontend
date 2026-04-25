@@ -53,23 +53,6 @@ function parseMixDetails(product = "") {
   };
 }
 
-function capturePhotoFromVideo() {
-  const video = videoRef.current;
-  const canvas = photoCanvasRef.current;
-
-  if (!video || !canvas) return "";
-
-  if (!video.videoWidth || !video.videoHeight) return "";
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  return canvas.toDataURL("image/jpeg", 0.92);
-}
-
 function SummaryRow({ label, value }) {
   return (
     <div className="asset-row">
@@ -198,9 +181,26 @@ export default function ETicketPage() {
   const [waterSignatureDataUrl, setWaterSignatureDataUrl] = useState("");
   const [finalSignatureDrawn, setFinalSignatureDrawn] = useState(false);
   const [finalSignatureDataUrl, setFinalSignatureDataUrl] = useState("");
-
-  const [photoPreview, setPhotoPreview] = useState("");
   const [cameraStarted, setCameraStarted] = useState(false);
+
+  const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
+
+  const loadTimeMs = useMemo(() => {
+    if (!ticket?.load_time) return null;
+    const ms = new Date(ticket.load_time).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }, [ticket?.load_time]);
+
+  const configuredLimitMinutes = 90;
+
+  const remainingMinutes = useMemo(() => {
+    if (!loadTimeMs) return configuredLimitMinutes;
+    const elapsedMs = nowTick - loadTimeMs;
+    return Math.max(
+      0,
+      Math.round((configuredLimitMinutes * 60000 - elapsedMs) / 60000)
+    );
+  }, [loadTimeMs, nowTick]);
 
   const fetchCurrentLocation = () => {
     return new Promise((resolve, reject) => {
@@ -215,14 +215,10 @@ export default function ETicketPage() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
-
           setLocationData(nextLocation);
-          console.log("Location captured:", nextLocation);
-
           resolve(nextLocation);
         },
         (geoError) => {
-          console.error("Geolocation error:", geoError);
           reject(geoError?.message || "Could not get current location.");
         },
         {
@@ -240,7 +236,7 @@ export default function ETicketPage() {
   }, []);
 
   useEffect(() => {
-    if (step === 3 && !signed && !cameraStarted){
+    if (step === 3 && !signed && !cameraStarted) {
       startCamera();
     }
   }, [step, signed, cameraStarted]);
@@ -248,14 +244,14 @@ export default function ETicketPage() {
   async function loadTicket() {
     setLoading(true);
     setError("");
+
     try {
       const data = await apiFetch(`/api/etickets/${token}`);
       setTicket(data);
-      setPrintedName(data.signed_name || "");
       setSigned(data.status === "signed");
       setFinalSignatureDataUrl(data.signature_data_url || "");
-      setPhotoPreview(data.photo_data_url || "");
       setWaterAdded(Number(data.water_added || 0));
+
       if (data.signature_data_url) {
         setFinalSignatureDrawn(true);
       }
@@ -330,25 +326,6 @@ export default function ETicketPage() {
     }
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
-  const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
-
-  const loadTimeMs = useMemo(() => {
-    if (!ticket?.load_time) return null;
-    const ms = new Date(ticket.load_time).getTime();
-    return Number.isNaN(ms) ? null : ms;
-  }, [ticket?.load_time]);
-
-  const configuredLimitMinutes = 90;
-
-  const remainingMinutes = useMemo(() => {
-    if (!loadTimeMs) return configuredLimitMinutes;
-    const elapsedMs = nowTick - loadTimeMs;
-    return Math.max(
-      0,
-      Math.round((configuredLimitMinutes * 60000 - elapsedMs) / 60000)
-    );
-  }, [loadTimeMs, nowTick]);
-
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
@@ -364,13 +341,7 @@ export default function ETicketPage() {
     ctx.moveTo(pt.x, pt.y);
   }
 
-  function moveSignature(
-    event,
-    canvasRef,
-    drawingRef,
-    lastPointRef,
-    setDrawn
-  ) {
+  function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
     if (!drawingRef.current || signed) return;
 
     event.preventDefault?.();
@@ -402,6 +373,7 @@ export default function ETicketPage() {
   function clearCanvas(canvasRef, setterDrawn, setterData) {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     setupCanvas(canvas);
     setterDrawn(false);
     setterData("");
@@ -443,9 +415,7 @@ export default function ETicketPage() {
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setError(
-        "This browser/device does not support camera access. Please use another device or browser."
-      );
+      setError("This browser/device does not support camera access.");
       return;
     }
 
@@ -459,9 +429,7 @@ export default function ETicketPage() {
         audio: false,
       },
       {
-        video: {
-          facingMode: "user",
-        },
+        video: { facingMode: "user" },
         audio: false,
       },
       {
@@ -478,7 +446,7 @@ export default function ETicketPage() {
 
         if (!videoRef.current) {
           stream.getTracks().forEach((track) => track.stop());
-          setError("Camera preview could not be initialized.");
+          setError("Camera could not be initialized.");
           return;
         }
 
@@ -489,13 +457,12 @@ export default function ETicketPage() {
 
         if (!ok) {
           stopCamera();
-          setError("Camera opened but preview could not start.");
+          setError("Camera opened but could not start.");
           return;
         }
 
         return;
       } catch (err) {
-        console.error("startCamera attempt failed:", err);
         lastError = err;
       }
     }
@@ -503,14 +470,11 @@ export default function ETicketPage() {
     let message = "Could not open camera.";
 
     if (lastError?.name === "NotAllowedError") {
-      message =
-        "Camera permission was denied. Please allow camera access and try again.";
+      message = "Camera permission was denied. Please allow camera access.";
     } else if (lastError?.name === "NotFoundError") {
       message = "No camera was found on this device.";
     } else if (lastError?.name === "NotReadableError") {
       message = "Camera is already being used by another app.";
-    } else if (lastError?.name === "OverconstrainedError") {
-      message = "This device could not satisfy the requested camera settings.";
     } else if (lastError?.message) {
       message = lastError.message;
     }
@@ -533,19 +497,12 @@ export default function ETicketPage() {
     setCameraStarted(false);
   }
 
-  function capturePhoto() {
+  function capturePhotoFromVideo() {
     const video = videoRef.current;
     const canvas = photoCanvasRef.current;
 
-    if (!video || !canvas) {
-      setError("Camera is not ready.");
-      return;
-    }
-
-    if (!video.videoWidth || !video.videoHeight) {
-      setError("Camera preview is not ready yet. Wait 1 second and try again.");
-      return;
-    }
+    if (!video || !canvas) return "";
+    if (!video.videoWidth || !video.videoHeight) return "";
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -553,13 +510,7 @@ export default function ETicketPage() {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL("image/jpeg", 0.92);
-    setPhotoPreview(imageData);
-    stopCamera();
-  }
-
-  function clearPhoto() {
-    setPhotoPreview("");
+    return canvas.toDataURL("image/jpeg", 0.92);
   }
 
   async function submitTicket() {
@@ -568,16 +519,42 @@ export default function ETicketPage() {
     setSuccess("");
 
     try {
-      if (!waterSignatureDrawn) throw new Error("Customer curb line signature is required");
-      if (!finalSignatureDrawn) throw new Error("Final signature is required");
-      if (!confirmWater) throw new Error("Please confirm the water amount");
-      if (!locationData.latitude || !locationData.longitude) {
-        throw new Error("Location is required before signing. Please allow location access and try again.");
+      if (!waterSignatureDrawn) {
+        throw new Error("Customer curb line signature is required");
       }
 
-      const signerPhoto = capturePhotoFromVideo();
+      if (!finalSignatureDrawn) {
+        throw new Error("Final signature is required");
+      }
+
+      if (!confirmWater) {
+        throw new Error("Please confirm the water amount");
+      }
+
+      let finalLocation = locationData;
+
+      if (!finalLocation.latitude || !finalLocation.longitude) {
+        finalLocation = await fetchCurrentLocation();
+      }
+
+      if (!finalLocation.latitude || !finalLocation.longitude) {
+        throw new Error(
+          "Location is required before signing. Please allow location access and try again."
+        );
+      }
+
+      let signerPhoto = capturePhotoFromVideo();
+
+      if (!signerPhoto && !cameraStarted) {
+        await startCamera();
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        signerPhoto = capturePhotoFromVideo();
+      }
+
       if (!signerPhoto) {
-        throw new Error("Signer photo could not be captured. Please make sure camera permission is allowed.");
+        throw new Error(
+          "Signer photo could not be captured. Please make sure camera permission is allowed."
+        );
       }
 
       await apiFetch(`/api/etickets/${token}/sign`, {
@@ -585,8 +562,8 @@ export default function ETicketPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "Signed on site",
-          latitude: locationData.latitude,
-          longitude: locationData.longitude,
+          latitude: finalLocation.latitude,
+          longitude: finalLocation.longitude,
           water_choice: `${curbLineSignature} | ${waterAllowed} gal allowed`,
           water_added: waterAdded,
           ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
@@ -628,6 +605,7 @@ export default function ETicketPage() {
       <div className="app-shell" style={{ padding: 16 }}>
         <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div className="panel-title">Signed eTicket</div>
+
           {success ? <div className="message-box">{success}</div> : null}
 
           <div className="asset-details">
@@ -659,6 +637,7 @@ export default function ETicketPage() {
     <div className="app-shell" style={{ padding: 14 }}>
       <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
         <div className="panel-title">BTC Fleet eTicket</div>
+
         {error ? (
           <div style={{ color: "#fecaca", marginBottom: 12, fontWeight: 700 }}>
             {error}
@@ -674,9 +653,15 @@ export default function ETicketPage() {
             fontWeight: 700,
           }}
         >
-          <span style={{ color: step === 1 ? "#fff" : "var(--muted)" }}>Ticket</span>
-          <span style={{ color: step === 2 ? "#fff" : "var(--muted)" }}>Water</span>
-          <span style={{ color: step === 3 ? "#fff" : "var(--muted)" }}>Submit</span>
+          <span style={{ color: step === 1 ? "#fff" : "var(--muted)" }}>
+            Ticket
+          </span>
+          <span style={{ color: step === 2 ? "#fff" : "var(--muted)" }}>
+            Water
+          </span>
+          <span style={{ color: step === 3 ? "#fff" : "var(--muted)" }}>
+            Submit
+          </span>
         </div>
 
         {step === 1 && (
@@ -766,6 +751,7 @@ export default function ETicketPage() {
                 <div style={{ color: "var(--muted)", marginBottom: 10 }}>
                   Water Added
                 </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -782,6 +768,7 @@ export default function ETicketPage() {
                   >
                     -
                   </button>
+
                   <div
                     style={{
                       color: "#fff",
@@ -793,6 +780,7 @@ export default function ETicketPage() {
                   >
                     {waterAdded} gal
                   </div>
+
                   <button
                     className="primary-btn"
                     style={{ width: "auto", marginTop: 0 }}
@@ -808,6 +796,7 @@ export default function ETicketPage() {
             <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
               Customer Finger Signature
             </div>
+
             <canvas
               ref={waterSignatureRef}
               style={{
@@ -853,6 +842,7 @@ export default function ETicketPage() {
                 )
               }
             />
+
             <div style={{ marginTop: 8 }}>
               <button
                 className="secondary-btn"
@@ -877,6 +867,7 @@ export default function ETicketPage() {
               >
                 Back
               </button>
+
               <button
                 className="primary-btn"
                 type="button"
@@ -910,9 +901,11 @@ export default function ETicketPage() {
               >
                 Confirm Water
               </div>
+
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 30 }}>
                 {waterAdded} gal
               </div>
+
               <div
                 style={{
                   display: "flex",
@@ -928,6 +921,7 @@ export default function ETicketPage() {
                 >
                   Yes
                 </button>
+
                 <button
                   className="secondary-btn"
                   type="button"
@@ -950,7 +944,14 @@ export default function ETicketPage() {
               <option>Rejected</option>
             </select>
 
-            <div style={{ marginTop: 18, display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginTop: 18,
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
               <QrCard title="Batch Weights" url={API_QR_BATCH} />
               <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
             </div>
@@ -965,6 +966,7 @@ export default function ETicketPage() {
             >
               Final Signature
             </div>
+
             <canvas
               ref={finalSignatureRef}
               style={{
@@ -1010,6 +1012,7 @@ export default function ETicketPage() {
                 )
               }
             />
+
             <div style={{ marginTop: 8, textAlign: "center" }}>
               <button
                 className="secondary-btn"
@@ -1026,103 +1029,22 @@ export default function ETicketPage() {
               </button>
             </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                color: "#fff",
-                fontWeight: 800,
-                textAlign: "center",
-              }}
-            >
-              Signer Photo
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                marginTop: 10,
-                justifyContent: "center",
-              }}
-            >
-              {!cameraStarted ? (
-                <button
-                  className="secondary-btn"
-                  type="button"
-                  onClick={startCamera}
-                >
-                  Start Camera
-                </button>
-              ) : (
-                <>
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={capturePhoto}
-                  >
-                    Capture Photo
-                  </button>
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={stopCamera}
-                  >
-                    Cancel Camera
-                  </button>
-                </>
-              )}
-
-              {photoPreview ? (
-                <button
-                  className="secondary-btn"
-                  type="button"
-                  onClick={clearPhoto}
-                >
-                  Clear Photo
-                </button>
-              ) : null}
-            </div>
-
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               style={{
-                width: "100%",
-                maxWidth: 420,
-                height: cameraStarted ? 260 : 0,
-                objectFit: "cover",
-                marginTop: cameraStarted ? 12 : 0,
-                borderRadius: 12,
-                background: "#000",
-                display: "block",
-                marginLeft: "auto",
-                marginRight: "auto",
-                overflow: "hidden",
-                opacity: cameraStarted ? 1 : 0,
-                pointerEvents: cameraStarted ? "auto" : "none",
+                width: 1,
+                height: 1,
+                opacity: 0,
+                position: "absolute",
+                left: "-9999px",
+                pointerEvents: "none",
               }}
             />
 
             <canvas ref={photoCanvasRef} style={{ display: "none" }} />
-
-            {photoPreview ? (
-              <img
-                src={photoPreview}
-                alt="Signer preview"
-                style={{
-                  width: "100%",
-                  maxWidth: 320,
-                  marginTop: 12,
-                  borderRadius: 12,
-                  display: "block",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                }}
-              />
-            ) : null}
 
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
               <button
@@ -1132,6 +1054,7 @@ export default function ETicketPage() {
               >
                 Back
               </button>
+
               <button
                 className="primary-btn"
                 type="button"
