@@ -397,8 +397,8 @@ export default function ETicketPage() {
     stopWaterHold();
 
     holdIntervalRef.current = setInterval(() => {
-      changeWaterAdded(amount);
-    }, 80);
+      changeWaterAdded(amount * 5);
+    }, 50);
   }
 
   function stopWaterHold() {
