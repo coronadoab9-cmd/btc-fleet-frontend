@@ -764,17 +764,11 @@ export default function ETicketPage() {
             <button 
               className="primary-btn"
               type="button"
-            
               onClick={() => {
-                if (!waterSignatureDrawn) {
-                  setError("Curb line signature is required before continuing.");
-                  return;
-                }
-
                 setError("");
-                setCurbLineSignedAt(new Date().toISOString());
-                setStep(3);
-              }}>
+                setStep(2);
+              }}
+            >
               Next
             </button>
           </>
@@ -990,19 +984,20 @@ export default function ETicketPage() {
                 Back
               </button>
 
-              <button
+              <button 
                 className="primary-btn"
                 type="button"
+              
                 onClick={() => {
                   if (!waterSignatureDrawn) {
-                    setError("Curb line signature is required");
+                    setError("Curb line signature is required before continuing.");
                     return;
                   }
 
                   setError("");
+                  setCurbLineSignedAt(new Date().toISOString());
                   setStep(3);
-                }}
-              >
+                }}>
                 Next
               </button>
             </div>
