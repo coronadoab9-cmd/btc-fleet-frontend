@@ -178,6 +178,7 @@ export default function ETicketPage() {
   const [curbLineSignature, setCurbLineSignature] = useState(
     "Customer / Contractor Signature"
   );
+  const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
   const [waterAllowed] = useState(25);
   const [waterAdded, setWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted");
@@ -641,6 +642,7 @@ export default function ETicketPage() {
           ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
           curb_line_signature_data_url: waterSignatureDataUrl,
+          curb_line_signed_at: curbLineSignedAt || new Date().toISOString(),
           photo_data_url: signerPhoto,
           batch_weights_qr_url: API_QR_BATCH,
           terms_qr_url: API_QR_TERMS,
@@ -745,10 +747,8 @@ export default function ETicketPage() {
               <SummaryRow label="Ticket #" value={ticket.ticket_number} />
               <SummaryRow label="Job Name" value={ticket.customer_name} />
               <SummaryRow label="Address" value={ticket.address} />
-              <SummaryRow
-                label="Mix / Truck"
-                value={`${ticket.product || "-"} / ${ticket.truck_number || "-"}`}
-              />
+              <SummaryRow label="Mix" value={ticket.product}/>
+              <SummaryRow label="Truck" value={ticket.truck_number} />
               <SummaryRow label="Description" value={mix.description} />
               <SummaryRow label="Strength" value={mix.strength} />
               <SummaryRow label="Slump" value={mix.slump} />
@@ -761,7 +761,20 @@ export default function ETicketPage() {
               <SummaryRow label="Order Total" value={`${ticket.quantity || 0} yards`} />
             </div>
 
-            <button className="primary-btn" onClick={() => setStep(2)}>
+            <button 
+              className="primary-btn"
+              type="button"
+            
+              onClick={() => {
+                if (!waterSignatureDrawn) {
+                  setError("Curb line signature is required before continuing.");
+                  return;
+                }
+
+                setError("");
+                setCurbLineSignedAt(new Date().toISOString());
+                setStep(3);
+              }}>
               Next
             </button>
           </>
