@@ -1057,8 +1057,8 @@ export default function ETicketPage() {
               value={ticketAcceptance}
               onChange={(e) => setTicketAcceptance(e.target.value)}
             >
-              <option>Accepted</option>
-              <option>Rejected</option>
+              <option>Accepted Delivery</option>
+              <option>Rejected Delivery</option>
             </select>
 
             <div
