@@ -27,6 +27,13 @@ export default function AdminPage({ token }) {
   const [devices, setDevices] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [eticketTab, setEticketTab] = useState("pending");
+  const [etickets, setEtickets] = useState([]);
+  const [reassignOptions, setReassignOptions] = useState({
+    admins: [],
+    trucks: [],
+  });
+  const [reassigningTicketId, setReassigningTicketId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingDriver, setSavingDriver] = useState(false);
@@ -51,15 +58,32 @@ export default function AdminPage({ token }) {
     setLoading(true);
     setError("");
     try {
-      const [driversData, devicesData, sessionsData] = await Promise.all([
+      const [
+        driversData,
+        devicesData,
+        sessionsData,
+        eticketsData,
+        reassignOptionsData,
+      ] = await Promise.all([
         adminFetch("/admin/drivers"),
         adminFetch("/admin/devices"),
         adminFetch("/admin/sessions"),
+        adminFetch(`/admin/etickets?tab=${eticketTab}`),
+        adminFetch("/admin/etickets/reassign-options"),
       ]);
 
       setDrivers(Array.isArray(driversData) ? driversData : []);
       setDevices(Array.isArray(devicesData) ? devicesData : []);
       setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setEtickets(Array.isArray(eticketsData) ? eticketsData : []);
+      setReassignOptions({
+        admins: Array.isArray(reassignOptionsData?.admins)
+          ? reassignOptionsData.admins
+          : [],
+        trucks: Array.isArray(reassignOptionsData?.trucks)
+          ? reassignOptionsData.trucks
+          : [],
+      });
     } catch (err) {
       setError(err.message || "Could not load admin data");
     } finally {
@@ -69,7 +93,7 @@ export default function AdminPage({ token }) {
 
   useEffect(() => {
     loadAll();
-  }, [token]);
+  }, [token, eticketTab]);
 
   async function saveDriver() {
     setSavingDriver(true);
@@ -139,6 +163,53 @@ export default function AdminPage({ token }) {
     }
   }
 
+  async function reassignEticket(ticket, optionValue) {
+    setError("");
+    setMessage("");
+
+    try {
+      if (!optionValue) {
+        throw new Error("Please choose a truck or admin");
+      }
+
+      const [assignedToType, assignedToId] = optionValue.split("|");
+
+      const allOptions = [
+        ...reassignOptions.trucks,
+        ...reassignOptions.admins,
+      ];
+
+      const selected = allOptions.find(
+        (item) =>
+          item.type === assignedToType &&
+          String(item.id) === String(assignedToId)
+      );
+
+      if (!selected) {
+        throw new Error("Selected assignment option was not found");
+      }
+
+      setReassigningTicketId(ticket.id);
+
+      await adminFetch("/admin/etickets/reassign", {
+        method: "POST",
+        body: JSON.stringify({
+          ticket_id: ticket.id,
+          assigned_to_type: selected.type,
+          assigned_to_id: String(selected.id),
+          assigned_to_name: selected.name,
+        }),
+      });
+
+      setMessage(`Ticket ${ticket.ticket_number || ticket.id} reassigned to ${selected.name}`);
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Could not reassign eTicket");
+    } finally {
+      setReassigningTicketId(null);
+    }
+  }
+
   async function deleteDriver(driverId) {
     setError("");
     setMessage("");
@@ -188,6 +259,105 @@ export default function AdminPage({ token }) {
     <div className="admin-page">
       {error ? <div style={styles.error}>{error}</div> : null}
       {message ? <div style={styles.success}>{message}</div> : null}
+
+      <Section
+        title="eTickets"
+        right={<button style={styles.secondaryButton} onClick={loadAll}>Refresh</button>}
+      >
+        <div style={styles.tabRow}>
+          {[
+            ["pending", "Pending Tickets"],
+            ["accepted", "Signed Accepted"],
+            ["rejected", "Signed Rejected"],
+            ["assigned", "Assigned"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
+              onClick={() => setEticketTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Ticket #</th>
+                <th style={styles.th}>Customer</th>
+                <th style={styles.th}>Truck</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Assigned To</th>
+                <th style={styles.th}>Signed At</th>
+                <th style={styles.th}>Reassign</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {etickets.map((ticket) => (
+                <tr key={ticket.id}>
+                  <td style={styles.td}>{ticket.ticket_number || "-"}</td>
+                  <td style={styles.td}>{ticket.customer_name || "-"}</td>
+                  <td style={styles.td}>{ticket.truck_number || "-"}</td>
+                  <td style={styles.td}>{ticket.status || "pending"}</td>
+                  <td style={styles.td}>{ticket.assigned_to_name || "-"}</td>
+                  <td style={styles.td}>{formatDateTime(ticket.signed_at)}</td>
+
+                  <td style={styles.td}>
+                    {String(ticket.status || "").toLowerCase() === "signed" ? (
+                      "-"
+                    ) : (
+                      <select
+                        style={styles.input}
+                        disabled={reassigningTicketId === ticket.id}
+                        value=""
+                        onChange={(e) => reassignEticket(ticket, e.target.value)}
+                      >
+                        <option value="">Choose...</option>
+
+                        <optgroup label="Trucks">
+                          {reassignOptions.trucks
+                            .filter((truck) => truck.id !== ticket.truck_number)
+                            .map((truck) => (
+                              <option
+                                key={`truck-${truck.id}`}
+                                value={`${truck.type}|${truck.id}`}
+                              >
+                                {truck.label}
+                              </option>
+                            ))}
+                        </optgroup>
+
+                        <optgroup label="Admins">
+                          {reassignOptions.admins.map((admin) => (
+                            <option
+                              key={`admin-${admin.id}`}
+                              value={`${admin.type}|${admin.id}`}
+                            >
+                              {admin.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {!etickets.length && (
+                <tr>
+                  <td style={styles.emptyCell} colSpan={7}>
+                    No eTickets found for this tab.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Section>
 
       <div style={styles.grid}>
         <div style={styles.leftColumn}>
@@ -417,6 +587,32 @@ export default function AdminPage({ token }) {
 }
 
 const styles = {
+  tabRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+
+  tabButton: {
+    border: "1px solid var(--border)",
+    background: "var(--panel-2)",
+    color: "var(--muted)",
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  activeTabButton: {
+    border: "1px solid #60a5fa",
+    background: "#1d4ed8",
+    color: "#fff",
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" },
   leftColumn: { display: "flex", flexDirection: "column", gap: 16 },
   rightColumn: { display: "flex", flexDirection: "column", gap: 16 },
