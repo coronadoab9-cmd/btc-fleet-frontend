@@ -31,6 +31,7 @@ function downloadCsv(filename, rows) {
 export default function ETicketsPage({ token }) {
   const [tickets, setTickets] = useState([]);
   const [selectedToken, setSelectedToken] = useState("");
+  const [eticketTab, setEticketTab] = useState("pending");
   const [filterStatus, setFilterStatus] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("");
   const [ticketFilter, setTicketFilter] = useState("");
@@ -45,7 +46,7 @@ export default function ETicketsPage({ token }) {
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetch("/api/etickets", {
+      const data = await apiFetch(`/admin/etickets?tab=${eticketTab}`, {
         headers: { "X-Admin-Token": token },
       });
       setTickets(Array.isArray(data) ? data : []);
@@ -61,7 +62,7 @@ export default function ETicketsPage({ token }) {
 
   useEffect(() => {
     loadTickets();
-  }, [token]);
+  }, [token, eticketTab]);
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
@@ -138,6 +139,27 @@ export default function ETicketsPage({ token }) {
             Export Filtered
           </button>
         </div>
+      </div>
+
+      <div style={styles.tabRow}>
+        {[
+          ["pending", "Pending Tickets"],
+          ["accepted", "Signed Accepted"],
+          ["rejected", "Signed Rejected"],
+          ["assigned", "Assigned"],
+        ].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
+            onClick={() => {
+              setSelectedToken("");
+              setEticketTab(key);
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div style={styles.filters}>
@@ -258,6 +280,32 @@ function InfoWide({ label, value }) {
 }
 
 const styles = {
+  tabRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 16,
+  },
+
+  tabButton: {
+    border: "1px solid var(--border)",
+    background: "var(--panel-2)",
+    color: "var(--muted)",
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  activeTabButton: {
+    border: "1px solid #60a5fa",
+    background: "#1d4ed8",
+    color: "#fff",
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
   headerRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   pageTitle: { fontSize: 24, fontWeight: 800, color: "#fff" },
   headerButtons: { display: "flex", gap: 10 },

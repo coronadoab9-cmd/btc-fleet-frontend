@@ -27,20 +27,23 @@ export default function AdminPage({ token }) {
   const [devices, setDevices] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [eticketTab, setEticketTab] = useState("pending");
-  const [etickets, setEtickets] = useState([]);
-  const [reassignOptions, setReassignOptions] = useState({
-    admins: [],
-    trucks: [],
-  });
-  const [reassigningTicketId, setReassigningTicketId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingDriver, setSavingDriver] = useState(false);
   const [assigningDevice, setAssigningDevice] = useState(false);
 
-  const [driverForm, setDriverForm] = useState({ name: "", pin: "", active: true });
-  const [deviceForm, setDeviceForm] = useState({ device_uuid: "", device_name: "", truck_number: "" });
+  const [driverForm, setDriverForm] = useState({
+    name: "",
+    pin: "",
+    active: true,
+  });
+
+  const [deviceForm, setDeviceForm] = useState({
+    device_uuid: "",
+    device_name: "",
+    truck_number: "",
+  });
+
   const [editingDriverId, setEditingDriverId] = useState(null);
 
   async function adminFetch(path, options = {}) {
@@ -57,33 +60,17 @@ export default function AdminPage({ token }) {
   async function loadAll() {
     setLoading(true);
     setError("");
+
     try {
-      const [
-        driversData,
-        devicesData,
-        sessionsData,
-        eticketsData,
-        reassignOptionsData,
-      ] = await Promise.all([
+      const [driversData, devicesData, sessionsData] = await Promise.all([
         adminFetch("/admin/drivers"),
         adminFetch("/admin/devices"),
         adminFetch("/admin/sessions"),
-        adminFetch(`/admin/etickets?tab=${eticketTab}`),
-        adminFetch("/admin/etickets/reassign-options"),
       ]);
 
       setDrivers(Array.isArray(driversData) ? driversData : []);
       setDevices(Array.isArray(devicesData) ? devicesData : []);
       setSessions(Array.isArray(sessionsData) ? sessionsData : []);
-      setEtickets(Array.isArray(eticketsData) ? eticketsData : []);
-      setReassignOptions({
-        admins: Array.isArray(reassignOptionsData?.admins)
-          ? reassignOptionsData.admins
-          : [],
-        trucks: Array.isArray(reassignOptionsData?.trucks)
-          ? reassignOptionsData.trucks
-          : [],
-      });
     } catch (err) {
       setError(err.message || "Could not load admin data");
     } finally {
@@ -93,18 +80,21 @@ export default function AdminPage({ token }) {
 
   useEffect(() => {
     loadAll();
-  }, [token, eticketTab]);
+  }, [token]);
 
   async function saveDriver() {
     setSavingDriver(true);
     setError("");
     setMessage("");
+
     try {
       const cleanName = driverForm.name.trim();
       const cleanPin = driverForm.pin.trim();
 
       if (!cleanName) throw new Error("Driver name is required");
-      if (!/^\d{6}$/.test(cleanPin)) throw new Error("PIN must be exactly 6 digits");
+      if (!/^\d{6}$/.test(cleanPin)) {
+        throw new Error("PIN must be exactly 6 digits");
+      }
 
       const payload = {
         name: cleanName,
@@ -140,9 +130,15 @@ export default function AdminPage({ token }) {
     setAssigningDevice(true);
     setError("");
     setMessage("");
+
     try {
-      if (!deviceForm.device_uuid.trim()) throw new Error("Device UUID is required");
-      if (!deviceForm.truck_number.trim()) throw new Error("Truck number is required");
+      if (!deviceForm.device_uuid.trim()) {
+        throw new Error("Device UUID is required");
+      }
+
+      if (!deviceForm.truck_number.trim()) {
+        throw new Error("Truck number is required");
+      }
 
       await adminFetch("/admin/devices/assign", {
         method: "POST",
@@ -154,7 +150,12 @@ export default function AdminPage({ token }) {
       });
 
       setMessage("Device assigned successfully");
-      setDeviceForm({ device_uuid: "", device_name: "", truck_number: "" });
+      setDeviceForm({
+        device_uuid: "",
+        device_name: "",
+        truck_number: "",
+      });
+
       await loadAll();
     } catch (err) {
       setError(err.message || "Could not assign tablet");
@@ -163,58 +164,15 @@ export default function AdminPage({ token }) {
     }
   }
 
-  async function reassignEticket(ticket, optionValue) {
-    setError("");
-    setMessage("");
-
-    try {
-      if (!optionValue) {
-        throw new Error("Please choose a truck or admin");
-      }
-
-      const [assignedToType, assignedToId] = optionValue.split("|");
-
-      const allOptions = [
-        ...reassignOptions.trucks,
-        ...reassignOptions.admins,
-      ];
-
-      const selected = allOptions.find(
-        (item) =>
-          item.type === assignedToType &&
-          String(item.id) === String(assignedToId)
-      );
-
-      if (!selected) {
-        throw new Error("Selected assignment option was not found");
-      }
-
-      setReassigningTicketId(ticket.id);
-
-      await adminFetch("/admin/etickets/reassign", {
-        method: "POST",
-        body: JSON.stringify({
-          ticket_id: ticket.id,
-          assigned_to_type: selected.type,
-          assigned_to_id: String(selected.id),
-          assigned_to_name: selected.name,
-        }),
-      });
-
-      setMessage(`Ticket ${ticket.ticket_number || ticket.id} reassigned to ${selected.name}`);
-      await loadAll();
-    } catch (err) {
-      setError(err.message || "Could not reassign eTicket");
-    } finally {
-      setReassigningTicketId(null);
-    }
-  }
-
   async function deleteDriver(driverId) {
     setError("");
     setMessage("");
+
     try {
-      await adminFetch(`/admin/drivers/${driverId}`, { method: "DELETE" });
+      await adminFetch(`/admin/drivers/${driverId}`, {
+        method: "DELETE",
+      });
+
       setMessage("Driver deleted");
       await loadAll();
     } catch (err) {
@@ -225,8 +183,12 @@ export default function AdminPage({ token }) {
   async function deleteDevice(deviceUuid) {
     setError("");
     setMessage("");
+
     try {
-      await adminFetch(`/admin/devices/${deviceUuid}`, { method: "DELETE" });
+      await adminFetch(`/admin/devices/${deviceUuid}`, {
+        method: "DELETE",
+      });
+
       setMessage("Tablet deleted");
       await loadAll();
     } catch (err) {
@@ -237,8 +199,12 @@ export default function AdminPage({ token }) {
   async function unassignDevice(deviceUuid) {
     setError("");
     setMessage("");
+
     try {
-      await adminFetch(`/admin/devices/unassign/${deviceUuid}`, { method: "POST" });
+      await adminFetch(`/admin/devices/unassign/${deviceUuid}`, {
+        method: "POST",
+      });
+
       setMessage("Tablet unassigned");
       await loadAll();
     } catch (err) {
@@ -247,133 +213,43 @@ export default function AdminPage({ token }) {
   }
 
   function editDriver(driver) {
-    setDriverForm({ name: driver.name || "", pin: driver.pin || "", active: !!driver.active });
+    setDriverForm({
+      name: driver.name || "",
+      pin: driver.pin || "",
+      active: !!driver.active,
+    });
+
     setEditingDriverId(driver.id);
     setError("");
     setMessage("");
   }
 
-  if (loading) return <div className="admin-page">Loading admin data...</div>;
+  if (loading) {
+    return <div className="admin-page">Loading admin data...</div>;
+  }
 
   return (
     <div className="admin-page">
       {error ? <div style={styles.error}>{error}</div> : null}
       {message ? <div style={styles.success}>{message}</div> : null}
 
-      <Section
-        title="eTickets"
-        right={<button style={styles.secondaryButton} onClick={loadAll}>Refresh</button>}
-      >
-        <div style={styles.tabRow}>
-          {[
-            ["pending", "Pending Tickets"],
-            ["accepted", "Signed Accepted"],
-            ["rejected", "Signed Rejected"],
-            ["assigned", "Assigned"],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
-              onClick={() => setEticketTab(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div style={styles.tableWrap}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Ticket #</th>
-                <th style={styles.th}>Customer</th>
-                <th style={styles.th}>Truck</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Assigned To</th>
-                <th style={styles.th}>Signed At</th>
-                <th style={styles.th}>Reassign</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {etickets.map((ticket) => (
-                <tr key={ticket.id}>
-                  <td style={styles.td}>{ticket.ticket_number || "-"}</td>
-                  <td style={styles.td}>{ticket.customer_name || "-"}</td>
-                  <td style={styles.td}>{ticket.truck_number || "-"}</td>
-                  <td style={styles.td}>{ticket.status || "pending"}</td>
-                  <td style={styles.td}>{ticket.assigned_to_name || "-"}</td>
-                  <td style={styles.td}>{formatDateTime(ticket.signed_at)}</td>
-
-                  <td style={styles.td}>
-                    {String(ticket.status || "").toLowerCase() === "signed" ? (
-                      "-"
-                    ) : (
-                      <select
-                        style={styles.input}
-                        disabled={reassigningTicketId === ticket.id}
-                        value=""
-                        onChange={(e) => reassignEticket(ticket, e.target.value)}
-                      >
-                        <option value="">Choose...</option>
-
-                        <optgroup label="Trucks">
-                          {reassignOptions.trucks
-                            .filter((truck) => truck.id !== ticket.truck_number)
-                            .map((truck) => (
-                              <option
-                                key={`truck-${truck.id}`}
-                                value={`${truck.type}|${truck.id}`}
-                              >
-                                {truck.label}
-                              </option>
-                            ))}
-                        </optgroup>
-
-                        <optgroup label="Admins">
-                          {reassignOptions.admins.map((admin) => (
-                            <option
-                              key={`admin-${admin.id}`}
-                              value={`${admin.type}|${admin.id}`}
-                            >
-                              {admin.label}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    )}
-                  </td>
-                </tr>
-              ))}
-
-              {!etickets.length && (
-                <tr>
-                  <td style={styles.emptyCell} colSpan={7}>
-                    No eTickets found for this tab.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
       <div style={styles.grid}>
         <div style={styles.leftColumn}>
           <Section
             title={editingDriverId ? "Edit Driver" : "Create Driver"}
-            right={editingDriverId ? (
-              <button
-                style={styles.secondaryButton}
-                onClick={() => {
-                  setEditingDriverId(null);
-                  setDriverForm({ name: "", pin: "", active: true });
-                }}
-              >
-                Cancel Edit
-              </button>
-            ) : null}
+            right={
+              editingDriverId ? (
+                <button
+                  style={styles.secondaryButton}
+                  onClick={() => {
+                    setEditingDriverId(null);
+                    setDriverForm({ name: "", pin: "", active: true });
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              ) : null
+            }
           >
             <div style={styles.formGrid}>
               <div>
@@ -381,10 +257,16 @@ export default function AdminPage({ token }) {
                 <input
                   style={styles.input}
                   value={driverForm.name}
-                  onChange={(e) => setDriverForm((p) => ({ ...p, name: e.target.value }))}
+                  onChange={(e) =>
+                    setDriverForm((p) => ({
+                      ...p,
+                      name: e.target.value,
+                    }))
+                  }
                   placeholder="Driver name"
                 />
               </div>
+
               <div>
                 <div style={styles.label}>6-Digit PIN</div>
                 <input
@@ -408,7 +290,12 @@ export default function AdminPage({ token }) {
                 id="driver-active"
                 type="checkbox"
                 checked={driverForm.active}
-                onChange={(e) => setDriverForm((p) => ({ ...p, active: e.target.checked }))}
+                onChange={(e) =>
+                  setDriverForm((p) => ({
+                    ...p,
+                    active: e.target.checked,
+                  }))
+                }
                 style={styles.checkbox}
               />
               <label htmlFor="driver-active" style={styles.checkboxLabel}>
@@ -417,15 +304,27 @@ export default function AdminPage({ token }) {
             </div>
 
             <div style={styles.actionRow}>
-              <button style={styles.primaryButton} onClick={saveDriver} disabled={savingDriver}>
-                {savingDriver ? "Saving..." : editingDriverId ? "Update Driver" : "Create Driver"}
+              <button
+                style={styles.primaryButton}
+                onClick={saveDriver}
+                disabled={savingDriver}
+              >
+                {savingDriver
+                  ? "Saving..."
+                  : editingDriverId
+                  ? "Update Driver"
+                  : "Create Driver"}
               </button>
             </div>
           </Section>
 
           <Section
             title={`Drivers (${drivers.length})`}
-            right={<button style={styles.secondaryButton} onClick={loadAll}>Refresh</button>}
+            right={
+              <button style={styles.secondaryButton} onClick={loadAll}>
+                Refresh
+              </button>
+            }
           >
             <div style={styles.tableWrap}>
               <table style={styles.table}>
@@ -438,28 +337,40 @@ export default function AdminPage({ token }) {
                     <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {drivers.map((driver) => (
                     <tr key={driver.id}>
                       <td style={styles.td}>{driver.name}</td>
                       <td style={styles.td}>{driver.pin}</td>
                       <td style={styles.td}>{driver.active ? "Yes" : "No"}</td>
-                      <td style={styles.td}>{formatDateTime(driver.created_at)}</td>
+                      <td style={styles.td}>
+                        {formatDateTime(driver.created_at)}
+                      </td>
                       <td style={styles.td}>
                         <div style={styles.inlineButtons}>
-                          <button style={styles.smallButton} onClick={() => editDriver(driver)}>
+                          <button
+                            style={styles.smallButton}
+                            onClick={() => editDriver(driver)}
+                          >
                             Edit
                           </button>
-                          <button style={styles.smallDangerButton} onClick={() => deleteDriver(driver.id)}>
+                          <button
+                            style={styles.smallDangerButton}
+                            onClick={() => deleteDriver(driver.id)}
+                          >
                             Delete
                           </button>
                         </div>
                       </td>
                     </tr>
                   ))}
+
                   {!drivers.length && (
                     <tr>
-                      <td style={styles.emptyCell} colSpan={5}>No drivers found</td>
+                      <td style={styles.emptyCell} colSpan={5}>
+                        No drivers found
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -476,29 +387,51 @@ export default function AdminPage({ token }) {
                 <input
                   style={styles.input}
                   value={deviceForm.device_uuid}
-                  onChange={(e) => setDeviceForm((p) => ({ ...p, device_uuid: e.target.value }))}
+                  onChange={(e) =>
+                    setDeviceForm((p) => ({
+                      ...p,
+                      device_uuid: e.target.value,
+                    }))
+                  }
                   placeholder="Paste tablet UUID"
                 />
               </div>
+
               <div>
                 <div style={styles.label}>Device Name</div>
                 <input
                   style={styles.input}
                   value={deviceForm.device_name}
-                  onChange={(e) => setDeviceForm((p) => ({ ...p, device_name: e.target.value }))}
+                  onChange={(e) =>
+                    setDeviceForm((p) => ({
+                      ...p,
+                      device_name: e.target.value,
+                    }))
+                  }
                   placeholder="Tablet 101"
                 />
               </div>
+
               <div>
                 <div style={styles.label}>Truck Number</div>
                 <input
                   style={styles.input}
                   value={deviceForm.truck_number}
-                  onChange={(e) => setDeviceForm((p) => ({ ...p, truck_number: e.target.value }))}
+                  onChange={(e) =>
+                    setDeviceForm((p) => ({
+                      ...p,
+                      truck_number: e.target.value,
+                    }))
+                  }
                   placeholder="101"
                 />
               </div>
-              <button style={styles.primaryButtonFull} onClick={assignDevice} disabled={assigningDevice}>
+
+              <button
+                style={styles.primaryButtonFull}
+                onClick={assignDevice}
+                disabled={assigningDevice}
+              >
                 {assigningDevice ? "Assigning..." : "Assign Device"}
               </button>
             </div>
@@ -517,29 +450,43 @@ export default function AdminPage({ token }) {
                     <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {devices.map((device) => (
                     <tr key={device.device_uuid}>
                       <td style={styles.td}>{device.device_uuid}</td>
                       <td style={styles.td}>{device.device_name || "-"}</td>
-                      <td style={styles.td}>{device.assigned_truck_number || "-"}</td>
+                      <td style={styles.td}>
+                        {device.assigned_truck_number || "-"}
+                      </td>
                       <td style={styles.td}>{device.driver_name || "-"}</td>
-                      <td style={styles.td}>{formatDateTime(device.last_seen)}</td>
+                      <td style={styles.td}>
+                        {formatDateTime(device.last_seen)}
+                      </td>
                       <td style={styles.td}>
                         <div style={styles.inlineButtons}>
-                          <button style={styles.smallButton} onClick={() => unassignDevice(device.device_uuid)}>
+                          <button
+                            style={styles.smallButton}
+                            onClick={() => unassignDevice(device.device_uuid)}
+                          >
                             Unassign
                           </button>
-                          <button style={styles.smallDangerButton} onClick={() => deleteDevice(device.device_uuid)}>
+                          <button
+                            style={styles.smallDangerButton}
+                            onClick={() => deleteDevice(device.device_uuid)}
+                          >
                             Delete
                           </button>
                         </div>
                       </td>
                     </tr>
                   ))}
+
                   {!devices.length && (
                     <tr>
-                      <td style={styles.emptyCell} colSpan={6}>No devices yet.</td>
+                      <td style={styles.emptyCell} colSpan={6}>
+                        No devices yet.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -560,20 +507,28 @@ export default function AdminPage({ token }) {
                     <th style={styles.th}>Active</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {sessions.map((session) => (
                     <tr key={session.id}>
                       <td style={styles.td}>{session.driver_name || "-"}</td>
                       <td style={styles.td}>{session.truck_number || "-"}</td>
                       <td style={styles.td}>{session.device_uuid || "-"}</td>
-                      <td style={styles.td}>{formatDateTime(session.signed_in_at)}</td>
-                      <td style={styles.td}>{formatDateTime(session.signed_out_at)}</td>
+                      <td style={styles.td}>
+                        {formatDateTime(session.signed_in_at)}
+                      </td>
+                      <td style={styles.td}>
+                        {formatDateTime(session.signed_out_at)}
+                      </td>
                       <td style={styles.td}>{session.active ? "Yes" : "No"}</td>
                     </tr>
                   ))}
+
                   {!sessions.length && (
                     <tr>
-                      <td style={styles.emptyCell} colSpan={6}>No sessions found</td>
+                      <td style={styles.emptyCell} colSpan={6}>
+                        No sessions found
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -587,57 +542,204 @@ export default function AdminPage({ token }) {
 }
 
 const styles = {
-  tabRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 14,
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 16,
+    alignItems: "start",
   },
 
-  tabButton: {
+  leftColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+
+  rightColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+
+  sectionCard: {
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    borderRadius: 18,
+    padding: 20,
+  },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 800,
+    color: "#fff",
+  },
+
+  label: {
+    color: "#c7def5",
+    marginBottom: 8,
+    fontWeight: 600,
+  },
+
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 12,
+  },
+
+  stackGap: {
+    display: "grid",
+    gap: 12,
+  },
+
+  input: {
+    width: "100%",
+    height: 56,
+    padding: "0 16px",
+    borderRadius: 12,
     border: "1px solid var(--border)",
     background: "var(--panel-2)",
-    color: "var(--muted)",
-    borderRadius: 999,
-    padding: "10px 14px",
+    color: "#fff",
+    fontSize: 16,
+  },
+
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 14,
+  },
+
+  checkbox: {
+    width: 20,
+    height: 20,
+    accentColor: "#ff8f3d",
+  },
+
+  checkboxLabel: {
+    color: "#d9ecff",
+    margin: 0,
+    fontWeight: 600,
+  },
+
+  actionRow: {
+    display: "flex",
+    gap: 10,
+    marginTop: 18,
+  },
+
+  primaryButton: {
+    background: "linear-gradient(90deg, #ff7a18, #ff8f3d)",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    padding: "14px 18px",
+    fontSize: 16,
     fontWeight: 800,
     cursor: "pointer",
   },
 
-  activeTabButton: {
-    border: "1px solid #60a5fa",
-    background: "#1d4ed8",
+  primaryButtonFull: {
+    width: "100%",
+    background: "linear-gradient(90deg, #ff7a18, #ff8f3d)",
     color: "#fff",
-    borderRadius: 999,
+    border: "none",
+    borderRadius: 12,
+    padding: "14px 18px",
+    fontSize: 16,
+    fontWeight: 800,
+    cursor: "pointer",
+    marginTop: 4,
+  },
+
+  secondaryButton: {
+    background: "#1d4572",
+    color: "#fff",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
     padding: "10px 14px",
-    fontWeight: 900,
+    fontSize: 16,
     cursor: "pointer",
   },
-  grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" },
-  leftColumn: { display: "flex", flexDirection: "column", gap: 16 },
-  rightColumn: { display: "flex", flexDirection: "column", gap: 16 },
-  sectionCard: { background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 18, padding: 20 },
-  sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  sectionTitle: { fontSize: 24, fontWeight: 800, color: "#fff" },
-  label: { color: "#c7def5", marginBottom: 8, fontWeight: 600 },
-  formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
-  stackGap: { display: "grid", gap: 12 },
-  input: { width: "100%", height: 56, padding: "0 16px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--panel-2)", color: "#fff", fontSize: 16 },
-  checkboxRow: { display: "flex", alignItems: "center", gap: 10, marginTop: 14 },
-  checkbox: { width: 20, height: 20, accentColor: "#ff8f3d" },
-  checkboxLabel: { color: "#d9ecff", margin: 0, fontWeight: 600 },
-  actionRow: { display: "flex", gap: 10, marginTop: 18 },
-  primaryButton: { background: "linear-gradient(90deg, #ff7a18, #ff8f3d)", color: "#fff", border: "none", borderRadius: 12, padding: "14px 18px", fontSize: 16, fontWeight: 800, cursor: "pointer" },
-  primaryButtonFull: { width: "100%", background: "linear-gradient(90deg, #ff7a18, #ff8f3d)", color: "#fff", border: "none", borderRadius: 12, padding: "14px 18px", fontSize: 16, fontWeight: 800, cursor: "pointer", marginTop: 4 },
-  secondaryButton: { background: "#1d4572", color: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", fontSize: 16, cursor: "pointer" },
-  smallButton: { background: "#1d4572", color: "#fff", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", cursor: "pointer" },
-  smallDangerButton: { background: "#7a2430", color: "#fff", border: "none", borderRadius: 10, padding: "8px 10px", cursor: "pointer" },
-  tableWrap: { overflowX: "auto" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: { textAlign: "left", color: "#b9d3ee", padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.1)", fontSize: 15 },
-  td: { color: "#fff", padding: "14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: 15, verticalAlign: "top" },
-  emptyCell: { color: "#b9d3ee", textAlign: "center", padding: 24 },
-  inlineButtons: { display: "flex", gap: 8, flexWrap: "wrap" },
-  error: { background: "rgba(127,29,29,0.25)", border: "1px solid rgba(239,68,68,0.35)", color: "#fecaca", padding: "14px 16px", borderRadius: 14, marginBottom: 16, fontWeight: 700 },
-  success: { background: "rgba(6,95,70,0.35)", border: "1px solid rgba(16,185,129,0.35)", color: "#d1fae5", padding: "14px 16px", borderRadius: 14, marginBottom: 16, fontWeight: 700 },
+
+  smallButton: {
+    background: "#1d4572",
+    color: "#fff",
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    padding: "8px 10px",
+    cursor: "pointer",
+  },
+
+  smallDangerButton: {
+    background: "#7a2430",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "8px 10px",
+    cursor: "pointer",
+  },
+
+  tableWrap: {
+    overflowX: "auto",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+
+  th: {
+    textAlign: "left",
+    color: "#b9d3ee",
+    padding: "12px 10px",
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
+    fontSize: 15,
+  },
+
+  td: {
+    color: "#fff",
+    padding: "14px 10px",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    fontSize: 15,
+    verticalAlign: "top",
+  },
+
+  emptyCell: {
+    color: "#b9d3ee",
+    textAlign: "center",
+    padding: 24,
+  },
+
+  inlineButtons: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+
+  error: {
+    background: "rgba(127,29,29,0.25)",
+    border: "1px solid rgba(239,68,68,0.35)",
+    color: "#fecaca",
+    padding: "14px 16px",
+    borderRadius: 14,
+    marginBottom: 16,
+    fontWeight: 700,
+  },
+
+  success: {
+    background: "rgba(6,95,70,0.35)",
+    border: "1px solid rgba(16,185,129,0.35)",
+    color: "#d1fae5",
+    padding: "14px 16px",
+    borderRadius: 14,
+    marginBottom: 16,
+    fontWeight: 700,
+  },
 };
