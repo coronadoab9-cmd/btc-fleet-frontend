@@ -696,13 +696,57 @@ export default function ETicketPage() {
             />
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}>
-            <button
-              className="primary-btn"
-              style={{ width: "auto", marginTop: 0 }}
-              onClick={() => window.open(buildEticketPdfUrl(token), "_blank")}
+          <div
+            style={{
+              display: "grid",
+              justifyItems: "center",
+              marginTop: 18,
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 18,
+              }}
             >
-              Open Signed PDF Copy
+              Scan to Open Signed PDF
+            </div>
+
+            <div
+              style={{
+                background: "#fff",
+                width: 180,
+                height: 180,
+                borderRadius: 12,
+                display: "grid",
+                placeItems: "center",
+                overflow: "hidden",
+                padding: 8,
+              }}
+            >
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+                  buildEticketPdfUrl(token)
+                )}`}
+                alt="Signed PDF QR Code"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </div>
+
+            <button
+              className="secondary-btn"
+              type="button"
+              style={{ width: "auto", marginTop: 8 }}
+              onClick={() => {
+                window.location.href = "/";
+              }}
+            >
+              Return Home
             </button>
           </div>
         </div>
