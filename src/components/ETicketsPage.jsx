@@ -41,15 +41,30 @@ export default function ETicketsPage({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [reassignOptions, setReassignOptions] = useState({
+    admins: [],
+    trucks: [],
+  });
+  const [reassigningTicketId, setReassigningTicketId] = useState(null);
 
   async function loadTickets() {
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetch(`/admin/etickets?tab=${eticketTab}`, {
-        headers: { "X-Admin-Token": token },
-      });
+      const [data, optionsData] = await Promise.all([
+        apiFetch(`/admin/etickets?tab=${eticketTab}`, {
+          headers: { "X-Admin-Token": token },
+        }),
+        apiFetch("/admin/etickets/reassign-options", {
+          headers: { "X-Admin-Token": token },
+        }),
+      ]);
+
       setTickets(Array.isArray(data) ? data : []);
+      setReassignOptions({
+        admins: Array.isArray(optionsData?.admins) ? optionsData.admins : [],
+        trucks: Array.isArray(optionsData?.trucks) ? optionsData.trucks : [],
+      });
       if (!selectedToken && data?.length) {
         setSelectedToken(data[0].token);
       }
@@ -121,6 +136,60 @@ export default function ETicketsPage({ token }) {
       setMessage(`${label} copied`);
     } catch {
       setError("Could not copy link");
+    }
+  }
+
+  async function reassignEticket(ticket, optionValue) {
+    setError("");
+    setMessage("");
+
+    try {
+      if (!optionValue) {
+        throw new Error("Please choose a truck or admin");
+      }
+
+      const [assignedToType, assignedToId] = optionValue.split("|");
+
+      const allOptions = [
+        ...reassignOptions.trucks,
+        ...reassignOptions.admins,
+      ];
+
+      const selected = allOptions.find(
+        (item) =>
+          item.type === assignedToType &&
+          String(item.id) === String(assignedToId)
+      );
+
+      if (!selected) {
+        throw new Error("Selected assignment option was not found");
+      }
+
+      setReassigningTicketId(ticket.id);
+
+      await apiFetch("/admin/etickets/reassign", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": token,
+        },
+        body: JSON.stringify({
+          ticket_id: ticket.id,
+          assigned_to_type: selected.type,
+          assigned_to_id: String(selected.id),
+          assigned_to_name: selected.name,
+        }),
+      });
+
+      setMessage(
+        `Ticket ${ticket.ticket_number || ticket.id} reassigned to ${selected.name}`
+      );
+
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Could not reassign eTicket");
+    } finally {
+      setReassigningTicketId(null);
     }
   }
 
@@ -233,9 +302,50 @@ export default function ETicketsPage({ token }) {
                   <Info label="Water Added" value={selectedTicket.water_added} />
                   <Info label="Acceptance" value={selectedTicket.ticket_acceptance} />
                   <Info label="Load Time" value={formatDateTime(selectedTicket.load_time)} />
+                  <Info label="Assigned To" value={selectedTicket.assigned_to_name} />
+                  <Info label="Assigned At" value={formatDateTime(selectedTicket.assigned_at)} />
                 </div>
 
                 <InfoWide label="Weather Summary" value={selectedTicket.weather_summary || "-"} />
+
+                {String(selectedTicket.status || "").toLowerCase() !== "signed" ? (
+                  <div style={styles.reassignBox}>
+                    <div style={styles.infoLabel}>Reassign Ticket</div>
+
+                    <select
+                      style={styles.input}
+                      disabled={reassigningTicketId === selectedTicket.id}
+                      value=""
+                      onChange={(e) => reassignEticket(selectedTicket, e.target.value)}
+                    >
+                      <option value="">Choose truck or admin...</option>
+
+                      <optgroup label="Trucks">
+                        {reassignOptions.trucks
+                          .filter((truck) => truck.id !== selectedTicket.truck_number)
+                          .map((truck) => (
+                            <option
+                              key={`truck-${truck.id}`}
+                              value={`${truck.type}|${truck.id}`}
+                            >
+                              {truck.label}
+                            </option>
+                          ))}
+                      </optgroup>
+
+                      <optgroup label="Admins">
+                        {reassignOptions.admins.map((admin) => (
+                          <option
+                            key={`admin-${admin.id}`}
+                            value={`${admin.type}|${admin.id}`}
+                          >
+                            {admin.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                ) : null}
 
                 <div style={styles.actionRow}>
                   <button style={styles.primaryButton} onClick={() => window.open(buildEticketUrl(selectedTicket.token), "_blank")}>
@@ -280,6 +390,14 @@ function InfoWide({ label, value }) {
 }
 
 const styles = {
+
+  reassignBox: {
+    background: "var(--bg-soft)",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+  },
   tabRow: {
     display: "flex",
     flexWrap: "wrap",
