@@ -427,8 +427,23 @@ const styles = {
   headerRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   pageTitle: { fontSize: 24, fontWeight: 800, color: "#fff" },
   headerButtons: { display: "flex", gap: 10 },
-  filters: { display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 10, marginBottom: 16 },
-  grid: { display: "grid", gridTemplateColumns: "360px 1fr", gap: 16 },
+  filters: {
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth <= 768
+        ? "1fr"
+        : "repeat(6, minmax(0, 1fr))",
+    gap: 10,
+    marginBottom: 16,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth <= 768
+        ? "1fr"
+        : "360px 1fr",
+    gap: 16,
+  },
   leftColumn: { display: "flex", flexDirection: "column", gap: 14 },
   ticketCard: { background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 16, padding: 18, cursor: "pointer" },
   ticketCardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
@@ -438,7 +453,15 @@ const styles = {
   detailHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   detailTitle: { fontSize: 24, fontWeight: 800, color: "#fff" },
   detailSubtitle: { color: "#c7def5", fontSize: 18 },
-  infoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      window.innerWidth <= 768
+        ? "1fr"
+        : "1fr 1fr",
+    gap: 14,
+    marginBottom: 14,
+  },
   infoCard: { background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 16, padding: 18 },
   infoWide: { background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 16, padding: 18, marginBottom: 14 },
   infoLabel: { color: "#b9d3ee", marginBottom: 10, fontSize: 14 },
