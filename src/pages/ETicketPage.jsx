@@ -737,17 +737,6 @@ export default function ETicketPage() {
                 }}
               />
             </div>
-
-            <button
-              className="secondary-btn"
-              type="button"
-              style={{ width: "auto", marginTop: 8 }}
-              onClick={() => {
-                window.location.href = "/";
-              }}
-            >
-              Return Home
-            </button>
           </div>
         </div>
       </div>
