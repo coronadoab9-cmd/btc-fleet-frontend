@@ -7,9 +7,15 @@ const CENTRAL_TZ = "America/Chicago";
 
 function getPoint(event, canvas) {
   const rect = canvas.getBoundingClientRect();
+
+  const touch =
+    event.touches?.[0] ||
+    event.changedTouches?.[0] ||
+    event;
+
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top,
   };
 }
 
@@ -985,6 +991,31 @@ export default function ETicketPage() {
                   setWaterSignatureDataUrl
                 )
               }
+              onTouchStart={(e) =>
+                startSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  lastWaterPointRef
+                )
+              }
+              onTouchMove={(e) =>
+                moveSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  lastWaterPointRef,
+                  setWaterSignatureDrawn
+                )
+              }
+              onTouchEnd={(e) =>
+                endSignature(
+                  e,
+                  waterSignatureRef,
+                  drawingWaterRef,
+                  setWaterSignatureDataUrl
+                )
+              }
               onPointerLeave={(e) =>
                 endSignature(
                   e,
@@ -1157,6 +1188,31 @@ export default function ETicketPage() {
                 )
               }
               onPointerUp={(e) =>
+                endSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  setFinalSignatureDataUrl
+                )
+              }
+              onTouchStart={(e) =>
+                startSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  lastFinalPointRef
+                )
+              }
+              onTouchMove={(e) =>
+                moveSignature(
+                  e,
+                  finalSignatureRef,
+                  drawingFinalRef,
+                  lastFinalPointRef,
+                  setFinalSignatureDrawn
+                )
+              }
+              onTouchEnd={(e) =>
                 endSignature(
                   e,
                   finalSignatureRef,
