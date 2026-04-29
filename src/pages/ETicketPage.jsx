@@ -47,19 +47,15 @@ function parseMixDetails(product = "") {
   const hasSlag = text.includes("SLAG");
   const hasAsh = text.includes("ASH");
   const noAir = text.includes("NO AIR");
-  const hasAir = text.includes("AIR") && !noAir;
+  const hasAir = /\bAIR\b/.test(text) && !noAir;
 
   return {
     strength: strengthMatch ? `${strengthMatch[1]} PSI in 28 Days` : "-",
     slump: "4.5 in ± 1.5 in",
-    airContent: noAir
-      ? "No Air / still ± 1.5%"
-      : hasAir
-      ? "4.5% ± 1.5%"
-      : "4.5% ± 1.5%",
+    airContent: hasAir ? "4.5% ± 1.5%" : "No Air",
     description: `${sackMatch ? sackMatch[1] : "-"} SK | ${
       hasSlag ? "Slag" : hasAsh ? "Ash" : "Standard"
-    } | ${noAir ? "No Air" : "Air"}`,
+    } | ${hasAir ? "Air" : "No Air"}`,
   };
 }
 
