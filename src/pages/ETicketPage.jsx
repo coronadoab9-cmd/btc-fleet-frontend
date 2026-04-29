@@ -50,7 +50,7 @@ function parseMixDetails(product = "") {
   const hasAir = text.includes("AIR") && !noAir;
 
   return {
-    strength: strengthMatch ? `${strengthMatch[1]} PSI` : "-",
+    strength: strengthMatch ? `${strengthMatch[1]} PSI 28 Days` : "-",
     slump: "4.5 in ± 1.5 in",
     airContent: noAir
       ? "No Air / still ± 1.5%"
