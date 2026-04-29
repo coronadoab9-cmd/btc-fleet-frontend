@@ -208,7 +208,7 @@ export default function ETicketPage() {
     return Number.isNaN(ms) ? null : ms;
   }, [ticket?.load_time]);
 
-  const configuredLimitMinutes = 90;
+  const configuredLimitMinutes = 100;
 
   const remainingMinutes = useMemo(() => {
     if (!loadTimeMs) return configuredLimitMinutes;
@@ -752,7 +752,7 @@ export default function ETicketPage() {
   return (
     <div className="app-shell" style={{ padding: 14 }}>
       <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="panel-title">BTC Fleet eTicket</div>
+        <div className="panel-title">BTC eTicket</div>
 
         {error ? (
           <div style={{ color: "#fecaca", marginBottom: 12, fontWeight: 700 }}>
@@ -792,12 +792,12 @@ export default function ETicketPage() {
               <SummaryRow label="Strength" value={mix.strength} />
               <SummaryRow label="Slump" value={mix.slump} />
               <SummaryRow label="Air" value={mix.airContent} />
-              <SummaryRow label="Load Size" value={`${ticket.quantity || 0} yards`} />
+              <SummaryRow label="Load Size" value={`${ticket.quantity || 0} cys`} />
               <SummaryRow
                 label="Quantity Delivered Total"
-                value={`${ticket.quantity || 0} yards`}
+                value={`${ticket.quantity || 0} cys`}
               />
-              <SummaryRow label="Order Total" value={`${ticket.quantity || 0} yards`} />
+              <SummaryRow label="Order Total" value={`${ticket.quantity || 0} cys`} />
             </div>
 
             <button 
