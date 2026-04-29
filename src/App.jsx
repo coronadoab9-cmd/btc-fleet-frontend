@@ -112,7 +112,7 @@ function ProtectedApp() {
     <div className="app-shell">
       <div className="top-nav">
         <div className="top-nav-left">
-          <div className="app-title">BTC Fleet</div>
+          <div className="app-title">BTC</div>
 
           {!isMobile ? (
             <>
