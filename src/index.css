@@ -589,6 +589,7 @@ select {
 
   canvas {
     max-width: 100%;
-    height: none;
+    touch-action: none;
   }
 }
+

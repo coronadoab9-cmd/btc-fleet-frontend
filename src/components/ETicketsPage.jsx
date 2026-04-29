@@ -430,18 +430,13 @@ const styles = {
   filters: {
     display: "grid",
     gridTemplateColumns:
-      window.innerWidth <= 768
-        ? "1fr"
-        : "repeat(6, minmax(0, 1fr))",
+      window.innerWidth <= 768 ? "1fr" : "repeat(6, minmax(0, 1fr))",
     gap: 10,
     marginBottom: 16,
   },
   grid: {
     display: "grid",
-    gridTemplateColumns:
-      window.innerWidth <= 768
-        ? "1fr"
-        : "360px 1fr",
+    gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "360px 1fr",
     gap: 16,
   },
   leftColumn: { display: "flex", flexDirection: "column", gap: 14 },
@@ -455,10 +450,7 @@ const styles = {
   detailSubtitle: { color: "#c7def5", fontSize: 18 },
   infoGrid: {
     display: "grid",
-    gridTemplateColumns:
-      window.innerWidth <= 768
-        ? "1fr"
-        : "1fr 1fr",
+    gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "1fr 1fr",
     gap: 14,
     marginBottom: 14,
   },
