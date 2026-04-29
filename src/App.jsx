@@ -25,7 +25,9 @@ function ProtectedApp() {
     const raw = localStorage.getItem("btc_admin_auth");
     return raw ? JSON.parse(raw) : null;
   });
-  const [activeTab, setActiveTab] = useState("operations");
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("btc_active_tab") || "operations";
+  });
   const [loading, setLoading] = useState(true);
   const isMobile = window.innerWidth <= 768;
 
@@ -58,6 +60,10 @@ function ProtectedApp() {
 
     validate();
   }, [auth?.token]);
+
+  useEffect(() => {
+    localStorage.setItem("btc_active_tab", activeTab);
+  }, [activeTab]);
 
   async function changePassword() {
     setPasswordMessage("");
@@ -97,6 +103,7 @@ function ProtectedApp() {
   function handleLogout() {
     localStorage.removeItem("btc_admin_auth");
     setAuth(null);
+    localStorage.removeItem("btc_active_tab");
     setActiveTab("operations");
   }
 
