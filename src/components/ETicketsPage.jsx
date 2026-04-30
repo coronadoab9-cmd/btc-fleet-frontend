@@ -267,6 +267,49 @@ export default function ETicketsPage({ token }) {
                 <div style={styles.ticketMeta}>{ticket.customer_name || "-"}</div>
                 <div style={styles.ticketMeta}>Truck: {ticket.truck_number || "-"}</div>
                 <div style={styles.ticketMeta}>Signed: {formatDateTime(ticket.signed_at)}</div>
+                <div style={styles.ticketMeta}>
+                  Reassigned To: {ticket.assigned_to_name || "-"}
+                </div>
+                {String(ticket.status || "").toLowerCase() !== "signed" ? (
+                  <div style={{ marginTop: 12 }}>
+                    <select
+                      style={styles.input}
+                      disabled={reassigningTicketId === ticket.id}
+                      value=""
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        reassignEticket(ticket, e.target.value);
+                      }}
+                    >
+                      <option value="">Reassign...</option>
+
+                      <optgroup label="Trucks">
+                        {reassignOptions.trucks
+                          .filter((truck) => truck.id !== ticket.truck_number)
+                          .map((truck) => (
+                            <option
+                              key={`truck-${truck.id}`}
+                              value={`${truck.type}|${truck.id}`}
+                            >
+                              {truck.label}
+                            </option>
+                          ))}
+                      </optgroup>
+
+                      <optgroup label="Admins">
+                        {reassignOptions.admins.map((admin) => (
+                          <option
+                            key={`admin-${admin.id}`}
+                            value={`${admin.type}|${admin.id}`}
+                          >
+                            {admin.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                ) : null}
               </div>
             ))}
             {!filteredTickets.length && <div className="empty-state">No eTickets found.</div>}
@@ -307,45 +350,6 @@ export default function ETicketsPage({ token }) {
                 </div>
 
                 <InfoWide label="Weather Summary" value={selectedTicket.weather_summary || "-"} />
-
-                {String(selectedTicket.status || "").toLowerCase() !== "signed" ? (
-                  <div style={styles.reassignBox}>
-                    <div style={styles.infoLabel}>Reassign Ticket</div>
-
-                    <select
-                      style={styles.input}
-                      disabled={reassigningTicketId === selectedTicket.id}
-                      value=""
-                      onChange={(e) => reassignEticket(selectedTicket, e.target.value)}
-                    >
-                      <option value="">Choose truck or admin...</option>
-
-                      <optgroup label="Trucks">
-                        {reassignOptions.trucks
-                          .filter((truck) => truck.id !== selectedTicket.truck_number)
-                          .map((truck) => (
-                            <option
-                              key={`truck-${truck.id}`}
-                              value={`${truck.type}|${truck.id}`}
-                            >
-                              {truck.label}
-                            </option>
-                          ))}
-                      </optgroup>
-
-                      <optgroup label="Admins">
-                        {reassignOptions.admins.map((admin) => (
-                          <option
-                            key={`admin-${admin.id}`}
-                            value={`${admin.type}|${admin.id}`}
-                          >
-                            {admin.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </select>
-                  </div>
-                ) : null}
 
                 <div style={styles.actionRow}>
                   <button style={styles.primaryButton} onClick={() => window.open(buildEticketUrl(selectedTicket.token), "_blank")}>
