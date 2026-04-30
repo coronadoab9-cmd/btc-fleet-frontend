@@ -193,6 +193,46 @@ export default function ETicketsPage({ token }) {
     }
   }
 
+  async function archiveEticket(ticket) {
+    setError("");
+    setMessage("");
+
+    try {
+      await apiFetch(`/admin/etickets/${ticket.id}/archive`, {
+        method: "POST",
+        headers: {
+          "X-Admin-Token": token,
+        },
+      });
+
+      setMessage(`Ticket ${ticket.ticket_number || ticket.id} archived`);
+      setSelectedToken("");
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Could not archive eTicket");
+    }
+  }
+
+  async function restoreEticket(ticket) {
+    setError("");
+    setMessage("");
+
+    try {
+      await apiFetch(`/admin/etickets/${ticket.id}/restore`, {
+        method: "POST",
+        headers: {
+          "X-Admin-Token": token,
+        },
+      });
+
+      setMessage(`Ticket ${ticket.ticket_number || ticket.id} restored`);
+      setSelectedToken("");
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Could not restore eTicket");
+    }
+  }
+
   return (
     <div className="admin-page">
       {error ? <div style={styles.error}>{error}</div> : null}
@@ -216,6 +256,7 @@ export default function ETicketsPage({ token }) {
           ["accepted", "Signed Accepted"],
           ["rejected", "Signed Rejected"],
           ["assigned", "Assigned"],
+          ["archived", "Archived"],
         ].map(([key, label]) => (
           <button
             key={key}
@@ -363,6 +404,23 @@ export default function ETicketsPage({ token }) {
                       Open Signed PDF
                     </button>
                   ) : null}
+                  {eticketTab === "archived" ? (
+                    <button
+                      style={styles.secondaryButton}
+                      type="button"
+                      onClick={() => restoreEticket(selectedTicket)}
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      style={styles.dangerButton}
+                      type="button"
+                      onClick={() => archiveEticket(selectedTicket)}
+                    >
+                      Archive
+                    </button>
+                  )}
                 </div>
               </>
             ) : (
@@ -415,6 +473,17 @@ const styles = {
     color: "var(--muted)",
     borderRadius: 999,
     padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  dangerButton: {
+    background: "#7a2430",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    padding: "12px 16px",
+    fontSize: 16,
     fontWeight: 800,
     cursor: "pointer",
   },
