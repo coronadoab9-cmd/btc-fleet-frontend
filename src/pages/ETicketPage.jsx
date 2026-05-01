@@ -716,6 +716,18 @@ export default function ETicketPage() {
               Scan to Open Signed PDF
             </div>
 
+            <button
+              className="primary-btn"
+              type="button"
+              onClick={exitEticket}
+              style={{
+                maxWidth: 280,
+                marginTop: 16,
+              }}
+            >
+              Exit / Return
+            </button>
+
             <div
               style={{
                 background: "#fff",
@@ -743,6 +755,21 @@ export default function ETicketPage() {
         </div>
       </div>
     );
+  }
+
+  function exitEticket() {
+    try {
+      if (window.BTCFleetAndroid?.exitEticket) {
+        window.BTCFleetAndroid.exitEticket();
+        return;
+      }
+    } catch {}
+
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/";
+    }
   }
 
   return (
