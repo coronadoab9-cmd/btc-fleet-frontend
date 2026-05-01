@@ -178,6 +178,7 @@ export default function ETicketPage() {
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState(1);
   const [nowTick, setNowTick] = useState(Date.now());
+  const isPhone = window.innerWidth <= 600;
 
   const [curbLineSignature, setCurbLineSignature] = useState(
     "Customer / Contractor Signature"
@@ -1022,10 +1023,12 @@ export default function ETicketPage() {
 
               style={{
                 width: "100%",
-                height: 150,
+                height: isPhone ? 240 : 150,
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
+                userSelect: "none",
+                WebkitUserSelect: "none",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
@@ -1205,10 +1208,12 @@ export default function ETicketPage() {
 
               style={{
                 width: "100%",
-                height: 160,
+                height: isPhone ? 240 : 160,
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
+                userSelect: "none",
+                WebkitUserSelect: "none",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
