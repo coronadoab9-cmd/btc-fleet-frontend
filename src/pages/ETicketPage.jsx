@@ -343,8 +343,27 @@ export default function ETicketPage() {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
+    event.preventDefault?.();
+    event.stopPropagation?.();
+
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
+
+    // Re-sync canvas size to the visible box before drawing
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const visibleWidth = Math.max(Math.floor(rect.width), 300);
+    const visibleHeight = Math.max(Math.floor(rect.height), 120);
+
+    const currentCssWidth = Math.round(canvas.width / ratio);
+    const currentCssHeight = Math.round(canvas.height / ratio);
+
+    if (
+      Math.abs(currentCssWidth - visibleWidth) > 2 ||
+      Math.abs(currentCssHeight - visibleHeight) > 2
+    ) {
+      setupCanvas(canvas);
+    }
 
     drawingRef.current = true;
     canvas.setPointerCapture?.(event.pointerId);
@@ -1024,6 +1043,7 @@ export default function ETicketPage() {
               style={{
                 width: "100%",
                 height: isPhone ? 240 : 150,
+                display: "block",
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
@@ -1209,6 +1229,7 @@ export default function ETicketPage() {
               style={{
                 width: "100%",
                 height: isPhone ? 240 : 160,
+                display: "block",
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
