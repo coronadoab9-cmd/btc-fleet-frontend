@@ -716,18 +716,6 @@ export default function ETicketPage() {
               Scan to Open Signed PDF
             </div>
 
-            <button
-              className="primary-btn"
-              type="button"
-              onClick={exitEticket}
-              style={{
-                maxWidth: 280,
-                marginTop: 16,
-              }}
-            >
-              Exit / Return
-            </button>
-
             <div
               style={{
                 background: "#fff",
@@ -750,6 +738,18 @@ export default function ETicketPage() {
                   height: "100%",
                 }}
               />
+
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={exitEticket}
+                style={{
+                  maxWidth: 280,
+                  marginTop: 16,
+                }}
+              >
+                Exit / Return
+              </button>
             </div>
           </div>
         </div>
