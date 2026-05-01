@@ -260,16 +260,18 @@ export default function ETicketPage() {
   }, [step, signed, cameraStarted]);
 
   useEffect(() => {
-    setTimeout(() => {
+    const id = setTimeout(() => {
       if (step === 2) {
-        setupCanvas(waterSignatureRef.current);
+        setupCanvas(waterSignatureRef.current, "#0b1a2b", waterSignatureDataUrl);
       }
 
       if (step === 3) {
-        setupCanvas(finalSignatureRef.current);
+        setupCanvas(finalSignatureRef.current, "#0b1a2b", finalSignatureDataUrl);
       }
     }, 150);
-  }, [step, isPhone]);
+
+    return () => clearTimeout(id);
+  }, [step, isPhone, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   async function loadTicket() {
     setLoading(true);
@@ -306,7 +308,7 @@ export default function ETicketPage() {
     });
   }, [signed]);
 
- function setupCanvas(canvas, bg = "#0b1a2b") {
+function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   if (!canvas) return;
 
   const rect = canvas.getBoundingClientRect();
@@ -328,6 +330,14 @@ export default function ETicketPage() {
   ctx.strokeStyle = "#ffffff";
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+
+  if (existingDataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, cssWidth, cssHeight);
+    };
+    img.src = existingDataUrl;
+  }
 }
 
   useEffect(() => {
@@ -360,7 +370,6 @@ export default function ETicketPage() {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
-    document.addEventListener("touchmove", preventScroll, { passive: false });
 
     event.preventDefault?.();
     event.stopPropagation?.();
@@ -413,7 +422,6 @@ export default function ETicketPage() {
   }
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
-    document.removeEventListener("touchmove", preventScroll);
 
     if (!drawingRef.current) return;
 
@@ -435,10 +443,6 @@ export default function ETicketPage() {
     setterData("");
   }
 
-  // ✅ ADD IT RIGHT HERE
-  function preventScroll(e) {
-    e.preventDefault();
-  }
 
   function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
     event.preventDefault();
@@ -671,12 +675,34 @@ export default function ETicketPage() {
     setCameraStarted(false);
   }
 
-  function capturePhotoFromVideo() {
+  async function waitForVideoReady(timeoutMs = 3000) {
+    const video = videoRef.current;
+    if (!video) return false;
+
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      if (video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+        return true;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    return false;
+  }
+
+  async function capturePhotoFromVideo() {
     const video = videoRef.current;
     const canvas = photoCanvasRef.current;
 
     if (!video || !canvas) return "";
-    if (!video.videoWidth || !video.videoHeight) return "";
+
+    const ready = await waitForVideoReady();
+
+    if (!ready || !video.videoWidth || !video.videoHeight) {
+      return "";
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -717,12 +743,12 @@ export default function ETicketPage() {
         );
       }
 
-      let signerPhoto = capturePhotoFromVideo();
+      let signerPhoto = await capturePhotoFromVideo();
 
       if (!signerPhoto && !cameraStarted) {
         await startCamera();
         await new Promise((resolve) => setTimeout(resolve, 800));
-        signerPhoto = capturePhotoFromVideo();
+        signerPhoto = await capturePhotoFromVideo();
       }
 
       if (!signerPhoto) {
