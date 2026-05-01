@@ -414,6 +414,72 @@ export default function ETicketPage() {
     setterData("");
   }
 
+  function getTouchPoint(event, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const touch =
+      event.touches?.[0] ||
+      event.changedTouches?.[0] ||
+      event.nativeEvent?.touches?.[0] ||
+      event.nativeEvent?.changedTouches?.[0];
+
+    if (!touch) return { x: 0, y: 0 };
+
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }
+
+  function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = canvasRef.current;
+    if (!canvas || signed) return;
+
+    drawingRef.current = true;
+
+    const pt = getTouchPoint(event, canvas);
+    lastPointRef.current = pt;
+
+    const ctx = canvas.getContext("2d");
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
+  }
+
+  function moveTouchSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
+    if (!drawingRef.current || signed) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const pt = getTouchPoint(event, canvas);
+
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+
+    lastPointRef.current = pt;
+    setDrawn(true);
+  }
+
+  function endTouchSignature(event, canvasRef, drawingRef, setDataUrl) {
+    if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = canvasRef.current;
+    drawingRef.current = false;
+
+    if (canvas) {
+      setDataUrl(canvas.toDataURL("image/png"));
+    }
+  }
+
   function changeWaterAdded(amount) {
     setWaterAdded((v) => {
       const next = Number(v || 0) + amount;
@@ -1025,10 +1091,10 @@ export default function ETicketPage() {
 
               // 👉 ADD THESE (this is what you were asking about)
               onTouchStart={(e) =>
-                startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
+                startTouchSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
               }
               onTouchMove={(e) =>
-                moveSignature(
+                moveTouchSignature(
                   e,
                   waterSignatureRef,
                   drawingWaterRef,
@@ -1037,7 +1103,7 @@ export default function ETicketPage() {
                 )
               }
               onTouchEnd={(e) =>
-                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                endTouchSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
               }
 
               style={{
@@ -1211,10 +1277,10 @@ export default function ETicketPage() {
 
               // 👉 ADD THESE
               onTouchStart={(e) =>
-                startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
+                startTouchSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
               }
               onTouchMove={(e) =>
-                moveSignature(
+                moveTouchSignature(
                   e,
                   finalSignatureRef,
                   drawingFinalRef,
@@ -1223,7 +1289,7 @@ export default function ETicketPage() {
                 )
               }
               onTouchEnd={(e) =>
-                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+                endTouchSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
               }
 
               style={{
