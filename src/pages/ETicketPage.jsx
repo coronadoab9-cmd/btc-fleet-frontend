@@ -1130,8 +1130,7 @@ export default function ETicketPage() {
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-
+            <div style={{ marginTop: 12 }}>
               {error ? (
                 <div
                   style={{
@@ -1146,30 +1145,32 @@ export default function ETicketPage() {
                 </div>
               ) : null}
 
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={() => setStep(1)}
+                >
+                  Back
+                </button>
 
-              <button 
-                className="primary-btn"
-                type="button"
-              
-                onClick={() => {
-                  if (!waterSignatureDrawn) {
-                    setError("Curb line signature is required before continuing.");
-                    return;
-                  }
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!waterSignatureDrawn) {
+                      setError("Curb line signature is required before continuing.");
+                      return;
+                    }
 
-                  setError("");
-                  setCurbLineSignedAt(new Date().toISOString());
-                  setStep(3);
-                }}>
-                Next
-              </button>
+                    setError("");
+                    setCurbLineSignedAt(new Date().toISOString());
+                    setStep(3);
+                  }}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -1348,8 +1349,9 @@ export default function ETicketPage() {
 
             <canvas ref={photoCanvasRef} style={{ display: "none" }} />
 
-            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <div style={{ marginTop: 18 }}>
 
+              {/* 🔴 ERROR ABOVE BUTTONS */}
               {error ? (
                 <div
                   style={{
@@ -1363,22 +1365,27 @@ export default function ETicketPage() {
                   {error}
                 </div>
               ) : null}
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() => setStep(2)}
-              >
-                Back
-              </button>
 
-              <button
-                className="primary-btn"
-                type="button"
-                onClick={submitTicket}
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit"}
-              </button>
+              {/* 🔘 BUTTON ROW */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={() => setStep(2)}
+                >
+                  Back
+                </button>
+
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={submitTicket}
+                  disabled={submitting}
+                >
+                  {submitting ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+
             </div>
           </>
         )}
