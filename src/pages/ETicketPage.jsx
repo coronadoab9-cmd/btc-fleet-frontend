@@ -918,16 +918,18 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
   function exitEticket() {
     try {
-      if (window.BTCFleetAndroid?.exitEticket) {
+      if (window.BTCFleetAndroid && typeof window.BTCFleetAndroid.exitEticket === "function") {
         window.BTCFleetAndroid.exitEticket();
         return;
       }
-    } catch {}
+    } catch (err) {
+      console.log("Android exit failed:", err);
+    }
 
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
+    try {
       window.location.href = "/";
+    } catch {
+      window.history.back();
     }
   }
 
