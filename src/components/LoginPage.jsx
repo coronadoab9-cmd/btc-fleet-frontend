@@ -40,7 +40,7 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-title">BTC Fleet Admin Login</div>
+        <div className="login-title">BTC Admin Login</div>
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label>Username</label>
@@ -83,7 +83,7 @@ export default function LoginPage({ onLogin }) {
         </form>
 
         <div className="login-help">
-          Use your BTC Fleet admin credentials.
+          Use your BTC admin credentials.
           <br />
           Example username format: <strong>adam.coronado</strong>
         </div>

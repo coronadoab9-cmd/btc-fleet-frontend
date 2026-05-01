@@ -953,12 +953,12 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <SummaryRow label="Strength" value={mix.strength} />
               <SummaryRow label="Slump" value={mix.slump} />
               <SummaryRow label="Air" value={mix.airContent} />
-              <SummaryRow label="Load Size" value={`${ticket.quantity || 0} CYs`} />
+              <SummaryRow label="Load Size" value={`${ticket.quantity || 0} cys`} />
               <SummaryRow
                 label="Quantity Delivered Total"
-                value={`${ticket.quantity || 0} CYs`}
+                value={`${ticket.quantity || 0} cys`}
               />
-              <SummaryRow label="Order Total" value={`${ticket.quantity || 0} CYs`} />
+              <SummaryRow label="Order Total" value={`${ticket.quantity || 0} cys`} />
             </div>
 
             <button 
