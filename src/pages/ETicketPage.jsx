@@ -257,6 +257,18 @@ export default function ETicketPage() {
     }
   }, [step, signed, cameraStarted]);
 
+  useEffect(() => {
+    setTimeout(() => {
+      if (step === 2) {
+        setupCanvas(waterSignatureRef.current);
+      }
+
+      if (step === 3) {
+        setupCanvas(finalSignatureRef.current);
+      }
+    }, 150);
+  }, [step, isPhone]);
+
   async function loadTicket() {
     setLoading(true);
     setError("");
@@ -292,26 +304,29 @@ export default function ETicketPage() {
     });
   }, [signed]);
 
-  function setupCanvas(canvas, bg = "#0b1a2b") {
-    if (!canvas) return;
+ function setupCanvas(canvas, bg = "#0b1a2b") {
+  if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const width = Math.max(Math.floor(rect.width), 300);
-    const height = Math.max(Math.floor(rect.height), 120);
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-    canvas.width = width * ratio;
-    canvas.height = height * ratio;
+  const cssWidth = Math.max(Math.floor(rect.width), 300);
+  const cssHeight = Math.max(Math.floor(rect.height), 150);
 
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, width, height);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }
+  canvas.width = cssWidth * ratio;
+  canvas.height = cssHeight * ratio;
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+}
 
   useEffect(() => {
     if (signed) return;
