@@ -8,12 +8,16 @@ const CENTRAL_TZ = "America/Chicago";
 function getPoint(event, canvas) {
   const rect = canvas.getBoundingClientRect();
 
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  const point =
+    event.touches?.[0] ||
+    event.changedTouches?.[0] ||
+    event.nativeEvent?.touches?.[0] ||
+    event.nativeEvent?.changedTouches?.[0] ||
+    event;
 
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    x: point.clientX - rect.left,
+    y: point.clientY - rect.top,
   };
 }
 
@@ -291,15 +295,18 @@ export default function ETicketPage() {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const width = Math.floor(rect.width);
-    const height = Math.floor(rect.height);
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const width = Math.max(Math.floor(rect.width), 300);
+    const height = Math.max(Math.floor(rect.height), 120);
 
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
 
     const ctx = canvas.getContext("2d");
-
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.lineWidth = 4;
+    ctx.fillRect(0, 0, width, height);
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = "#ffffff";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -335,8 +342,6 @@ export default function ETicketPage() {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
-    event.preventDefault?.();
-
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
 
@@ -370,8 +375,6 @@ export default function ETicketPage() {
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
     if (!drawingRef.current) return;
-
-    event.preventDefault();
 
     const canvas = canvasRef.current;
     drawingRef.current = false;
@@ -980,24 +983,9 @@ export default function ETicketPage() {
 
             <canvas
               ref={waterSignatureRef}
-              style={{
-                width: "100%",
-                height: 220,
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                touchAction: "none",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                marginTop: 10,
-                background: "#0b1a2b",
-              }}
+
               onPointerDown={(e) =>
-                startSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  lastWaterPointRef
-                )
+                startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
               }
               onPointerMove={(e) =>
                 moveSignature(
@@ -1009,20 +997,15 @@ export default function ETicketPage() {
                 )
               }
               onPointerUp={(e) =>
-                endSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  setWaterSignatureDataUrl
-                )
+                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
               }
+              onPointerLeave={(e) =>
+                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+              }
+
+              // 👉 ADD THESE (this is what you were asking about)
               onTouchStart={(e) =>
-                startSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  lastWaterPointRef
-                )
+                startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
               }
               onTouchMove={(e) =>
                 moveSignature(
@@ -1034,21 +1017,18 @@ export default function ETicketPage() {
                 )
               }
               onTouchEnd={(e) =>
-                endSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  setWaterSignatureDataUrl
-                )
+                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
               }
-              onPointerLeave={(e) =>
-                endSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  setWaterSignatureDataUrl
-                )
-              }
+
+              style={{
+                width: "100%",
+                height: 150,
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                touchAction: "none",
+                marginTop: 10,
+                background: "#0b1a2b",
+              }}
             />
 
             <div style={{ marginTop: 8 }}>
@@ -1186,24 +1166,9 @@ export default function ETicketPage() {
 
             <canvas
               ref={finalSignatureRef}
-              style={{
-                width: "100%",
-                height: 220,
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                touchAction: "none",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                marginTop: 10,
-                background: "#0b1a2b",
-              }}
+
               onPointerDown={(e) =>
-                startSignature(
-                  e,
-                  finalSignatureRef,
-                  drawingFinalRef,
-                  lastFinalPointRef
-                )
+                startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
               }
               onPointerMove={(e) =>
                 moveSignature(
@@ -1215,22 +1180,38 @@ export default function ETicketPage() {
                 )
               }
               onPointerUp={(e) =>
-                endSignature(
-                  e,
-                  finalSignatureRef,
-                  drawingFinalRef,
-                  setFinalSignatureDataUrl
-                )
+                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
               }
-              
               onPointerLeave={(e) =>
-                endSignature(
+                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+              }
+
+              // 👉 ADD THESE
+              onTouchStart={(e) =>
+                startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
+              }
+              onTouchMove={(e) =>
+                moveSignature(
                   e,
                   finalSignatureRef,
                   drawingFinalRef,
-                  setFinalSignatureDataUrl
+                  lastFinalPointRef,
+                  setFinalSignatureDrawn
                 )
               }
+              onTouchEnd={(e) =>
+                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+              }
+
+              style={{
+                width: "100%",
+                height: 160,
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                touchAction: "none",
+                marginTop: 10,
+                background: "#0b1a2b",
+              }}
             />
 
             <div style={{ marginTop: 8, textAlign: "center" }}>
