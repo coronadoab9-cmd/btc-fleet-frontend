@@ -360,6 +360,8 @@ export default function ETicketPage() {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+
     event.preventDefault?.();
     event.stopPropagation?.();
 
@@ -411,6 +413,8 @@ export default function ETicketPage() {
   }
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
+    document.removeEventListener("touchmove", preventScroll);
+
     if (!drawingRef.current) return;
 
     const canvas = canvasRef.current;
@@ -431,20 +435,9 @@ export default function ETicketPage() {
     setterData("");
   }
 
-  function getTouchPoint(event, canvas) {
-    const rect = canvas.getBoundingClientRect();
-    const touch =
-      event.touches?.[0] ||
-      event.changedTouches?.[0] ||
-      event.nativeEvent?.touches?.[0] ||
-      event.nativeEvent?.changedTouches?.[0];
-
-    if (!touch) return { x: 0, y: 0 };
-
-    return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-    };
+  // ✅ ADD IT RIGHT HERE
+  function preventScroll(e) {
+    e.preventDefault();
   }
 
   function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
@@ -497,85 +490,6 @@ export default function ETicketPage() {
     }
   }
 
-  function getPadPoint(event, pad) {
-    const rect = pad.getBoundingClientRect();
-    const touch =
-      event.touches?.[0] ||
-      event.changedTouches?.[0] ||
-      event.nativeEvent?.touches?.[0] ||
-      event.nativeEvent?.changedTouches?.[0];
-
-    if (!touch) return { x: 0, y: 0 };
-
-    return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-    };
-  }
-
-  function startPhoneSignature(event, padRef, canvasRef, drawingRef, lastPointRef) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const pad = padRef.current;
-    const canvas = canvasRef.current;
-    if (!pad || !canvas || signed) return;
-
-    const rect = pad.getBoundingClientRect();
-
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#0b1a2b";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    drawingRef.current = true;
-
-    const pt = getPadPoint(event, pad);
-    lastPointRef.current = pt;
-
-    ctx.beginPath();
-    ctx.moveTo(pt.x, pt.y);
-  }
-
-  function movePhoneSignature(event, padRef, canvasRef, drawingRef, lastPointRef, setDrawn) {
-    if (!drawingRef.current || signed) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const pad = padRef.current;
-    const canvas = canvasRef.current;
-    if (!pad || !canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    const pt = getPadPoint(event, pad);
-
-    ctx.lineTo(pt.x, pt.y);
-    ctx.stroke();
-
-    lastPointRef.current = pt;
-    setDrawn(true);
-  }
-
-  function endPhoneSignature(event, canvasRef, drawingRef, setDataUrl) {
-    if (!drawingRef.current) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const canvas = canvasRef.current;
-    drawingRef.current = false;
-
-    if (canvas) {
-      setDataUrl(canvas.toDataURL("image/png"));
-    }
-  }
 
   function changeWaterAdded(amount) {
     setWaterAdded((v) => {
@@ -1157,60 +1071,6 @@ export default function ETicketPage() {
             <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
               Customer Finger Signature
             </div>
-
-            {isPhone ? (
-              <div
-                ref={waterPadRef}
-                style={{
-                  width: "100%",
-                  height: 240,
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  background: "#0b1a2b",
-                  marginTop: 10,
-                  touchAction: "none",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-                onTouchStart={(e) =>
-                  startPhoneSignature(
-                    e,
-                    waterPadRef,
-                    waterSignatureRef,
-                    drawingWaterRef,
-                    lastWaterPointRef
-                  )
-                }
-                onTouchMove={(e) =>
-                  movePhoneSignature(
-                    e,
-                    waterPadRef,
-                    waterSignatureRef,
-                    drawingWaterRef,
-                    lastWaterPointRef,
-                    setWaterSignatureDrawn
-                  )
-                }
-                onTouchEnd={(e) =>
-                  endPhoneSignature(
-                    e,
-                    waterSignatureRef,
-                    drawingWaterRef,
-                    setWaterSignatureDataUrl
-                  )
-                }
-              >
-                <canvas
-                  ref={waterSignatureRef}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "block",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            ) : (
               <canvas
                 ref={waterSignatureRef}
                 onPointerDown={(e) =>
@@ -1244,7 +1104,7 @@ export default function ETicketPage() {
                   background: "#0b1a2b",
                 }}
               />
-            )}
+            
 
             <div style={{ marginTop: 8 }}>
               <button
@@ -1394,60 +1254,6 @@ export default function ETicketPage() {
             >
               Final Signature
             </div>
-
-            {isPhone ? (
-              <div
-                ref={finalPadRef}
-                style={{
-                  width: "100%",
-                  height: 240,
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  background: "#0b1a2b",
-                  marginTop: 10,
-                  touchAction: "none",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-                onTouchStart={(e) =>
-                  startPhoneSignature(
-                    e,
-                    finalPadRef,
-                    finalSignatureRef,
-                    drawingFinalRef,
-                    lastFinalPointRef
-                  )
-                }
-                onTouchMove={(e) =>
-                  movePhoneSignature(
-                    e,
-                    finalPadRef,
-                    finalSignatureRef,
-                    drawingFinalRef,
-                    lastFinalPointRef,
-                    setFinalSignatureDrawn
-                  )
-                }
-                onTouchEnd={(e) =>
-                  endPhoneSignature(
-                    e,
-                    finalSignatureRef,
-                    drawingFinalRef,
-                    setFinalSignatureDataUrl
-                  )
-                }
-              >
-                <canvas
-                  ref={finalSignatureRef}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "block",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            ) : (
               <canvas
                 ref={finalSignatureRef}
                 onPointerDown={(e) =>
@@ -1481,7 +1287,7 @@ export default function ETicketPage() {
                   background: "#0b1a2b",
                 }}
               />
-            )}
+            
 
             <div style={{ marginTop: 8, textAlign: "center" }}>
               <button
