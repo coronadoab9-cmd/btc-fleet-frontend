@@ -158,6 +158,8 @@ export default function ETicketPage() {
   const videoRef = useRef(null);
   const photoCanvasRef = useRef(null);
   const streamRef = useRef(null);
+  const waterPadRef = useRef(null);
+  const finalPadRef = useRef(null);
 
   const holdTimeoutRef = useRef(null);
   const holdIntervalRef = useRef(null);
@@ -482,6 +484,86 @@ export default function ETicketPage() {
   }
 
   function endTouchSignature(event, canvasRef, drawingRef, setDataUrl) {
+    if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = canvasRef.current;
+    drawingRef.current = false;
+
+    if (canvas) {
+      setDataUrl(canvas.toDataURL("image/png"));
+    }
+  }
+
+  function getPadPoint(event, pad) {
+    const rect = pad.getBoundingClientRect();
+    const touch =
+      event.touches?.[0] ||
+      event.changedTouches?.[0] ||
+      event.nativeEvent?.touches?.[0] ||
+      event.nativeEvent?.changedTouches?.[0];
+
+    if (!touch) return { x: 0, y: 0 };
+
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+    };
+  }
+
+  function startPhoneSignature(event, padRef, canvasRef, drawingRef, lastPointRef) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const pad = padRef.current;
+    const canvas = canvasRef.current;
+    if (!pad || !canvas || signed) return;
+
+    const rect = pad.getBoundingClientRect();
+
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0b1a2b";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    drawingRef.current = true;
+
+    const pt = getPadPoint(event, pad);
+    lastPointRef.current = pt;
+
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
+  }
+
+  function movePhoneSignature(event, padRef, canvasRef, drawingRef, lastPointRef, setDrawn) {
+    if (!drawingRef.current || signed) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const pad = padRef.current;
+    const canvas = canvasRef.current;
+    if (!pad || !canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const pt = getPadPoint(event, pad);
+
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+
+    lastPointRef.current = pt;
+    setDrawn(true);
+  }
+
+  function endPhoneSignature(event, canvasRef, drawingRef, setDataUrl) {
     if (!drawingRef.current) return;
 
     event.preventDefault();
@@ -1076,58 +1158,93 @@ export default function ETicketPage() {
               Customer Finger Signature
             </div>
 
-            <canvas
-              ref={waterSignatureRef}
-
-              onPointerDown={(e) =>
-                startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
-              }
-              onPointerMove={(e) =>
-                moveSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  lastWaterPointRef,
-                  setWaterSignatureDrawn
-                )
-              }
-              onPointerUp={(e) =>
-                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-              }
-              onPointerLeave={(e) =>
-                endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-              }
-
-              // 👉 ADD THESE (this is what you were asking about)
-              onTouchStart={(e) =>
-                startTouchSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
-              }
-              onTouchMove={(e) =>
-                moveTouchSignature(
-                  e,
-                  waterSignatureRef,
-                  drawingWaterRef,
-                  lastWaterPointRef,
-                  setWaterSignatureDrawn
-                )
-              }
-              onTouchEnd={(e) =>
-                endTouchSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-              }
-
-              style={{
-                width: "100%",
-                height: isPhone ? 240 : 150,
-                display: "block",
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                touchAction: "none",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                marginTop: 10,
-                background: "#0b1a2b",
-              }}
-            />
+            {isPhone ? (
+              <div
+                ref={waterPadRef}
+                style={{
+                  width: "100%",
+                  height: 240,
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  background: "#0b1a2b",
+                  marginTop: 10,
+                  touchAction: "none",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+                onTouchStart={(e) =>
+                  startPhoneSignature(
+                    e,
+                    waterPadRef,
+                    waterSignatureRef,
+                    drawingWaterRef,
+                    lastWaterPointRef
+                  )
+                }
+                onTouchMove={(e) =>
+                  movePhoneSignature(
+                    e,
+                    waterPadRef,
+                    waterSignatureRef,
+                    drawingWaterRef,
+                    lastWaterPointRef,
+                    setWaterSignatureDrawn
+                  )
+                }
+                onTouchEnd={(e) =>
+                  endPhoneSignature(
+                    e,
+                    waterSignatureRef,
+                    drawingWaterRef,
+                    setWaterSignatureDataUrl
+                  )
+                }
+              >
+                <canvas
+                  ref={waterSignatureRef}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
+            ) : (
+              <canvas
+                ref={waterSignatureRef}
+                onPointerDown={(e) =>
+                  startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
+                }
+                onPointerMove={(e) =>
+                  moveSignature(
+                    e,
+                    waterSignatureRef,
+                    drawingWaterRef,
+                    lastWaterPointRef,
+                    setWaterSignatureDrawn
+                  )
+                }
+                onPointerUp={(e) =>
+                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                }
+                onPointerLeave={(e) =>
+                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                }
+                style={{
+                  width: "100%",
+                  height: 150,
+                  display: "block",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  touchAction: "none",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  marginTop: 10,
+                  background: "#0b1a2b",
+                }}
+              />
+            )}
 
             <div style={{ marginTop: 8 }}>
               <button
@@ -1278,58 +1395,93 @@ export default function ETicketPage() {
               Final Signature
             </div>
 
-            <canvas
-              ref={finalSignatureRef}
-
-              onPointerDown={(e) =>
-                startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
-              }
-              onPointerMove={(e) =>
-                moveSignature(
-                  e,
-                  finalSignatureRef,
-                  drawingFinalRef,
-                  lastFinalPointRef,
-                  setFinalSignatureDrawn
-                )
-              }
-              onPointerUp={(e) =>
-                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
-              }
-              onPointerLeave={(e) =>
-                endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
-              }
-
-              // 👉 ADD THESE
-              onTouchStart={(e) =>
-                startTouchSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
-              }
-              onTouchMove={(e) =>
-                moveTouchSignature(
-                  e,
-                  finalSignatureRef,
-                  drawingFinalRef,
-                  lastFinalPointRef,
-                  setFinalSignatureDrawn
-                )
-              }
-              onTouchEnd={(e) =>
-                endTouchSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
-              }
-
-              style={{
-                width: "100%",
-                height: isPhone ? 240 : 160,
-                display: "block",
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                touchAction: "none",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                marginTop: 10,
-                background: "#0b1a2b",
-              }}
-            />
+            {isPhone ? (
+              <div
+                ref={finalPadRef}
+                style={{
+                  width: "100%",
+                  height: 240,
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  background: "#0b1a2b",
+                  marginTop: 10,
+                  touchAction: "none",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+                onTouchStart={(e) =>
+                  startPhoneSignature(
+                    e,
+                    finalPadRef,
+                    finalSignatureRef,
+                    drawingFinalRef,
+                    lastFinalPointRef
+                  )
+                }
+                onTouchMove={(e) =>
+                  movePhoneSignature(
+                    e,
+                    finalPadRef,
+                    finalSignatureRef,
+                    drawingFinalRef,
+                    lastFinalPointRef,
+                    setFinalSignatureDrawn
+                  )
+                }
+                onTouchEnd={(e) =>
+                  endPhoneSignature(
+                    e,
+                    finalSignatureRef,
+                    drawingFinalRef,
+                    setFinalSignatureDataUrl
+                  )
+                }
+              >
+                <canvas
+                  ref={finalSignatureRef}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
+            ) : (
+              <canvas
+                ref={finalSignatureRef}
+                onPointerDown={(e) =>
+                  startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
+                }
+                onPointerMove={(e) =>
+                  moveSignature(
+                    e,
+                    finalSignatureRef,
+                    drawingFinalRef,
+                    lastFinalPointRef,
+                    setFinalSignatureDrawn
+                  )
+                }
+                onPointerUp={(e) =>
+                  endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+                }
+                onPointerLeave={(e) =>
+                  endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+                }
+                style={{
+                  width: "100%",
+                  height: 160,
+                  display: "block",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  touchAction: "none",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  marginTop: 10,
+                  background: "#0b1a2b",
+                }}
+              />
+            )}
 
             <div style={{ marginTop: 8, textAlign: "center" }}>
               <button
