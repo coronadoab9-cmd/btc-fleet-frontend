@@ -739,7 +739,9 @@ export default function ETicketPage() {
                 }}
               />
 
-              <button
+              
+            </div>
+            <button
                 className="primary-btn"
                 type="button"
                 onClick={exitEticket}
@@ -750,7 +752,6 @@ export default function ETicketPage() {
               >
                 Exit / Return
               </button>
-            </div>
           </div>
         </div>
       </div>
