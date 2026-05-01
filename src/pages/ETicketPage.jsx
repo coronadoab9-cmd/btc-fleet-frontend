@@ -8,16 +8,11 @@ const CENTRAL_TZ = "America/Chicago";
 function getPoint(event, canvas) {
   const rect = canvas.getBoundingClientRect();
 
-  const point =
-    event.touches?.[0] ||
-    event.changedTouches?.[0] ||
-    event.nativeEvent?.touches?.[0] ||
-    event.nativeEvent?.changedTouches?.[0] ||
-    event;
+  const e = event.nativeEvent || event;
 
   return {
-    x: point.clientX - rect.left,
-    y: point.clientY - rect.top,
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top,
   };
 }
 
@@ -384,29 +379,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
-
-    event.preventDefault?.();
-    event.stopPropagation?.();
+    event.preventDefault();
+    event.stopPropagation();
 
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
 
-    // Re-sync canvas size to the visible box before drawing
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const visibleWidth = Math.max(Math.floor(rect.width), 300);
-    const visibleHeight = Math.max(Math.floor(rect.height), 120);
-
-    const currentCssWidth = Math.round(canvas.width / ratio);
-    const currentCssHeight = Math.round(canvas.height / ratio);
-
-    if (
-      Math.abs(currentCssWidth - visibleWidth) > 2 ||
-      Math.abs(currentCssHeight - visibleHeight) > 2
-    )
-
     drawingRef.current = true;
-    canvas.setPointerCapture?.(event.pointerId);
+
+    if (event.pointerId !== undefined) {
+      canvas.setPointerCapture?.(event.pointerId);
+    }
 
     const pt = getPoint(event, canvas);
     lastPointRef.current = pt;
@@ -419,13 +402,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
     if (!drawingRef.current || signed) return;
 
-    event.preventDefault?.();
+    event.preventDefault();
+    event.stopPropagation();
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
     const pt = getPoint(event, canvas);
+    const ctx = canvas.getContext("2d");
 
+    ctx.beginPath();
+    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
     ctx.lineTo(pt.x, pt.y);
     ctx.stroke();
 
@@ -434,29 +421,25 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
-
     if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
 
     const canvas = canvasRef.current;
     drawingRef.current = false;
-    canvas?.releasePointerCapture?.(event.pointerId);
+
+    if (event.pointerId !== undefined) {
+      canvas?.releasePointerCapture?.(event.pointerId);
+    }
 
     if (canvas) {
       setDataUrl(canvas.toDataURL("image/png"));
     }
   }
 
-  function clearCanvas(canvasRef, setterDrawn, setterData) {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    setupCanvas(canvas);
-    setterDrawn(false);
-    setterData("");
-  }
-
-
-  function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
+ /* function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -506,7 +489,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     }
   }
 
-
+*/
   function changeWaterAdded(amount) {
     setWaterAdded((v) => {
       const next = Number(v || 0) + amount;
@@ -1137,9 +1120,13 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 onPointerLeave={(e) =>
                   endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
                 }
+                onPointerCancel={(e) =>
+                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                }
                 style={{
                   width: "100%",
-                  height: 150,
+                  height: "180px",
+                  minHeight: "180px",
                   display: "block",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
@@ -1321,9 +1308,13 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 onPointerLeave={(e) =>
                   endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
                 }
+                onPointerCancel={(e) =>
+                  endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
+                }
                 style={{
                   width: "100%",
-                  height: 160,
+                  height: "180px",
+                  minHeight: "180px",
                   display: "block",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
