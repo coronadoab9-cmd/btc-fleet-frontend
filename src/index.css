@@ -588,8 +588,17 @@ select {
   }
 
   canvas {
-    max-width: 100%;
-    touch-action: none;
-  }
+  max-width: 100%;
+}
+
+canvas.signature-canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+  min-height: 180px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 }
 

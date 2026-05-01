@@ -1116,6 +1116,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               Customer Finger Signature
             </div>
               <canvas
+                className="signature-canvas"
                 ref={waterSignatureRef}
                 onPointerDown={(e) =>
                   startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
@@ -1299,6 +1300,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               Final Signature
             </div>
               <canvas
+                className="signature-canvas"
                 ref={finalSignatureRef}
                 onPointerDown={(e) =>
                   startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
