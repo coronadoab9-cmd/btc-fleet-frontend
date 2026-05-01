@@ -321,7 +321,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
   const cssWidth = Math.max(Math.round(rect.width), 300);
-  const cssHeight = Math.max(Math.round(rect.height), 180);
+  const cssHeight = Math.max(Math.round(rect.height), 260);
 
   canvas.width = cssWidth * ratio;
   canvas.height = cssHeight * ratio;
@@ -1158,8 +1158,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }
                 style={{
                   width: "100%",
-                  height: "180px",
-                  minHeight: "180px",
+                  height: "260px",
+                  minHeight: "260px",
                   display: "block",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
@@ -1346,8 +1346,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }
                 style={{
                   width: "100%",
-                  height: "180px",
-                  minHeight: "180px",
+                  height: "260px",
+                  minHeight: "260px",
                   display: "block",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
