@@ -8,9 +8,12 @@ const CENTRAL_TZ = "America/Chicago";
 function getPoint(event, canvas) {
   const rect = canvas.getBoundingClientRect();
 
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
   };
 }
 
@@ -288,17 +291,15 @@ export default function ETicketPage() {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const width = Math.max(Math.floor(rect.width), 300);
-    const height = Math.max(Math.floor(rect.height), 120);
+    const width = Math.floor(rect.width);
+    const height = Math.floor(rect.height);
 
-    canvas.width = width;
-    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, width, height);
-    ctx.lineWidth = 3;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = 4;
     ctx.strokeStyle = "#ffffff";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -335,7 +336,7 @@ export default function ETicketPage() {
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
     event.preventDefault?.();
-    
+
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
 
@@ -369,6 +370,8 @@ export default function ETicketPage() {
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
     if (!drawingRef.current) return;
+
+    event.preventDefault();
 
     const canvas = canvasRef.current;
     drawingRef.current = false;
@@ -979,11 +982,12 @@ export default function ETicketPage() {
               ref={waterSignatureRef}
               style={{
                 width: "100%",
-                height: 150,
+                height: 220,
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
-                overscrollBehavior: "contain",
+                userSelect: "none",
+                WebkitUserSelect: "none",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
@@ -1184,11 +1188,12 @@ export default function ETicketPage() {
               ref={finalSignatureRef}
               style={{
                 width: "100%",
-                height: 160,
+                height: 220,
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
-                overscrollBehavior: "contain",
+                userSelect: "none",
+                WebkitUserSelect: "none",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
