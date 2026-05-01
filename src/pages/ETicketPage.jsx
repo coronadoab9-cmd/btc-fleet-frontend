@@ -11,11 +11,16 @@ function getPoint(event, canvas) {
   const touch =
     event.touches?.[0] ||
     event.changedTouches?.[0] ||
+    event.nativeEvent?.touches?.[0] ||
+    event.nativeEvent?.changedTouches?.[0] ||
     event;
 
+  const pageX = touch.pageX ?? touch.clientX + window.scrollX;
+  const pageY = touch.pageY ?? touch.clientY + window.scrollY;
+
   return {
-    x: touch.clientX - rect.left,
-    y: touch.clientY - rect.top,
+    x: pageX - (rect.left + window.scrollX),
+    y: pageY - (rect.top + window.scrollY),
   };
 }
 
@@ -340,6 +345,7 @@ export default function ETicketPage() {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
+    event.preventDefault?.();
     const canvas = canvasRef.current;
     if (!canvas || signed) return;
 
@@ -987,6 +993,7 @@ export default function ETicketPage() {
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
+                overscrollBehavior: "contain",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
@@ -1191,6 +1198,7 @@ export default function ETicketPage() {
                 border: "1px solid var(--border)",
                 borderRadius: 14,
                 touchAction: "none",
+                overscrollBehavior: "contain",
                 marginTop: 10,
                 background: "#0b1a2b",
               }}
