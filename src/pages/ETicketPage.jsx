@@ -41,11 +41,10 @@ function drawPremiumStroke(canvas, from, to) {
   if (!canvas || !from || !to) return;
 
   const ctx = canvas.getContext("2d");
-  const midPoint = {
-    x: (from.x + to.x) / 2,
-    y: (from.y + to.y) / 2,
-  };
 
+  // Keep the signature smooth but solid.
+  // The previous curve version could leave gaps on phones when touch events came in slowly.
+  ctx.setLineDash([]);
   ctx.lineWidth = getStrokeWidth(from, to);
   ctx.strokeStyle = "#ffffff";
   ctx.lineCap = "round";
@@ -53,7 +52,7 @@ function drawPremiumStroke(canvas, from, to) {
 
   ctx.beginPath();
   ctx.moveTo(from.x, from.y);
-  ctx.quadraticCurveTo(from.x, from.y, midPoint.x, midPoint.y);
+  ctx.lineTo(to.x, to.y);
   ctx.stroke();
 }
 
