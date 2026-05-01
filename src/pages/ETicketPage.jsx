@@ -17,7 +17,54 @@ function getPoint(event, canvas) {
   return {
     x: point.clientX - rect.left,
     y: point.clientY - rect.top,
+    time: Date.now(),
   };
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getStrokeWidth(from, to) {
+  if (!from || !to) return 3;
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const elapsed = Math.max((to.time || Date.now()) - (from.time || Date.now()), 8);
+  const speed = distance / elapsed;
+
+  return clamp(4.2 - speed * 7.5, 1.7, 4.2);
+}
+
+function drawPremiumStroke(canvas, from, to) {
+  if (!canvas || !from || !to) return;
+
+  const ctx = canvas.getContext("2d");
+  const midPoint = {
+    x: (from.x + to.x) / 2,
+    y: (from.y + to.y) / 2,
+  };
+
+  ctx.lineWidth = getStrokeWidth(from, to);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.quadraticCurveTo(from.x, from.y, midPoint.x, midPoint.y);
+  ctx.stroke();
+}
+
+function drawSignatureDot(canvas, point) {
+  if (!canvas || !point) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, 1.7, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function formatGallons(value) {
@@ -339,10 +386,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, cssWidth, cssHeight);
 
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 3;
   ctx.strokeStyle = "#ffffff";
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.imageSmoothingEnabled = true;
 
   if (existingDataUrl) {
     const img = new Image();
@@ -403,6 +451,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     const ctx = canvas.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(pt.x, pt.y);
+    drawSignatureDot(canvas, pt);
   }
 
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
@@ -416,12 +465,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     if (!canvas) return;
 
     const pt = getPoint(event, canvas);
-    const ctx = canvas.getContext("2d");
 
-    ctx.beginPath();
-    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    ctx.lineTo(pt.x, pt.y);
-    ctx.stroke();
+    drawPremiumStroke(canvas, lastPointRef.current, pt);
 
     lastPointRef.current = pt;
     setDrawn(true);
@@ -471,10 +516,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     ctx.fillStyle = "#0b1a2b";
     ctx.fillRect(0, 0, cssWidth, cssHeight);
 
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = "#ffffff";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.imageSmoothingEnabled = true;
   }
 
   // Phone-only native touch listeners.
@@ -513,6 +559,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         return {
           x: point.clientX - rect.left,
           y: point.clientY - rect.top,
+          time: Date.now(),
         };
       }
 
@@ -528,6 +575,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         const ctx = canvas.getContext("2d");
         ctx.beginPath();
         ctx.moveTo(pt.x, pt.y);
+        drawSignatureDot(canvas, pt);
       }
 
       function move(e) {
@@ -537,12 +585,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         e.stopPropagation();
 
         const pt = getNativePoint(e);
-        const ctx = canvas.getContext("2d");
 
-        ctx.beginPath();
-        ctx.moveTo(cfg.lastPointRef.current.x, cfg.lastPointRef.current.y);
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
+        drawPremiumStroke(canvas, cfg.lastPointRef.current, pt);
 
         cfg.lastPointRef.current = pt;
         cfg.setDrawn(true);
