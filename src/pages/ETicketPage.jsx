@@ -15,9 +15,12 @@ function getPoint(event, canvas) {
     event.nativeEvent?.changedTouches?.[0] ||
     event;
 
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
   return {
-    x: point.clientX - rect.left,
-    y: point.clientY - rect.top,
+    x: (point.clientX - rect.left) * scaleX,
+    y: (point.clientY - rect.top) * scaleY,
   };
 }
 
@@ -400,9 +403,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     if (
       Math.abs(currentCssWidth - visibleWidth) > 2 ||
       Math.abs(currentCssHeight - visibleHeight) > 2
-    ) {
-      setupCanvas(canvas);
-    }
+    )
 
     drawingRef.current = true;
     canvas.setPointerCapture?.(event.pointerId);
