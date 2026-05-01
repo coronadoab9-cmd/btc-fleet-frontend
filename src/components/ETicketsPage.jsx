@@ -299,13 +299,38 @@ export default function ETicketsPage({ token }) {
                     Open eTicket
                   </button>
 
-                  <button
-                    style={styles.dangerButton}
-                    type="button"
-                    onClick={() => archiveEticket(ticket)}
+                  <select
+                    style={styles.input}
+                    disabled={reassigningTicketId === ticket.id}
+                    value=""
+                    onChange={(e) => reassignEticket(ticket, e.target.value)}
                   >
-                    Archive
-                  </button>
+                    <option value="">Reassign...</option>
+
+                    <optgroup label="Trucks">
+                      {reassignOptions.trucks
+                        .filter((truck) => truck.id !== ticket.truck_number)
+                        .map((truck) => (
+                          <option
+                            key={`mobile-truck-${ticket.id}-${truck.id}`}
+                            value={`${truck.type}|${truck.id}`}
+                          >
+                            {truck.label}
+                          </option>
+                        ))}
+                    </optgroup>
+
+                    <optgroup label="Admins">
+                      {reassignOptions.admins.map((admin) => (
+                        <option
+                          key={`mobile-admin-${ticket.id}-${admin.id}`}
+                          value={`${admin.type}|${admin.id}`}
+                        >
+                          {admin.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
                 </div>
               </div>
             ))}
