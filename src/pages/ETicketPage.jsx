@@ -254,10 +254,21 @@ export default function ETicketPage() {
   }, []);
 
   useEffect(() => {
-    if (step === 3 && !signed && !cameraStarted) {
-      startCamera();
+    if (signed) return;
+
+    if (step === 3) {
+      const id = setTimeout(() => {
+        startCamera();
+      }, 300);
+
+      return () => clearTimeout(id);
     }
-  }, [step, signed, cameraStarted]);
+
+    if (step !== 3) {
+      stopCamera();
+      setCameraStarted(false);
+    }
+  }, [step, signed]);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -745,9 +756,16 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
       let signerPhoto = await capturePhotoFromVideo();
 
-      if (!signerPhoto && !cameraStarted) {
+      if (!signerPhoto) {
+        stopCamera();
+        setCameraStarted(false);
+
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         await startCamera();
-        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+
         signerPhoto = await capturePhotoFromVideo();
       }
 
@@ -1370,7 +1388,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 <button
                   className="secondary-btn"
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    stopCamera();
+                    setCameraStarted(false);
+                    setStep(2);
+                  }}
                 >
                   Back
                 </button>
