@@ -233,6 +233,92 @@ export default function ETicketsPage({ token }) {
     }
   }
 
+  if (window.innerWidth <= 768) {
+    return (
+      <div className="admin-page">
+        {error ? <div style={styles.error}>{error}</div> : null}
+        {message ? <div style={styles.success}>{message}</div> : null}
+
+        <div style={styles.mobileHeader}>
+          <div style={styles.pageTitle}>eTickets</div>
+          <button style={styles.secondaryButton} onClick={loadTickets}>
+            Refresh
+          </button>
+        </div>
+
+        <div style={styles.mobileTabs}>
+          {[
+            ["pending", "Pending"],
+            ["assigned", "Assigned"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
+              onClick={() => {
+                setSelectedToken("");
+                setEticketTab(key);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="empty-state">Loading eTickets...</div>
+        ) : (
+          <div style={styles.mobileTicketList}>
+            {tickets.map((ticket) => (
+              <div key={ticket.token} style={styles.mobileTicketCard}>
+                <div style={styles.ticketCardTop}>
+                  <div style={styles.ticketNumber}>
+                    #{ticket.ticket_number || "-"}
+                  </div>
+                  <div style={styles.pendingPill}>PENDING</div>
+                </div>
+
+                <div style={styles.ticketMeta}>
+                  Customer: <strong>{ticket.customer_name || "-"}</strong>
+                </div>
+
+                <div style={styles.ticketMeta}>
+                  Truck: <strong>{ticket.truck_number || "-"}</strong>
+                </div>
+
+                <div style={styles.ticketMeta}>
+                  Reassigned To: <strong>{ticket.assigned_to_name || "-"}</strong>
+                </div>
+
+                <div style={styles.mobileButtonRow}>
+                  <button
+                    style={styles.primaryButton}
+                    type="button"
+                    onClick={() => window.open(buildEticketUrl(ticket.token), "_blank")}
+                  >
+                    Open eTicket
+                  </button>
+
+                  <button
+                    style={styles.dangerButton}
+                    type="button"
+                    onClick={() => archiveEticket(ticket)}
+                  >
+                    Archive
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {!tickets.length && (
+              <div className="empty-state">No eTickets found.</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       {error ? <div style={styles.error}>{error}</div> : null}
@@ -526,6 +612,40 @@ const styles = {
     gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "1fr 1fr",
     gap: 14,
     marginBottom: 14,
+  },
+  mobileHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+
+  mobileTabs: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+    marginBottom: 16,
+  },
+
+  mobileTicketList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  },
+
+  mobileTicketCard: {
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    borderRadius: 18,
+    padding: 18,
+  },
+
+  mobileButtonRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+    marginTop: 14,
   },
   infoCard: { background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 16, padding: 18 },
   infoWide: { background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 16, padding: 18, marginBottom: 14 },
