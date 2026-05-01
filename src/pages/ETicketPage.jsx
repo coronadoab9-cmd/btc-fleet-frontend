@@ -438,6 +438,37 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     }
   }
 
+  function clearCanvas(canvasRef, setterDrawn, setterData) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    setterData("");
+    setterDrawn(false);
+
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+    const cssWidth = Math.max(Math.round(rect.width), 300);
+    const cssHeight = Math.max(Math.round(rect.height), 180);
+
+    canvas.width = cssWidth * ratio;
+    canvas.height = cssHeight * ratio;
+
+    canvas.style.width = "100%";
+    canvas.style.height = `${cssHeight}px`;
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    ctx.fillStyle = "#0b1a2b";
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }
+
 
  /* function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
     event.preventDefault();
