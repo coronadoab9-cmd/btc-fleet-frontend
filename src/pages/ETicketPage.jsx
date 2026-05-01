@@ -383,6 +383,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
+    if (isPhone && event.pointerType === "touch") return;
+
     event.preventDefault();
     event.stopPropagation();
 
@@ -404,6 +406,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }
 
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
+    if (isPhone && event.pointerType === "touch") return;
     if (!drawingRef.current || signed) return;
 
     event.preventDefault();
@@ -425,6 +428,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
+    if (isPhone && event.pointerType === "touch") return;
     if (!drawingRef.current) return;
 
     event.preventDefault();
@@ -473,58 +477,108 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     ctx.lineJoin = "round";
   }
 
+  // Phone-only native touch listeners.
+  // Tablet and desktop keep the regular pointer handlers that already work.
+  useEffect(() => {
+    if (signed || !isPhone) return;
 
- /* function startTouchSignature(event, canvasRef, drawingRef, lastPointRef) {
-    event.preventDefault();
-    event.stopPropagation();
+    const configs = [
+      {
+        canvas: waterSignatureRef.current,
+        drawingRef: drawingWaterRef,
+        lastPointRef: lastWaterPointRef,
+        setDrawn: setWaterSignatureDrawn,
+        setDataUrl: setWaterSignatureDataUrl,
+      },
+      {
+        canvas: finalSignatureRef.current,
+        drawingRef: drawingFinalRef,
+        lastPointRef: lastFinalPointRef,
+        setDrawn: setFinalSignatureDrawn,
+        setDataUrl: setFinalSignatureDataUrl,
+      },
+    ];
 
-    const canvas = canvasRef.current;
-    if (!canvas || signed) return;
+    const cleanups = [];
 
-    drawingRef.current = true;
+    configs.forEach((cfg) => {
+      const canvas = cfg.canvas;
+      if (!canvas) return;
 
-    const pt = getTouchPoint(event, canvas);
-    lastPointRef.current = pt;
+      function getNativePoint(e) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches?.[0] || e.changedTouches?.[0];
+        const point = touch || e;
 
-    const ctx = canvas.getContext("2d");
-    ctx.beginPath();
-    ctx.moveTo(pt.x, pt.y);
-  }
+        return {
+          x: point.clientX - rect.left,
+          y: point.clientY - rect.top,
+        };
+      }
 
-  function moveTouchSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
-    if (!drawingRef.current || signed) return;
+      function start(e) {
+        e.preventDefault();
+        e.stopPropagation();
 
-    event.preventDefault();
-    event.stopPropagation();
+        cfg.drawingRef.current = true;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+        const pt = getNativePoint(e);
+        cfg.lastPointRef.current = pt;
 
-    const ctx = canvas.getContext("2d");
-    const pt = getTouchPoint(event, canvas);
+        const ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
+      }
 
-    ctx.lineTo(pt.x, pt.y);
-    ctx.stroke();
+      function move(e) {
+        if (!cfg.drawingRef.current) return;
 
-    lastPointRef.current = pt;
-    setDrawn(true);
-  }
+        e.preventDefault();
+        e.stopPropagation();
 
-  function endTouchSignature(event, canvasRef, drawingRef, setDataUrl) {
-    if (!drawingRef.current) return;
+        const pt = getNativePoint(e);
+        const ctx = canvas.getContext("2d");
 
-    event.preventDefault();
-    event.stopPropagation();
+        ctx.beginPath();
+        ctx.moveTo(cfg.lastPointRef.current.x, cfg.lastPointRef.current.y);
+        ctx.lineTo(pt.x, pt.y);
+        ctx.stroke();
 
-    const canvas = canvasRef.current;
-    drawingRef.current = false;
+        cfg.lastPointRef.current = pt;
+        cfg.setDrawn(true);
+      }
 
-    if (canvas) {
-      setDataUrl(canvas.toDataURL("image/png"));
-    }
-  }
+      function end(e) {
+        if (!cfg.drawingRef.current) return;
 
-*/
+        e.preventDefault();
+        e.stopPropagation();
+
+        cfg.drawingRef.current = false;
+        cfg.setDataUrl(canvas.toDataURL("image/png"));
+      }
+
+      canvas.addEventListener("touchstart", start, { passive: false });
+      canvas.addEventListener("touchmove", move, { passive: false });
+      canvas.addEventListener("touchend", end, { passive: false });
+      canvas.addEventListener("touchcancel", end, { passive: false });
+
+      cleanups.push(() => {
+        canvas.removeEventListener("touchstart", start);
+        canvas.removeEventListener("touchmove", move);
+        canvas.removeEventListener("touchend", end);
+        canvas.removeEventListener("touchcancel", end);
+      });
+    });
+
+    return () => {
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [step, signed, isPhone]);
+
+
+
+
   function changeWaterAdded(amount) {
     setWaterAdded((v) => {
       const next = Number(v || 0) + amount;
@@ -1161,21 +1215,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
                 }
 
-                onTouchStart={(e) =>
-                  startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
-                }
-                onTouchMove={(e) =>
-                  moveSignature(
-                    e,
-                    waterSignatureRef,
-                    drawingWaterRef,
-                    lastWaterPointRef,
-                    setWaterSignatureDrawn
-                  )
-                }
-                onTouchEnd={(e) =>
-                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-                }
                 style={{
                   width: "100%",
                   height: "180px",
@@ -1365,21 +1404,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
                 }
 
-                onTouchStart={(e) =>
-                  startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
-                }
-                onTouchMove={(e) =>
-                  moveSignature(
-                    e,
-                    finalSignatureRef,
-                    drawingFinalRef,
-                    lastFinalPointRef,
-                    setFinalSignatureDrawn
-                  )
-                }
-                onTouchEnd={(e) =>
-                  endSignature(e, finalSignatureRef, drawingFinalRef, setFinalSignatureDataUrl)
-                }
                 style={{
                   width: "100%",
                   height: "180px",
