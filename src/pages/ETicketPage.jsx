@@ -906,23 +906,6 @@ export default function ETicketPage() {
               <SummaryRow label="Order Total" value={`${ticket.quantity || 0} CYs`} />
             </div>
 
-            {error ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  background: "rgba(127,29,29,0.9)",
-                  border: "1px solid rgba(239,68,68,0.5)",
-                  color: "#fecaca",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
-                {error}
-              </div>
-            ) : null}
-
             <button 
               className="primary-btn"
               type="button"
@@ -1148,6 +1131,21 @@ export default function ETicketPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+
+              {error ? (
+                <div
+                  style={{
+                    color: "#fecaca",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    marginBottom: 10,
+                    textAlign: "left",
+                  }}
+                >
+                  {error}
+                </div>
+              ) : null}
+
               <button
                 className="secondary-btn"
                 type="button"
@@ -1355,14 +1353,11 @@ export default function ETicketPage() {
               {error ? (
                 <div
                   style={{
-                    marginTop: 12,
-                    background: "rgba(127,29,29,0.9)",
-                    border: "1px solid rgba(239,68,68,0.5)",
                     color: "#fecaca",
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    fontWeight: 800,
-                    textAlign: "center",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    marginBottom: 10,
+                    textAlign: "left",
                   }}
                 >
                   {error}
