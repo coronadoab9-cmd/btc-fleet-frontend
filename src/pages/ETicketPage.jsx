@@ -15,12 +15,9 @@ function getPoint(event, canvas) {
     event.nativeEvent?.changedTouches?.[0] ||
     event;
 
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-
   return {
-    x: (point.clientX - rect.left) * scaleX,
-    y: (point.clientY - rect.top) * scaleY,
+    x: point.clientX - rect.left,
+    y: point.clientY - rect.top,
   };
 }
 
@@ -328,11 +325,14 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   const rect = canvas.getBoundingClientRect();
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-  const cssWidth = Math.max(Math.floor(rect.width), 300);
-  const cssHeight = Math.max(Math.floor(rect.height), 150);
+  const cssWidth = Math.max(Math.round(rect.width), 300);
+  const cssHeight = Math.max(Math.round(rect.height), 180);
 
   canvas.width = cssWidth * ratio;
   canvas.height = cssHeight * ratio;
+
+  canvas.style.width = "100%";
+  canvas.style.height = `${cssHeight}px`;
 
   const ctx = canvas.getContext("2d");
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
