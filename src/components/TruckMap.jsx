@@ -325,8 +325,15 @@ export default function TruckMap() {
     setEticketCustomer(draft.customer || selectedJob?.customer_name || "");
     setEticketPlant(draft.plant || selectedJob?.plant || "BTS-01A - CX");
     const productText = draft.product || selectedJob?.product || "";
+    const parts = productText.split(" ");
 
-    setEticketMixNumber(draft.mixNumber || productText.split(" ").slice(0, 2).join(" "));
+    setEticketMixNumber(parts[0] || "");
+    setEticketMixDescription(parts.slice(1).join(" "));
+
+    const parts = productText.split(" ");
+
+    setEticketMixNumber(draft.mixNumber || parts[0] || "");
+    setEticketMixDescription(draft.mixDescription || parts.slice(1).join(" "));
     setEticketMixDescription(draft.mixDescription || productText.split(" ").slice(2).join(" "));
     setEticketQuantity(
       draft.quantity ||
