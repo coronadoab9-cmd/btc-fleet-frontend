@@ -516,6 +516,17 @@ export default function ETicketsPage({ token }) {
                   <Info label="Water Choice" value={selectedTicket.water_choice} />
                   <Info label="Water Added" value={selectedTicket.water_added} />
                   <Info label="Acceptance" value={selectedTicket.ticket_acceptance} />
+                  <Info
+                    label="Rejection Reason"
+                    value={
+                      String(selectedTicket.ticket_acceptance || "").includes("Reason:")
+                        ? String(selectedTicket.ticket_acceptance)
+                            .split("Reason:")[1]
+                            .split("|")[0]
+                            .trim()
+                        : "-"
+                    }
+                  />
                   <Info label="Load Time" value={formatDateTime(selectedTicket.load_time)} />
                   <Info label="Assigned To" value={selectedTicket.assigned_to_name} />
                   <Info label="Assigned At" value={formatDateTime(selectedTicket.assigned_at)} />
