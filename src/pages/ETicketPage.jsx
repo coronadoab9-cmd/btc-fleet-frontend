@@ -960,7 +960,30 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <SummaryRow label="Ticket #" value={ticket.ticket_number} />
             <SummaryRow label="Customer" value={ticket.customer_name} />
             <SummaryRow label="Truck" value={ticket.truck_number} />
-            <SummaryRow label="Signed By" value={ticket.signed_name} />
+            <SummaryRow
+              label="Signed By"
+              value={
+                String(ticket.ticket_acceptance || "").includes("Driver signed")
+                  ? "Driver signed - no one available"
+                  : "Customer / Contractor Signature"
+              }
+            />
+
+            <SummaryRow
+              label="Acceptance"
+              value={
+                String(ticket.ticket_acceptance || "").includes("Reason:")
+                  ? `Rejected - ${
+                      String(ticket.ticket_acceptance)
+                        .split("Reason:")[1]
+                        .split("|")[0]
+                        .trim()
+                    }`
+                  : String(ticket.ticket_acceptance || "").includes("Rejected")
+                  ? "Rejected"
+                  : "Accepted"
+              }
+            />
             <SummaryRow
               label="Signed At (CDT)"
               value={formatCentralDateTime(ticket.signed_at)}
