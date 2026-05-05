@@ -487,7 +487,8 @@ export default function ETicketsPage({ token }) {
                   <Info label="Address" value={selectedTicket.address} />
                   <Info label="Plant" value={selectedTicket.plant} />
                   <Info label="Truck" value={selectedTicket.truck_number} />
-                  <Info label="Product" value={selectedTicket.product} />
+                  <Info label="Mix #" value={selectedTicket.mix_number || selectedTicket.product || "-"} />
+                  <Info label="Description" value={selectedTicket.mix_description || "-"} />
                   <Info label="Quantity" value={selectedTicket.quantity} />
                   <Info label="Signed By" value={selectedTicket.signed_name} />
                   <Info label="Signed At" value={formatDateTime(selectedTicket.signed_at)} />
