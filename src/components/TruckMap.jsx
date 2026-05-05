@@ -465,7 +465,9 @@ export default function TruckMap() {
       address: selectedJob?.address || address || "Job Address",
       plant: eticketPlant.trim() || "BTS-01A - CX",
       truck_number: selectedTruck.truck_number,
-      product: eticketProduct.trim(),
+      product: `${eticketMixNumber} ${eticketMixDescription}`.trim(),
+      mix_number: eticketMixNumber.trim(),
+      mix_description: eticketMixDescription.trim(),
       quantity: eticketQuantity === "" ? 0 : Number(eticketQuantity),
     };
 
@@ -645,11 +647,18 @@ export default function TruckMap() {
                 <label>Truck</label>
                 <input value={selectedTruck.truck_number} readOnly />
 
-                <label>Product / Mix</label>
+                <label>Mix #</label>
                 <input
-                  value={eticketProduct}
-                  onChange={(e) => setEticketProduct(e.target.value)}
-                  placeholder="Ex: 3600 PSI 5.5SK SLAG AIR"
+                  value={eticketMixNumber}
+                  onChange={(e) => setEticketMixNumber(e.target.value)}
+                  placeholder="3500 PSI"
+                />
+
+                <label>Description</label>
+                <input
+                  value={eticketMixDescription}
+                  onChange={(e) => setEticketMixDescription(e.target.value)}
+                  placeholder="4SK NO AIR"
                 />
 
                 <label>Quantity</label>
