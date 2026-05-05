@@ -235,6 +235,7 @@ export default function ETicketPage() {
   const [waterAllowed] = useState(25);
   const [waterAdded, setWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [confirmWater, setConfirmWater] = useState(false);
   const [locationData, setLocationData] = useState({
     latitude: null,
@@ -858,6 +859,9 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
       if (!confirmWater) {
         throw new Error("Please confirm the water amount");
       }
+      if (ticketAcceptance === "Rejected Delivery" && !rejectionReason) {
+        throw new Error("Please select a rejection reason.");
+      }
 
       let finalLocation = locationData;
 
@@ -901,7 +905,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           longitude: finalLocation.longitude,
           water_choice: `${curbLineSignature} | ${formatGallons(waterAllowed)} allowed`,
           water_added: Number(waterAdded).toFixed(2),
-          ticket_acceptance: `${ticketAcceptance} | ${curbLineSignature}`,
+          ticket_acceptance:
+            ticketAcceptance === "Rejected Delivery"
+              ? `${ticketAcceptance} | Reason: ${rejectionReason} | ${curbLineSignature}`
+              : `${ticketAcceptance} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
           curb_line_signature_data_url: waterSignatureDataUrl,
           curb_line_signed_at: curbLineSignedAt || new Date().toISOString(),
@@ -1416,11 +1423,36 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <label>Ticket Acceptance</label>
             <select
               value={ticketAcceptance}
-              onChange={(e) => setTicketAcceptance(e.target.value)}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setTicketAcceptance(nextValue);
+
+                if (nextValue !== "Rejected Delivery") {
+                  setRejectionReason("");
+                }
+              }}
             >
               <option>Accepted Delivery</option>
               <option>Rejected Delivery</option>
             </select>
+
+            {ticketAcceptance === "Rejected Delivery" ? (
+              <>
+                <label>Rejection Reason</label>
+                <select
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                >
+                  <option value="">Select reason</option>
+                  <option value="Slump">Slump</option>
+                  <option value="Air">Air</option>
+                  <option value="Mechanical">Mechanical</option>
+                  <option value="Dispatch">Dispatch</option>
+                  <option value="Batch">Batch</option>
+                  <option value="Other">Other</option>
+                </select>
+              </>
+            ) : null}
 
             <div
               style={{
