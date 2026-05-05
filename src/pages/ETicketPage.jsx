@@ -99,7 +99,7 @@ function parseMixDetails(product = "") {
   return {
     strength: strengthMatch ? `${strengthMatch[1]} PSI in 28 Days` : "-",
     slump: "4.5 in ± 1.5 in",
-    airContent: hasAir ? "4.5% ± 1.5%" : "0.0% ± 1.5%",
+    airContent: hasAir ? "4.5% ± 1.5%" : "1.5% ± 1.5%",
     description: `${sackMatch ? sackMatch[1] : "-"} SK | ${
       hasSlag ? "Slag" : hasAsh ? "Ash" : "Standard"
     } | ${hasAir ? "Air" : "No Air"}`,
