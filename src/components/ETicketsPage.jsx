@@ -487,8 +487,27 @@ export default function ETicketsPage({ token }) {
                   <Info label="Address" value={selectedTicket.address} />
                   <Info label="Plant" value={selectedTicket.plant} />
                   <Info label="Truck" value={selectedTicket.truck_number} />
-                  <Info label="Mix #" value={selectedTicket.mix_number || selectedTicket.product || "-"} />
-                  <Info label="Description" value={selectedTicket.mix_description || "-"} />
+                  <Info
+                    label="Mix #"
+                    value={
+                      selectedTicket.mix_description
+                        ? selectedTicket.mix_number
+                        : String(selectedTicket.product || "").trim().split(/\s+/)[0] || "-"
+                    }
+                  />
+
+                  <Info
+                    label="Description"
+                    value={
+                      selectedTicket.mix_description ||
+                      String(selectedTicket.product || "")
+                        .trim()
+                        .split(/\s+/)
+                        .slice(1)
+                        .join(" ") ||
+                      "-"
+                    }
+                  />
                   <Info label="Quantity" value={selectedTicket.quantity} />
                   <Info label="Signed By" value={selectedTicket.signed_name} />
                   <Info label="Signed At" value={formatDateTime(selectedTicket.signed_at)} />
