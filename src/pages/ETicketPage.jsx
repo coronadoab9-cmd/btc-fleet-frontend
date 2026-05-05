@@ -125,6 +125,7 @@ function InfoNotice({ children }) {
         padding: 14,
         color: "#d7e7f7",
         lineHeight: 1.5,
+        marginTop: 10, // 👈 ADD THIS
       }}
     >
       {children}
@@ -1132,7 +1133,9 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             </select>
 
             <InfoNotice>
-              We are not responsible for any property damage.
+              <div style={{ marginTop: 8 }}>
+                We are not responsible for any property damage.
+              </div>
             </InfoNotice>
 
             <div
