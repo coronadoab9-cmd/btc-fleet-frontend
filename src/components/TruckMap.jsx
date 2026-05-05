@@ -137,6 +137,8 @@ export default function TruckMap() {
 
   const [eticketCustomer, setEticketCustomer] = useState("");
   const [eticketPlant, setEticketPlant] = useState("BTS-01A - CX");
+  const [eticketMixNumber, setEticketMixNumber] = useState("");
+  const [eticketMixDescription, setEticketMixDescription] = useState("");
   const [eticketQuantity, setEticketQuantity] = useState("");
   const [eticketTicketNumber, setEticketTicketNumber] = useState("");
   const [creatingETicket, setCreatingETicket] = useState(false);
@@ -363,7 +365,7 @@ export default function TruckMap() {
         customer_email: customerEmail,
         address,
         plant,
-        product,
+        product: `${mixNumber} ${mixDescription}`.trim(),
         ordered_qty: orderedQty === "" ? 0 : Number(orderedQty),
       }),
     });
