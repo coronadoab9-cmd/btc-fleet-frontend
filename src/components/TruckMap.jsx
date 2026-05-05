@@ -321,20 +321,18 @@ export default function TruckMap() {
       selectedJob?.job_number || jobNumber || ""
     );
 
+    const productText = draft.product || selectedJob?.product || "";
+    const parts = productText.trim().split(/\s+/);
+
     setEticketTicketNumber(draft.ticketNumber || autoTicketNumber);
     setEticketCustomer(draft.customer || selectedJob?.customer_name || "");
     setEticketPlant(draft.plant || selectedJob?.plant || "BTS-01A - CX");
-    const productText = draft.product || selectedJob?.product || "";
-    const parts = productText.split(" ");
-
-    setEticketMixNumber(parts[0] || "");
-    setEticketMixDescription(parts.slice(1).join(" "));
-
-    const parts = productText.split(" ");
 
     setEticketMixNumber(draft.mixNumber || parts[0] || "");
-    setEticketMixDescription(draft.mixDescription || parts.slice(1).join(" "));
-    setEticketMixDescription(draft.mixDescription || productText.split(" ").slice(2).join(" "));
+    setEticketMixDescription(
+      draft.mixDescription || parts.slice(1).join(" ") || ""
+    );
+
     setEticketQuantity(
       draft.quantity ||
         (selectedJob?.ordered_qty !== null &&
