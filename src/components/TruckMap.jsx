@@ -294,7 +294,9 @@ export default function TruckMap() {
       [selectedTruckNumber]: {
         customer: eticketCustomer,
         plant: eticketPlant,
-        product: eticketProduct,
+        mixNumber: eticketMixNumber,
+        mixDescription: eticketMixDescription,
+        product: `${eticketMixNumber} ${eticketMixDescription}`.trim(),
         quantity: eticketQuantity,
         ticketNumber: eticketTicketNumber,
       },
@@ -303,7 +305,8 @@ export default function TruckMap() {
     selectedTruckNumber,
     eticketCustomer,
     eticketPlant,
-    eticketProduct,
+    eticketMixNumber,
+    eticketMixDescription,
     eticketQuantity,
     eticketTicketNumber,
   ]);
@@ -320,7 +323,10 @@ export default function TruckMap() {
     setEticketTicketNumber(draft.ticketNumber || autoTicketNumber);
     setEticketCustomer(draft.customer || selectedJob?.customer_name || "");
     setEticketPlant(draft.plant || selectedJob?.plant || "BTS-01A - CX");
-    setEticketProduct(draft.product || selectedJob?.product || "");
+    const productText = draft.product || selectedJob?.product || "";
+
+    setEticketMixNumber(draft.mixNumber || productText.split(" ").slice(0, 2).join(" "));
+    setEticketMixDescription(draft.mixDescription || productText.split(" ").slice(2).join(" "));
     setEticketQuantity(
       draft.quantity ||
         (selectedJob?.ordered_qty !== null &&
@@ -450,8 +456,13 @@ export default function TruckMap() {
       return;
     }
 
-    if (!eticketProduct.trim()) {
-      setMessage("Enter product/mix for the eTicket.");
+    if (!eticketMixNumber.trim()) {
+      setMessage("Enter Mix # for the eTicket.");
+      return;
+    }
+
+    if (!eticketMixDescription.trim()) {
+      setMessage("Enter Description for the eTicket.");
       return;
     }
 
