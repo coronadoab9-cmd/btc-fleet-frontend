@@ -1066,8 +1066,27 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <SummaryRow label="Job Name" value={ticket.customer_name} />
               <SummaryRow label="Address" value={ticket.address} />
               <SummaryRow label="Truck" value={ticket.truck_number} />
-              <SummaryRow label="Mix #" value={ticket.mix_number || ticket.product} />
-              <SummaryRow label="Description" value={ticket.mix_description || mix.description} />
+              <SummaryRow
+                label="Mix #"
+                value={
+                  ticket?.mix_number ||
+                  String(ticket?.product || "").trim().split(/\s+/)[0] ||
+                  "-"
+                }
+              />
+
+              <SummaryRow
+                label="Description"
+                value={
+                  ticket?.mix_description ||
+                  String(ticket?.product || "")
+                    .trim()
+                    .split(/\s+/)
+                    .slice(1)
+                    .join(" ") ||
+                  "-"
+                }
+              />
               <SummaryRow label="Strength" value={mix.strength} />
               <SummaryRow label="Slump" value={mix.slump} />
               <SummaryRow label="Air" value={mix.airContent} />
