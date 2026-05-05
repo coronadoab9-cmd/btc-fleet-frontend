@@ -67,7 +67,9 @@ function drawSignatureDot(canvas, point) {
 }
 
 function formatGallons(value) {
-  return `${Number(value || 0).toFixed(2)} gal`;
+  const num = Number(value);
+  if (isNaN(num)) return "-";
+  return `${num.toFixed(1)} gal`;
 }
 
 function formatCentralDateTime(value) {

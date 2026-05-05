@@ -10,6 +10,12 @@ function formatDateTime(value) {
   }
 }
 
+function formatGallons(val) {
+  const num = Number(val);
+  if (isNaN(num)) return "-";
+  return `${num.toFixed(1)} gal`;
+}
+
 function downloadCsv(filename, rows) {
   const csv = rows
     .map((row) =>
@@ -528,8 +534,10 @@ export default function ETicketsPage({ token }) {
                   <Info
                     label="Water Allowed"
                     value={
-                      String(selectedTicket.water_choice || "").match(/(\d+(?:\.\d+)?)\s*gal/i)
-                        ? `${String(selectedTicket.water_choice || "").match(/(\d+(?:\.\d+)?)\s*gal/i)[1]} gal`
+                      String(selectedTicket.water_choice || "").match(/(\d+(?:\.\d+)?)/)
+                        ? formatGallons(
+                            String(selectedTicket.water_choice).match(/(\d+(?:\.\d+)?)/)[1]
+                          )
                         : "-"
                     }
                   />
@@ -540,7 +548,7 @@ export default function ETicketsPage({ token }) {
                       selectedTicket.water_added !== null &&
                       selectedTicket.water_added !== undefined &&
                       selectedTicket.water_added !== ""
-                        ? `${selectedTicket.water_added} gal`
+                        ? formatGallons(selectedTicket.water_added)
                         : "-"
                     }
                   />
