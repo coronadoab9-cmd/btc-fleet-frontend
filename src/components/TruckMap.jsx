@@ -119,6 +119,8 @@ export default function TruckMap() {
   const [address, setAddress] = useState("");
   const [plant, setPlant] = useState("BTS-01A - CX");
   const [product, setProduct] = useState("");
+  const [mixNumber, setMixNumber] = useState("");
+  const [mixDescription, setMixDescription] = useState("");
   const [orderedQty, setOrderedQty] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -546,11 +548,18 @@ export default function TruckMap() {
                 ))}
               </select>
 
-              <label>Product / Mix</label>
+              <label>Mix #</label>
               <input
-                value={product}
-                onChange={(e) => setProduct(e.target.value)}
-                placeholder="Ex: 3600 PSI 5.5SK SLAG AIR"
+                value={mixNumber}
+                onChange={(e) => setMixNumber(e.target.value)}
+                placeholder="3500 PSI"
+              />
+
+              <label>Description</label>
+              <input
+                value={mixDescription}
+                onChange={(e) => setMixDescription(e.target.value)}
+                placeholder="4SK NO AIR"
               />
 
               <label>Ordered Qty</label>
