@@ -487,6 +487,7 @@ export default function ETicketsPage({ token }) {
                   <Info label="Address" value={selectedTicket.address} />
                   <Info label="Plant" value={selectedTicket.plant} />
                   <Info label="Truck" value={selectedTicket.truck_number} />
+
                   <Info
                     label="Mix #"
                     value={
@@ -508,25 +509,58 @@ export default function ETicketsPage({ token }) {
                       "-"
                     }
                   />
+
                   <Info label="Quantity" value={selectedTicket.quantity} />
-                  <Info label="Signed By" value={selectedTicket.signed_name} />
+
+                  <Info
+                    label="Signed By"
+                    value={
+                      String(selectedTicket.ticket_acceptance || "").includes("Driver signed")
+                        ? "Driver signed - no one available"
+                        : "Customer / Contractor Signature"
+                    }
+                  />
+
                   <Info label="Signed At" value={formatDateTime(selectedTicket.signed_at)} />
                   <Info label="Latitude" value={selectedTicket.signed_latitude} />
                   <Info label="Longitude" value={selectedTicket.signed_longitude} />
-                  <Info label="Water Choice" value={selectedTicket.water_choice} />
-                  <Info label="Water Added" value={selectedTicket.water_added} />
-                  <Info label="Acceptance" value={selectedTicket.ticket_acceptance} />
+
                   <Info
-                    label="Rejection Reason"
+                    label="Water Allowed"
                     value={
-                      String(selectedTicket.ticket_acceptance || "").includes("Reason:")
-                        ? String(selectedTicket.ticket_acceptance)
-                            .split("Reason:")[1]
-                            .split("|")[0]
-                            .trim()
+                      String(selectedTicket.water_choice || "").match(/(\d+(?:\.\d+)?)\s*gal/i)
+                        ? `${String(selectedTicket.water_choice || "").match(/(\d+(?:\.\d+)?)\s*gal/i)[1]} gal`
                         : "-"
                     }
                   />
+
+                  <Info
+                    label="Water Added"
+                    value={
+                      selectedTicket.water_added !== null &&
+                      selectedTicket.water_added !== undefined &&
+                      selectedTicket.water_added !== ""
+                        ? `${selectedTicket.water_added} gal`
+                        : "-"
+                    }
+                  />
+
+                  <Info
+                    label="Acceptance"
+                    value={
+                      String(selectedTicket.ticket_acceptance || "").includes("Reason:")
+                        ? `Rejected - ${
+                            String(selectedTicket.ticket_acceptance)
+                              .split("Reason:")[1]
+                              .split("|")[0]
+                              .trim()
+                          }`
+                        : String(selectedTicket.ticket_acceptance || "").includes("Rejected")
+                        ? "Rejected"
+                        : "Accepted"
+                    }
+                  />
+
                   <Info label="Load Time" value={formatDateTime(selectedTicket.load_time)} />
                   <Info label="Assigned To" value={selectedTicket.assigned_to_name} />
                   <Info label="Assigned At" value={formatDateTime(selectedTicket.assigned_at)} />
