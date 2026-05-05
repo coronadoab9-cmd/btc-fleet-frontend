@@ -137,7 +137,6 @@ export default function TruckMap() {
 
   const [eticketCustomer, setEticketCustomer] = useState("");
   const [eticketPlant, setEticketPlant] = useState("BTS-01A - CX");
-  const [eticketProduct, setEticketProduct] = useState("");
   const [eticketQuantity, setEticketQuantity] = useState("");
   const [eticketTicketNumber, setEticketTicketNumber] = useState("");
   const [creatingETicket, setCreatingETicket] = useState(false);
