@@ -239,6 +239,38 @@ export default function ETicketsPage({ token }) {
     }
   }
 
+  async function deleteEticketForever(ticket) {
+    setError("");
+    setMessage("");
+
+    const confirmedFirst = window.confirm(
+      `Permanently delete eTicket #${ticket.ticket_number || ticket.id}? This cannot be undone.`
+    );
+
+    if (!confirmedFirst) return;
+
+    const confirmedSecond = window.confirm(
+      "Are you absolutely sure? This will permanently remove the archived eTicket and its PDF."
+    );
+
+    if (!confirmedSecond) return;
+
+    try {
+      await apiFetch(`/admin/etickets/${ticket.id}/delete`, {
+        method: "DELETE",
+        headers: {
+          "X-Admin-Token": token,
+        },
+      });
+
+      setMessage(`Ticket ${ticket.ticket_number || ticket.id} permanently deleted`);
+      setSelectedToken("");
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Could not permanently delete eTicket");
+    }
+  }
+
   if (window.innerWidth <= 768) {
     return (
       <div className="admin-page">
@@ -589,13 +621,23 @@ export default function ETicketsPage({ token }) {
                     </button>
                   ) : null}
                   {eticketTab === "archived" ? (
-                    <button
-                      style={styles.secondaryButton}
-                      type="button"
-                      onClick={() => restoreEticket(selectedTicket)}
-                    >
-                      Restore
-                    </button>
+                    <>
+                      <button
+                        style={styles.secondaryButton}
+                        type="button"
+                        onClick={() => restoreEticket(selectedTicket)}
+                      >
+                        Restore
+                      </button>
+
+                      <button
+                        style={styles.dangerButton}
+                        type="button"
+                        onClick={() => deleteEticketForever(selectedTicket)}
+                      >
+                        Delete Forever
+                      </button>
+                    </>
                   ) : (
                     <button
                       style={styles.dangerButton}
