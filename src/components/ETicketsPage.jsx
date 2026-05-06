@@ -635,7 +635,7 @@ export default function ETicketsPage({ token }) {
                         type="button"
                         onClick={() => deleteEticketForever(selectedTicket)}
                       >
-                        Delete Forever
+                        Delete
                       </button>
                     </>
                   ) : (
