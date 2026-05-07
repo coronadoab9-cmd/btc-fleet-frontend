@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, buildEticketPdfUrl } from "../lib/api";
 
-const API_QR_BATCH = "https://btcfleet.app/qr/batch-weights";
 const API_QR_TERMS = "https://btcfleet.app/qr/terms";
 const CENTRAL_TZ = "America/Chicago";
 
@@ -144,7 +143,7 @@ function QrCard({ title, url }) {
         background: "var(--panel-2)",
         border: "1px solid var(--border)",
         borderRadius: 14,
-        padding: 16,
+        padding: 12,
         display: "grid",
         justifyItems: "center",
         textAlign: "center",
@@ -155,7 +154,7 @@ function QrCard({ title, url }) {
           fontWeight: 800,
           color: "#fff",
           marginBottom: 12,
-          fontSize: 18,
+          fontSize: 16,
         }}
       >
         {title}
@@ -164,8 +163,8 @@ function QrCard({ title, url }) {
       <div
         style={{
           background: "#fff",
-          width: 150,
-          height: 150,
+          width: 115,
+          height: 115,
           borderRadius: 12,
           display: "grid",
           placeItems: "center",
@@ -915,7 +914,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           curb_line_signature_data_url: waterSignatureDataUrl,
           curb_line_signed_at: curbLineSignedAt || new Date().toISOString(),
           photo_data_url: signerPhoto,
-          batch_weights_qr_url: API_QR_BATCH,
           terms_qr_url: API_QR_TERMS,
           load_time: ticket?.load_time,
           time_limit_minutes: remainingMinutes,
@@ -1391,59 +1389,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
         {step === 3 && (
           <>
-            <div
-              style={{
-                background: "var(--panel-2)",
-                border: "1px solid var(--border)",
-                borderRadius: 16,
-                padding: 18,
-                marginBottom: 16,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  color: "#fff",
-                  fontWeight: 800,
-                  fontSize: 18,
-                  marginBottom: 8,
-                }}
-              >
-                Confirm Water
-              </div>
-
-              <div style={{ color: "#fff", fontWeight: 800, fontSize: 30 }}>
-                {formatGallons(waterAdded)}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  marginTop: 14,
-                  justifyContent: "center",
-                }}
-              >
-                <button
-                  className="primary-btn"
-                  style={{ width: "auto", marginTop: 0 }}
-                  onClick={() => setConfirmWater(true)}
-                >
-                  Yes
-                </button>
-
-                <button
-                  className="secondary-btn"
-                  type="button"
-                  onClick={() => {
-                    setConfirmWater(false);
-                    setStep(2);
-                  }}
-                >
-                  Edit
-                </button>
-              </div>
-            </div>
 
             <label>Ticket Acceptance</label>
             <select
@@ -1481,14 +1426,104 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
             <div
               style={{
-                marginTop: 18,
-                display: "flex",
-                gap: 16,
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns: "7fr 3fr",
+                gap: 14,
+                alignItems: "stretch",
               }}
             >
-              <QrCard title="Batch Weights" url={API_QR_BATCH} />
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: 18,
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
+                  Confirm Water
+                </div>
+
+                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 10 }}>
+                  {formatGallons(waterAdded)}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14 }}>
+                  <button
+                    className="primary-btn"
+                    style={{ width: "auto", marginTop: 0 }}
+                    onClick={() => setConfirmWater(true)}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={() => {
+                      setConfirmWater(false);
+                      setStep(2);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+
               <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
+            </div>
+
+            <div
+              style={{
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: "#fff",
+                  textAlign: "center",
+                  marginBottom: 12,
+                  fontSize: 18,
+                }}
+              >
+                Batch Weights
+              </div>
+
+              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {["Description", "Design", "Target", "Actual", "UOM", "% Var", "Moisture (%)", "Water (gal)"].map((h) => (
+                      <th key={h} style={{ borderBottom: "1px solid var(--border)", padding: 6, textAlign: "left" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
+                    ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
+                    ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
+                    ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
+                    ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
+                    ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
+                    ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
+                  ].map((row, i) => (
+                    <tr key={i}>
+                      {row.map((cell, j) => (
+                        <td key={j} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: 6 }}>
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div
