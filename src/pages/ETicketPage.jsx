@@ -143,7 +143,7 @@ function QrCard({ title, url }) {
         background: "var(--panel-2)",
         border: "1px solid var(--border)",
         borderRadius: 14,
-        padding: 12,
+        padding: 10,
         display: "grid",
         justifyItems: "center",
         textAlign: "center",
@@ -154,7 +154,8 @@ function QrCard({ title, url }) {
           fontWeight: 800,
           color: "#fff",
           marginBottom: 12,
-          fontSize: 16,
+          fontSize: 12,
+          whiteSpace: "nowrap",
         }}
       >
         {title}
@@ -163,8 +164,8 @@ function QrCard({ title, url }) {
       <div
         style={{
           background: "#fff",
-          width: 115,
-          height: 115,
+          width: 90,
+          height: 90,
           borderRadius: 12,
           display: "grid",
           placeItems: "center",
@@ -179,16 +180,6 @@ function QrCard({ title, url }) {
           alt={title}
           style={{ width: "100%", height: "100%" }}
         />
-      </div>
-
-      <div
-        style={{
-          color: "var(--muted)",
-          fontSize: 12,
-          wordBreak: "break-all",
-        }}
-      >
-        {url}
       </div>
     </div>
   );
@@ -1390,7 +1381,60 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         {step === 3 && (
           <>
 
-            <label>Ticket Acceptance</label>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "7fr 3fr",
+                gap: 14,
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "10px 18px",
+                  textAlign: "center",
+                  minHeight: 135,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
+                  Confirm Water
+                </div>
+
+                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
+                  {formatGallons(waterAdded)}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 8 }}>
+                  <button
+                    className="primary-btn"
+                    style={{ width: "auto", marginTop: 0 }}
+                    onClick={() => setConfirmWater(true)}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={() => {
+                      setConfirmWater(false);
+                      setStep(2);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+
+            <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
+            </div>
+
+            <label style={{ marginTop: 14 }}>Ticket Acceptance</label>
             <select
               value={ticketAcceptance}
               onChange={(e) => {
@@ -1424,54 +1468,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               </>
             ) : null}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "7fr 3fr",
-                gap: 14,
-                alignItems: "stretch",
-              }}
-            >
-              <div
-                style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: 18,
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  Confirm Water
-                </div>
 
-                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 10 }}>
-                  {formatGallons(waterAdded)}
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14 }}>
-                  <button
-                    className="primary-btn"
-                    style={{ width: "auto", marginTop: 0 }}
-                    onClick={() => setConfirmWater(true)}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={() => {
-                      setConfirmWater(false);
-                      setStep(2);
-                    }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-
-              <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
-            </div>
 
             <div
               style={{
