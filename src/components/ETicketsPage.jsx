@@ -510,8 +510,24 @@ export default function ETicketsPage({ token }) {
                       {selectedTicket.customer_name || "-"} • Truck {selectedTicket.truck_number || "-"}
                     </div>
                   </div>
-                  <div style={selectedTicket.status === "signed" ? styles.signedPill : styles.pendingPill}>
-                    {selectedTicket.status === "signed" ? "SIGNED" : "PENDING"}
+                  <div
+                    style={
+                      ticket.status === "signed"
+                        ? String(ticket.ticket_acceptance || "")
+                            .toLowerCase()
+                            .includes("rejected")
+                          ? styles.rejectedPill
+                          : styles.acceptedPill
+                        : styles.pendingPill
+                    }
+                  >
+                    {ticket.status === "signed"
+                      ? String(ticket.ticket_acceptance || "")
+                          .toLowerCase()
+                          .includes("rejected")
+                        ? "REJECTED"
+                        : "ACCEPTED"
+                      : "PENDING"}
                   </div>
                 </div>
 
@@ -791,6 +807,21 @@ const styles = {
   primaryButton: { background: "linear-gradient(90deg, #ff7a18, #ff8f3d)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 16, fontWeight: 800, cursor: "pointer" },
   secondaryButton: { background: "#1d4572", color: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", fontSize: 16, cursor: "pointer" },
   signedPill: { background: "rgba(37, 194, 129, 0.18)", color: "#7ef0bc", padding: "8px 12px", borderRadius: 999, fontWeight: 800 },
+  acceptedPill: {
+    background: "rgba(37, 194, 129, 0.18)",
+    color: "#7ef0bc",
+    padding: "8px 12px",
+    borderRadius: 999,
+    fontWeight: 800,
+  },
+
+  rejectedPill: {
+    background: "rgba(249, 115, 22, 0.18)",
+    color: "#ffb37a",
+    padding: "8px 12px",
+    borderRadius: 999,
+    fontWeight: 800,
+  },
   pendingPill: { background: "rgba(249, 115, 22, 0.18)", color: "#ffb37a", padding: "8px 12px", borderRadius: 999, fontWeight: 800 },
   error: { background: "rgba(127,29,29,0.25)", border: "1px solid rgba(239,68,68,0.35)", color: "#fecaca", padding: "14px 16px", borderRadius: 14, marginBottom: 16, fontWeight: 700 },
   success: { background: "rgba(6,95,70,0.35)", border: "1px solid rgba(16,185,129,0.35)", color: "#d1fae5", padding: "14px 16px", borderRadius: 14, marginBottom: 16, fontWeight: 700 },
