@@ -346,9 +346,7 @@ export default function ETicketsPage({ token }) {
                     <option value="">Reassign...</option>
 
                     <optgroup label="Trucks">
-                      {reassignOptions.trucks
-                        .filter((truck) => truck.id !== ticket.truck_number)
-                        .map((truck) => (
+                      {reassignOptions.trucks.map((item) => (
                           <option
                             key={`mobile-truck-${ticket.id}-${truck.id}`}
                             value={`${truck.type}|${truck.id}`}
