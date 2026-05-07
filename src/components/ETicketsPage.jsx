@@ -510,19 +510,23 @@ export default function ETicketsPage({ token }) {
                       {selectedTicket.customer_name || "-"} • Truck {selectedTicket.truck_number || "-"}
                     </div>
                   </div>
-                  <div
+                 <div
                     style={
-                      ticket.status === "signed"
-                        ? (String(ticket.ticket_acceptance || "").toLowerCase().includes("rejected")
-                            ? styles.rejectedPill
-                            : styles.acceptedPill)
+                      selectedTicket.status === "signed"
+                        ? String(selectedTicket.ticket_acceptance || "")
+                            .toLowerCase()
+                            .includes("rejected")
+                          ? styles.rejectedPill
+                          : styles.acceptedPill
                         : styles.pendingPill
                     }
                   >
-                    {ticket.status === "signed"
-                      ? (String(ticket.ticket_acceptance || "").toLowerCase().includes("rejected")
-                          ? "REJECTED"
-                          : "ACCEPTED")
+                    {selectedTicket.status === "signed"
+                      ? String(selectedTicket.ticket_acceptance || "")
+                          .toLowerCase()
+                          .includes("rejected")
+                        ? "REJECTED"
+                        : "ACCEPTED"
                       : "PENDING"}
                   </div>
                 </div>
