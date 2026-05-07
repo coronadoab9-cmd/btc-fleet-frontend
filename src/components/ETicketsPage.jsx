@@ -399,9 +399,8 @@ export default function ETicketsPage({ token }) {
 
       <div style={styles.tabRow}>
         {[
-          ["pending", "Pending Tickets"],
-          ["accepted", "Signed Accepted"],
-          ["rejected", "Signed Rejected"],
+          ["pending", "Pending eTickets"],
+          ["signed", "Signed eTickets"],
           ["assigned", "Assigned"],
           ["archived", "Archived"],
         ].map(([key, label]) => (
