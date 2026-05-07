@@ -513,20 +513,16 @@ export default function ETicketsPage({ token }) {
                   <div
                     style={
                       ticket.status === "signed"
-                        ? String(ticket.ticket_acceptance || "")
-                            .toLowerCase()
-                            .includes("rejected")
-                          ? styles.rejectedPill
-                          : styles.acceptedPill
+                        ? (String(ticket.ticket_acceptance || "").toLowerCase().includes("rejected")
+                            ? styles.rejectedPill
+                            : styles.acceptedPill)
                         : styles.pendingPill
                     }
                   >
                     {ticket.status === "signed"
-                      ? String(ticket.ticket_acceptance || "")
-                          .toLowerCase()
-                          .includes("rejected")
-                        ? "REJECTED"
-                        : "ACCEPTED"
+                      ? (String(ticket.ticket_acceptance || "").toLowerCase().includes("rejected")
+                          ? "REJECTED"
+                          : "ACCEPTED")
                       : "PENDING"}
                   </div>
                 </div>
@@ -814,7 +810,6 @@ const styles = {
     borderRadius: 999,
     fontWeight: 800,
   },
-
   rejectedPill: {
     background: "rgba(249, 115, 22, 0.18)",
     color: "#ffb37a",
