@@ -87,9 +87,13 @@ export default function ETicketsPage({ token }) {
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
+      const acceptanceText = String(t.ticket_acceptance || "").toLowerCase();
+
       const statusOk =
+        eticketTab !== "signed" ||
         filterStatus === "all" ||
-        (filterStatus === "signed" ? t.status === "signed" : t.status !== "signed");
+        (filterStatus === "accepted" && acceptanceText.includes("accepted")) ||
+        (filterStatus === "rejected" && acceptanceText.includes("rejected"));
       const customerOk =
         !customerFilter.trim() ||
         (t.customer_name || "").toLowerCase().includes(customerFilter.trim().toLowerCase());
@@ -295,6 +299,7 @@ export default function ETicketsPage({ token }) {
               style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
               onClick={() => {
                 setSelectedToken("");
+                setFilterStatus("all");
                 setEticketTab(key);
               }}
             >
@@ -410,6 +415,7 @@ export default function ETicketsPage({ token }) {
             style={eticketTab === key ? styles.activeTabButton : styles.tabButton}
             onClick={() => {
               setSelectedToken("");
+              setFilterStatus("all");
               setEticketTab(key);
             }}
           >
@@ -419,11 +425,17 @@ export default function ETicketsPage({ token }) {
       </div>
 
       <div style={styles.filters}>
-        <select style={styles.input} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="all">All</option>
-          <option value="signed">Signed</option>
-          <option value="pending">Pending</option>
-        </select>
+        {eticketTab === "signed" ? (
+          <select
+            style={styles.input}
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        ) : null}
         <input style={styles.input} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder="Filter by customer" />
         <input style={styles.input} value={ticketFilter} onChange={(e) => setTicketFilter(e.target.value)} placeholder="Filter by ticket #" />
         <input style={styles.input} value={truckFilter} onChange={(e) => setTruckFilter(e.target.value)} placeholder="Filter by truck" />
