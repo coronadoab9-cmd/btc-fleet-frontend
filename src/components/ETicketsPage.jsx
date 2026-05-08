@@ -41,6 +41,7 @@ export default function ETicketsPage({ token }) {
   const [filterStatus, setFilterStatus] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("");
   const [ticketFilter, setTicketFilter] = useState("");
+  const [orderFilter, setOrderFilter] = useState("");
   const [truckFilter, setTruckFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -100,6 +101,9 @@ export default function ETicketsPage({ token }) {
       const ticketOk =
         !ticketFilter.trim() ||
         (t.ticket_number || "").toLowerCase().includes(ticketFilter.trim().toLowerCase());
+      const orderOk =
+        !orderFilter.trim() ||
+        (t.job_number || "").toLowerCase().includes(orderFilter.trim().toLowerCase());
       const truckOk =
         !truckFilter.trim() ||
         (t.truck_number || "").toLowerCase().includes(truckFilter.trim().toLowerCase());
@@ -108,7 +112,7 @@ export default function ETicketsPage({ token }) {
       const fromOk = !dateFrom || !signedAt || signedAt >= new Date(`${dateFrom}T00:00:00`);
       const toOk = !dateTo || !signedAt || signedAt <= new Date(`${dateTo}T23:59:59`);
 
-      return statusOk && customerOk && ticketOk && truckOk && fromOk && toOk;
+      return statusOk && customerOk && ticketOk && orderOk && truckOk && fromOk && toOk;
     });
   }, [tickets, filterStatus, customerFilter, ticketFilter, truckFilter, dateFrom, dateTo]);
 
@@ -438,6 +442,12 @@ export default function ETicketsPage({ token }) {
         ) : null}
         <input style={styles.input} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder="Filter by customer" />
         <input style={styles.input} value={ticketFilter} onChange={(e) => setTicketFilter(e.target.value)} placeholder="Filter by ticket #" />
+        <input
+          placeholder="Filter by order #"
+          value={orderFilter}
+          onChange={(e) => setOrderFilter(e.target.value)}
+          style={styles.filterInput}
+        />
         <input style={styles.input} value={truckFilter} onChange={(e) => setTruckFilter(e.target.value)} placeholder="Filter by truck" />
         <input style={styles.input} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         <input style={styles.input} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
