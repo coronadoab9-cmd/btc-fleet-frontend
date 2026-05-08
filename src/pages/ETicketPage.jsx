@@ -1162,10 +1162,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  window.innerWidth <= 768
-                    ? "1fr"
-                    : "1fr 1fr",
+                gridTemplateColumns: isPhone ? "1fr 1fr" : "1fr 1fr",
                 gap: 14,
                 marginTop: 16,
               }}
@@ -1175,14 +1172,39 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   background: "var(--panel-2)",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
-                  padding: 16,
+                  padding: isPhone ? 10 : 16,
                 }}
               >
-                <div style={{ color: "var(--muted)", marginBottom: 10 }}>
-                  Water Allowed
-                </div>
-                <div style={{ color: "#fff", fontSize: 26, fontWeight: 800 }}>
-                  {formatGallons(waterAllowed)}
+                <div
+                  style={{
+                    ...styles.waterCard,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "var(--muted)",
+                      fontSize: isPhone ? 16 : 18,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Water Allowed
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontWeight: 900,
+                      fontSize: isPhone ? 24 : 38,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {formatGallons(waterAllowed)}
+                  </div>
                 </div>
               </div>
 
@@ -1191,10 +1213,18 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   background: "var(--panel-2)",
                   border: "1px solid var(--border)",
                   borderRadius: 14,
-                  padding: 16,
+                  padding: isPhone ? 10 : 16,
                 }}
               >
-                <div style={{ color: "var(--muted)", marginBottom: 10 }}>
+                <div
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    color: "var(--muted)",
+                    fontSize: isPhone ? 16 : 18,
+                    marginBottom: 12,
+                  }}
+                >
                   Water Added
                 </div>
 
@@ -1209,10 +1239,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <button
                     className="primary-btn"
                     style={{
-                      width: 64,
-                      height: 52,
+                      width: isPhone ? 46 : 64,
+                      height: isPhone ? 42 : 52,
                       marginTop: 0,
-                      fontSize: 26,
+                      fontSize: isPhone ? 20 : 26,
                       fontWeight: 900,
                       touchAction: "none",
                       userSelect: "none",
@@ -1235,7 +1265,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <div
                     style={{
                       color: "#fff",
-                      fontSize: 28,
+                      fontSize: isPhone ? 22 : 28,
                       fontWeight: 900,
                       minWidth: 130,
                       textAlign: "center",
@@ -1247,10 +1277,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <button
                     className="primary-btn"
                     style={{
-                      width: 64,
-                      height: 52,
+                      width: isPhone ? 46 : 64,
+                      height: isPhone ? 42 : 52,
                       marginTop: 0,
-                      fontSize: 26,
+                      fontSize: isPhone ? 20 : 26,
                       fontWeight: 900,
                       touchAction: "none",
                       userSelect: "none",
