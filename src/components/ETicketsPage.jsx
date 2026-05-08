@@ -114,7 +114,7 @@ export default function ETicketsPage({ token }) {
 
       return statusOk && customerOk && ticketOk && orderOk && truckOk && fromOk && toOk;
     });
-  }, [tickets, filterStatus, customerFilter, ticketFilter, truckFilter, dateFrom, dateTo]);
+  }, [tickets, filterStatus, customerFilter, ticketFilter, orderFilter, truckFilter, dateFrom, dateTo]);
 
   const selectedTicket =
     filteredTickets.find((t) => t.token === selectedToken) ||
@@ -446,7 +446,7 @@ export default function ETicketsPage({ token }) {
           placeholder="Filter by order #"
           value={orderFilter}
           onChange={(e) => setOrderFilter(e.target.value)}
-          style={styles.filterInput}
+          style={styles.input}
         />
         <input style={styles.input} value={truckFilter} onChange={(e) => setTruckFilter(e.target.value)} placeholder="Filter by truck" />
         <input style={styles.input} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
