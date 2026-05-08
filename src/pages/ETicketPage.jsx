@@ -226,7 +226,7 @@ export default function ETicketPage() {
   const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
   const [waterAllowed] = useState(25);
   const [waterAdded, setWaterAdded] = useState(0);
-  const [ticketAcceptance, setTicketAcceptance] = useState("Accepted");
+  const [ticketAcceptance, setTicketAcceptance] = useState("Accepted Delivery");
   const [rejectionReason, setRejectionReason] = useState("");
   const [confirmWater, setConfirmWater] = useState(false);
   const [locationData, setLocationData] = useState({
@@ -1177,7 +1177,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               >
                 <div
                   style={{
-                    ...styles.waterCard,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
