@@ -1085,7 +1085,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           <>
             <div className="asset-details">
               <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-              <SummaryRow label="Job Name" value={ticket.customer_name} />
+              <SummaryRow label="Customer" value={ticket.customer_name} />
               <SummaryRow label="Address" value={ticket.address} />
               <SummaryRow label="Truck" value={ticket.truck_number} />
               <SummaryRow
