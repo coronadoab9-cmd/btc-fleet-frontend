@@ -545,6 +545,7 @@ export default function ETicketsPage({ token }) {
 
                 <div style={styles.infoGrid}>
                   <Info label="Customer" value={selectedTicket.customer_name} />
+                  <Info label="Order #" value={selectedTicket.job_number} />
                   <Info label="Address" value={selectedTicket.address} />
                   <Info label="Plant" value={selectedTicket.plant} />
                   <Info label="Truck" value={selectedTicket.truck_number} />
@@ -576,9 +577,11 @@ export default function ETicketsPage({ token }) {
                   <Info
                     label="Signed By"
                     value={
-                      String(selectedTicket.ticket_acceptance || "").includes("Driver signed")
-                        ? "Driver signed - no one available"
-                        : "Customer / Contractor Signature"
+                      selectedTicket.status === "signed"
+                        ? String(selectedTicket.ticket_acceptance || "").includes("Driver signed")
+                          ? "Driver signed - no one available"
+                          : "Customer / Contractor Signature"
+                        : "-"
                     }
                   />
 
@@ -608,10 +611,11 @@ export default function ETicketsPage({ token }) {
                     }
                   />
 
-                  <Info
-                    label="Acceptance"
-                    value={
-                      String(selectedTicket.ticket_acceptance || "").includes("Reason:")
+                 <Info
+                  label="Acceptance"
+                  value={
+                    selectedTicket.status === "signed"
+                      ? String(selectedTicket.ticket_acceptance || "").includes("Reason:")
                         ? `Rejected - ${
                             String(selectedTicket.ticket_acceptance)
                               .split("Reason:")[1]
@@ -621,8 +625,9 @@ export default function ETicketsPage({ token }) {
                         : String(selectedTicket.ticket_acceptance || "").includes("Rejected")
                         ? "Rejected"
                         : "Accepted"
-                    }
-                  />
+                      : "-"
+                  }
+                />
 
                   <Info label="Load Time" value={formatDateTime(selectedTicket.load_time)} />
                   <Info label="Assigned To" value={selectedTicket.assigned_to_name} />
