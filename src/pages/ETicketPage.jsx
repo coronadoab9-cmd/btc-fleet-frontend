@@ -155,7 +155,7 @@ function QrCard({ title, url }) {
           color: "#fff",
           marginBottom: 12,
           fontSize: 12,
-          whiteSpace: "nowrap",
+          whiteSpace: window.innerWidth <= 600 ? "normal" : "nowrap",
         }}
       >
         {title}
@@ -1384,7 +1384,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "7fr 3fr",
+                gridTemplateColumns: isPhone ? "1fr" : "7fr 3fr",
                 gap: 14,
                 alignItems: "stretch",
               }}
@@ -1491,36 +1491,68 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 Batch Weights
               </div>
 
-              <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff", fontSize: 12 }}>
-                <thead>
-                  <tr>
-                    {["Description", "Design", "Target", "Actual", "UOM", "% Var", "Moisture (%)", "Water (gal)"].map((h) => (
-                      <th key={h} style={{ borderBottom: "1px solid var(--border)", padding: 6, textAlign: "left" }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
-                    ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
-                    ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
-                    ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
-                    ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
-                    ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
-                    ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
-                  ].map((row, i) => (
-                    <tr key={i}>
-                      {row.map((cell, j) => (
-                        <td key={j} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", padding: 6 }}>
-                          {cell}
-                        </td>
+              <div style={{ overflowX: "auto", width: "100%" }}>
+                <table
+                  style={{
+                    width: isPhone ? 760 : "100%",
+                    borderCollapse: "collapse",
+                    color: "#fff",
+                    fontSize: isPhone ? 11 : 12,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {[
+                        "Description",
+                        "Design",
+                        "Target",
+                        "Actual",
+                        "UOM",
+                        "% Var",
+                        "Moisture (%)",
+                        "Water (gal)",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            borderBottom: "1px solid var(--border)",
+                            padding: 6,
+                            textAlign: "left",
+                          }}
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+
+                  <tbody>
+                    {[
+                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
+                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
+                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
+                      ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
+                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
+                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
+                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        {row.map((cell, j) => (
+                          <td
+                            key={j}
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              padding: 6,
+                            }}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div
