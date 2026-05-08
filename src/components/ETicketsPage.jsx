@@ -144,6 +144,36 @@ export default function ETicketsPage({ token }) {
     setMessage("Filtered eTickets exported");
   }
 
+  async function exportFilteredPdfs() {
+    setError("");
+    setMessage("");
+
+    const signedTickets = filteredTickets.filter((t) => t.status === "signed");
+
+    if (!signedTickets.length) {
+      setError("No signed PDFs found in the current filtered list.");
+      return;
+    }
+
+    const ids = signedTickets.map((t) => t.id);
+
+    try {
+      const res = await apiFetch("/admin/etickets/export-pdfs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": token,
+        },
+        body: JSON.stringify({ ticket_ids: ids }),
+      });
+
+      window.open(res.url, "_blank");
+      setMessage(`${signedTickets.length} PDFs exported into one file`);
+    } catch (err) {
+      setError(err.message || "Could not export PDFs");
+    }
+  }
+
   async function copyLink(url, label) {
     try {
       await navigator.clipboard.writeText(url);
@@ -401,7 +431,14 @@ export default function ETicketsPage({ token }) {
             Refresh
           </button>
           <button style={styles.primaryButton} onClick={exportFilteredCsv}>
-            Export Filtered
+            Export CSV
+          </button>
+          <button
+            style={styles.orangeButton}
+            type="button"
+            onClick={exportFilteredPdfs}
+          >
+            Export PDFs
           </button>
         </div>
       </div>
