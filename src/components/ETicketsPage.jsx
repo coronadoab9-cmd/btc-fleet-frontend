@@ -234,8 +234,6 @@ export default function ETicketsPage({ token }) {
       }
 
       const blob = await res.blob();
-
-      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
