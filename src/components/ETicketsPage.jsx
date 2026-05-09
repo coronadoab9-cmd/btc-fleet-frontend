@@ -128,19 +128,80 @@ export default function ETicketsPage({ token }) {
     }
   }, [selectedTicket, selectedToken]);
 
-  function exportFilteredCsv() {
-    const rows = [
-      ["Ticket Number", "Customer", "Truck", "Status", "Signed At", "PDF Link"],
-      ...filteredTickets.map((t) => [
-        t.ticket_number || "",
-        t.customer_name || "",
-        t.truck_number || "",
-        t.status || "",
-        t.signed_at || "",
-        t.status === "signed" ? buildEticketPdfUrl(t.token) : "",
-      ]),
+  function formatDateOnly(value) {
+    if (!value) return "";
+
+    try {
+      return new Date(value).toLocaleDateString("en-US", {
+        timeZone: "America/Chicago",
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  }
+
+  function exportFiltered() {
+    setError("");
+    setMessage("");
+
+    const headers = [
+      "Load End",
+      "Truck Number",
+      "Job Number",
+      "Customer",
+      "Product Type",
+      "Ticket ID",
+      "Product",
+      "Load Size",
     ];
-    downloadCsv(`btc_etickets_${new Date().toISOString().slice(0, 10)}.csv`, rows);
+
+    const csvRows = filteredTickets.map((t) => {
+      const productText = String(t.product || "").trim();
+      const mixNumber =
+        t.mix_number ||
+        productText.split(/\s+/)[0] ||
+        "";
+
+      const productType =
+        t.mix_description ||
+        productText.split(/\s+/).slice(1).join(" ") ||
+        productText;
+
+      return [
+        formatDateOnly(t.signed_at || t.load_time),
+        t.truck_number || "",
+        t.job_number || "",
+        t.customer_name || "",
+        productType,
+        t.ticket_number || "",
+        mixNumber,
+        t.quantity || "",
+      ];
+    });
+
+    const csvContent = [headers, ...csvRows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `btc_etickets_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+
     setMessage("Filtered eTickets exported");
   }
 
