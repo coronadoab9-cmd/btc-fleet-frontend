@@ -248,7 +248,7 @@ export default function ETicketsPage({ token }) {
       setMessage(`${signedTickets.length} signed PDFs exported`);
     } catch (err) {
       console.error("PDF EXPORT ERROR:", err);
-      setError(err.message || "Could not export PDFs");
+      setError(String(err.message || err || "Could not export PDFs"));
     }
   }
 
