@@ -155,20 +155,36 @@ export default function ETicketsPage({ token }) {
       return;
     }
 
-    const ids = signedTickets.map((t) => t.id);
-
     try {
-      const res = await apiFetch("/admin/etickets/export-pdfs", {
+      const res = await fetch(`${API_BASE_URL}/admin/etickets/export-pdfs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Token": token,
         },
-        body: JSON.stringify({ ticket_ids: ids }),
+        body: JSON.stringify({
+          ticket_ids: signedTickets.map((t) => t.id),
+        }),
       });
 
-      window.open(res.url, "_blank");
-      setMessage(`${signedTickets.length} PDFs exported into one file`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Could not export PDFs");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `signed_etickets_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+
+      setMessage(`${signedTickets.length} signed PDFs exported`);
     } catch (err) {
       setError(err.message || "Could not export PDFs");
     }
@@ -434,7 +450,7 @@ export default function ETicketsPage({ token }) {
             Export CSV
           </button>
           <button
-            style={styles.orangeButton}
+            style={styles.primaryButton}
             type="button"
             onClick={exportFilteredPdfs}
           >
