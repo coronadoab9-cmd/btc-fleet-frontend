@@ -229,17 +229,11 @@ export default function ETicketsPage({ token }) {
       });
 
       if (!res.ok) {
-        let errorText = "";
-
-        try {
-          const data = await res.json();
-          errorText = data.detail || JSON.stringify(data);
-        } catch {
-          errorText = await res.text();
-        }
-
+        const errorText = await res.text();
         throw new Error(errorText || "Could not export PDFs");
       }
+
+      const blob = await res.blob();
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
