@@ -229,8 +229,16 @@ export default function ETicketsPage({ token }) {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Could not export PDFs");
+        let errorText = "";
+
+        try {
+          const data = await res.json();
+          errorText = data.detail || JSON.stringify(data);
+        } catch {
+          errorText = await res.text();
+        }
+
+        throw new Error(errorText || "Could not export PDFs");
       }
 
       const blob = await res.blob();
@@ -247,6 +255,7 @@ export default function ETicketsPage({ token }) {
 
       setMessage(`${signedTickets.length} signed PDFs exported`);
     } catch (err) {
+      console.error("PDF EXPORT ERROR:", err);
       setError(err.message || "Could not export PDFs");
     }
   }
@@ -507,7 +516,7 @@ export default function ETicketsPage({ token }) {
           <button style={styles.secondaryButton} onClick={loadTickets}>
             Refresh
           </button>
-          <button style={styles.primaryButton} onClick={exportFilteredCsv}>
+          <button style={styles.primaryButton} onClick={exportFiltered}>
             Export CSV
           </button>
           <button
