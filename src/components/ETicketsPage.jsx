@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { API_BASE_URL, apiFetch, buildEticketPdfUrl, buildEticketUrl } from "../lib/api";
+import { apiFetch, buildEticketPdfUrl, buildEticketUrl } from "../lib/api";
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -156,7 +156,7 @@ export default function ETicketsPage({ token }) {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/etickets/export-pdfs`, {
+      const res = await fetch("/admin/etickets/export-pdfs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
