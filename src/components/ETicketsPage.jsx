@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch, buildEticketPdfUrl, buildEticketUrl } from "../lib/api";
+import { API_BASE_URL, apiFetch, buildEticketPdfUrl, buildEticketUrl } from "../lib/api";
 
 function formatDateTime(value) {
   if (!value) return "-";
