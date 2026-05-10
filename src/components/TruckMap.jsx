@@ -143,6 +143,8 @@ export default function TruckMap() {
   const [eticketTicketNumber, setEticketTicketNumber] = useState("");
   const [creatingETicket, setCreatingETicket] = useState(false);
   const [eticketDraftsByTruck, setEticketDraftsByTruck] = useState({});
+  const [eticketDeliveredTotal, setEticketDeliveredTotal] = useState("");
+  const [eticketOrderTotal, setEticketOrderTotal] = useState("");
 
   const auth = useMemo(() => {
     const raw = localStorage.getItem("btc_admin_auth");
@@ -299,6 +301,8 @@ export default function TruckMap() {
         mixDescription: eticketMixDescription,
         product: `${eticketMixNumber} ${eticketMixDescription}`.trim(),
         quantity: eticketQuantity,
+        deliveredTotal: eticketDeliveredTotal,
+        orderTotal: eticketOrderTotal,
         ticketNumber: eticketTicketNumber,
       },
     }));
@@ -340,6 +344,26 @@ export default function TruckMap() {
         selectedJob?.ordered_qty !== ""
           ? String(selectedJob.ordered_qty)
           : orderedQty || "")
+    );
+
+    setEticketDeliveredTotal(
+      draft.deliveredTotal ||
+        (
+          selectedJob?.delivered_qty !== null &&
+          selectedJob?.delivered_qty !== undefined
+            ? String(selectedJob.delivered_qty)
+            : eticketQuantity || ""
+        )
+    );
+
+    setEticketOrderTotal(
+      draft.orderTotal ||
+        (
+          selectedJob?.ordered_qty !== null &&
+          selectedJob?.ordered_qty !== undefined
+            ? String(selectedJob.ordered_qty)
+            : eticketQuantity || ""
+        )
     );
 
     if (selectedJob?.address) setAddress(selectedJob.address);
@@ -486,6 +510,16 @@ export default function TruckMap() {
       mix_number: eticketMixNumber.trim(),
       mix_description: eticketMixDescription.trim(),
       quantity: eticketQuantity === "" ? 0 : Number(eticketQuantity),
+
+      delivered_qty_total:
+        eticketDeliveredTotal === ""
+          ? Number(eticketQuantity || 0)
+          : Number(eticketDeliveredTotal),
+
+      order_total:
+        eticketOrderTotal === ""
+          ? Number(eticketQuantity || 0)
+          : Number(eticketOrderTotal),
     };
 
     try {
@@ -678,10 +712,22 @@ export default function TruckMap() {
                   placeholder="4SK NO AIR"
                 />
 
-                <label>Quantity</label>
+                <label>Load Size</label>
                 <input
                   value={eticketQuantity}
                   onChange={(e) => setEticketQuantity(e.target.value)}
+                />
+
+                <label>Qty Delivered Total</label>
+                <input
+                  value={eticketDeliveredTotal}
+                  onChange={(e) => setEticketDeliveredTotal(e.target.value)}
+                />
+
+                <label>Order Total</label>
+                <input
+                  value={eticketOrderTotal}
+                  onChange={(e) => setEticketOrderTotal(e.target.value)}
                 />
 
                 <button
