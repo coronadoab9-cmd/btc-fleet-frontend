@@ -1316,7 +1316,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             </div>
 
             <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
-              Customer Finger Signature
+              Curb Line Signature
             </div>
               <canvas
                 className="signature-canvas"
