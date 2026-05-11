@@ -882,8 +882,11 @@ const styles = {
   filters: {
     display: "grid",
     gridTemplateColumns:
-      window.innerWidth <= 768 ? "1fr" : "repeat(6, minmax(0, 1fr))",
+      window.innerWidth <= 768
+        ? "1fr"
+        : "140px 1fr 1fr 1fr 1fr 170px 170px",
     gap: 10,
+    alignItems: "center",
     marginBottom: 16,
   },
   grid: {
