@@ -884,7 +884,7 @@ const styles = {
     gridTemplateColumns:
       window.innerWidth <= 768
         ? "1fr"
-        : "140px 1fr 1fr 1fr 1fr 170px 170px",
+        : "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 10,
     alignItems: "center",
     marginBottom: 16,
