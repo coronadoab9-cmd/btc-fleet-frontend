@@ -204,6 +204,7 @@ export default function ETicketPage() {
   const holdStartedRef = useRef(false);
   const holdStartTimeRef = useRef(0);
   const holdAmountRef = useRef(0);
+  const holdWaterTypeRef = useRef("customer");
 
   const drawingWaterRef = useRef(false);
   const drawingFinalRef = useRef(false);
@@ -220,15 +221,15 @@ export default function ETicketPage() {
   const [nowTick, setNowTick] = useState(Date.now());
   const isPhone = window.innerWidth <= 600;
 
-  const [curbLineSignature, setCurbLineSignature] = useState(
-    "Customer / Contractor Signature"
-  );
+  const [curbLineSignature, setCurbLineSignature] = useState("Not Needed");
   const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
   const [waterAllowed] = useState(25);
-  const [waterAdded, setWaterAdded] = useState(0);
+  const [qcWaterAdded, setQcWaterAdded] = useState(0);
+  const [customerWaterAdded, setCustomerWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted Delivery");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [confirmWater, setConfirmWater] = useState(false);
+  const [confirmQcWater, setConfirmQcWater] = useState(false);
+  const [confirmCustomerWater, setConfirmCustomerWater] = useState(false);
   const [locationData, setLocationData] = useState({
     latitude: null,
     longitude: null,
@@ -332,7 +333,8 @@ export default function ETicketPage() {
       setTicket(data);
       setSigned(data.status === "signed");
       setFinalSignatureDataUrl(data.signature_data_url || "");
-      setWaterAdded(Number(data.water_added || 0));
+      setQcWaterAdded(Number(data.qc_water_added || 0));
+      setCustomerWaterAdded(Number(data.customer_water_added || data.water_added || 0));
 
       if (data.signature_data_url) {
         setFinalSignatureDrawn(true);
@@ -616,8 +618,15 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
 
 
-  function changeWaterAdded(amount) {
-    setWaterAdded((v) => {
+  function changeQcWaterAdded(amount) {
+    setQcWaterAdded((v) => {
+      const next = Number(v || 0) + amount;
+      return Math.max(0, Math.round(next * 100) / 100);
+    });
+  }
+
+  function changeCustomerWaterAdded(amount) {
+    setCustomerWaterAdded((v) => {
       const next = Number(v || 0) + amount;
       return Math.max(0, Math.round(next * 100) / 100);
     });
@@ -633,18 +642,25 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     return direction * 1;
   }
 
-  function startWaterPress(amount) {
+  function startWaterPress(amount, waterType = "customer") {
     if (holdAmountRef.current !== 0) return;
 
     holdAmountRef.current = amount;
     holdStartedRef.current = false;
     holdStartTimeRef.current = Date.now();
+    holdWaterTypeRef.current = waterType;
 
     holdTimeoutRef.current = setTimeout(() => {
       holdStartedRef.current = true;
 
       holdIntervalRef.current = setInterval(() => {
-        changeWaterAdded(getAcceleratedWaterStep(amount));
+        const step = getAcceleratedWaterStep(amount);
+
+        if (holdWaterTypeRef.current === "qc") {
+          changeQcWaterAdded(step);
+        } else {
+          changeCustomerWaterAdded(step);
+        }
       }, 160);
     }, 400);
   }
@@ -670,7 +686,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     stopWaterPress();
 
     if (!wasHolding) {
-      changeWaterAdded(amount);
+      if (holdWaterTypeRef.current === "qc") {
+        changeQcWaterAdded(amount);
+      } else {
+        changeCustomerWaterAdded(amount);
+      }
     }
 
     holdAmountRef.current = 0;
@@ -840,7 +860,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     setSuccess("");
 
     try {
-      if (!waterSignatureDrawn) {
+      if (
+        curbLineSignature === "Customer / Contractor Signature" &&
+        !waterSignatureDrawn
+      ) {
         throw new Error("Customer curb line signature is required");
       }
 
@@ -848,8 +871,12 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         throw new Error("Final signature is required");
       }
 
-      if (!confirmWater) {
-        throw new Error("Please confirm the water amount");
+      if (!confirmQcWater) {
+        throw new Error("Please confirm QC water added");
+      }
+
+      if (!confirmCustomerWater) {
+        throw new Error("Please confirm customer water added");
       }
       if (ticketAcceptance === "Rejected Delivery" && !rejectionReason) {
         throw new Error("Please select a rejection reason.");
@@ -896,18 +923,26 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           latitude: finalLocation.latitude,
           longitude: finalLocation.longitude,
           water_choice: `${curbLineSignature} | ${formatGallons(waterAllowed)} allowed`,
-          water_added: Number(waterAdded).toFixed(2),
+          water_added: Number(customerWaterAdded).toFixed(2),
+          qc_water_added: Number(qcWaterAdded).toFixed(2),
+          customer_water_added: Number(customerWaterAdded).toFixed(2),
+          curb_line_status: curbLineSignature,
           ticket_acceptance:
             ticketAcceptance === "Rejected Delivery"
               ? `${ticketAcceptance} | Reason: ${rejectionReason} | ${curbLineSignature}`
               : `${ticketAcceptance} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
-          curb_line_signature_data_url: waterSignatureDataUrl,
-          curb_line_signed_at: curbLineSignedAt || new Date().toISOString(),
+          curb_line_signature_data_url:
+            curbLineSignature === "Customer / Contractor Signature"
+              ? waterSignatureDataUrl
+              : "",
+          curb_line_signed_at:
+            curbLineSignature === "Customer / Contractor Signature"
+              ? curbLineSignedAt || new Date().toISOString()
+              : "",
           photo_data_url: signerPhoto,
           terms_qr_url: API_QR_TERMS,
           load_time: ticket?.load_time,
-          time_limit_minutes: remainingMinutes,
         }),
       });
 
@@ -1071,17 +1106,372 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           }}
         >
           <span style={{ color: step === 1 ? "#fff" : "var(--muted)" }}>
-            Ticket
+            Driver
           </span>
           <span style={{ color: step === 2 ? "#fff" : "var(--muted)" }}>
-            Water
+            QC
           </span>
           <span style={{ color: step === 3 ? "#fff" : "var(--muted)" }}>
+            Ticket
+          </span>
+          <span style={{ color: step === 4 ? "#fff" : "var(--muted)" }}>
+            Water
+          </span>
+          <span style={{ color: step === 5 ? "#fff" : "var(--muted)" }}>
             Submit
           </span>
         </div>
 
         {step === 1 && (
+          <>
+            <div className="asset-details">
+              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
+              <SummaryRow label="Customer" value={ticket.customer_name} />
+              <SummaryRow label="Truck" value={ticket.truck_number} />
+
+              <SummaryRow label="Ordered Slump" value={mix.slump} />
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 800,
+                  color: "#fff",
+                  marginBottom: 12,
+                  fontSize: 16,
+                }}
+              >
+                Batch Weights
+              </div>
+
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  color: "#fff",
+                  fontSize: 12,
+                }}
+              >
+                <thead>
+                  <tr>
+                    {[
+                      "Description",
+                      "Design",
+                      "Target",
+                      "Actual",
+                      "UOM",
+                      "% Var",
+                      "Moisture (%)",
+                      "Water (gal)",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          borderBottom: "1px solid var(--border)",
+                          padding: 6,
+                          textAlign: "left",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {[
+                    ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
+                    ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
+                    ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
+                    ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
+                    ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
+                    ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
+                    ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
+                  ].map((row, i) => (
+                    <tr key={i}>
+                      {row.map((cell, j) => (
+                        <td
+                          key={j}
+                          style={{
+                            borderBottom:
+                              "1px solid rgba(255,255,255,0.08)",
+                            padding: 6,
+                          }}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              className="primary-btn"
+              type="button"
+              onClick={() => {
+                setError("");
+                setStep(2);
+              }}
+            >
+              Next
+            </button>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <div className="asset-details">
+              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
+              <SummaryRow label="Customer" value={ticket.customer_name} />
+              <SummaryRow label="Truck" value={ticket.truck_number} />
+              <SummaryRow label="Ordered Slump" value={mix.slump} />
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 800,
+                  color: "#fff",
+                  marginBottom: 12,
+                  fontSize: 16,
+                }}
+              >
+                Batch Weights
+              </div>
+
+              <div style={{ overflowX: "auto", width: "100%" }}>
+                <table
+                  style={{
+                    width: isPhone ? 760 : "100%",
+                    borderCollapse: "collapse",
+                    color: "#fff",
+                    fontSize: isPhone ? 11 : 12,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {[
+                        "Description",
+                        "Design",
+                        "Target",
+                        "Actual",
+                        "UOM",
+                        "% Var",
+                        "Moisture (%)",
+                        "Water (gal)",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            borderBottom: "1px solid var(--border)",
+                            padding: 6,
+                            textAlign: "left",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {[
+                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
+                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
+                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
+                      ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
+                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
+                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
+                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        {row.map((cell, j) => (
+                          <td
+                            key={j}
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              padding: 6,
+                            }}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
+                gap: 14,
+                marginTop: 16,
+              }}
+            >
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: isPhone ? 10 : 16,
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--muted)",
+                    fontSize: isPhone ? 16 : 18,
+                    marginBottom: 12,
+                  }}
+                >
+                  Water Allowed
+                </div>
+
+                <div
+                  style={{
+                    color: "#fff",
+                    fontWeight: 900,
+                    fontSize: isPhone ? 24 : 38,
+                    lineHeight: 1,
+                  }}
+                >
+                  {formatGallons(waterAllowed)}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: isPhone ? 10 : 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    color: "var(--muted)",
+                    fontSize: isPhone ? 16 : 18,
+                    marginBottom: 12,
+                  }}
+                >
+                  QC Water Added
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                  }}
+                >
+                  <button
+                    className="primary-btn"
+                    style={{
+                      width: isPhone ? 46 : 64,
+                      height: isPhone ? 42 : 52,
+                      marginTop: 0,
+                      fontSize: isPhone ? 20 : 26,
+                      fontWeight: 900,
+                      touchAction: "none",
+                      userSelect: "none",
+                    }}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      startWaterPress(-1, "qc");
+                    }}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      finishWaterPress();
+                    }}
+                    onPointerLeave={finishWaterPress}
+                    onPointerCancel={finishWaterPress}
+                  >
+                    -
+                  </button>
+
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontSize: isPhone ? 22 : 28,
+                      fontWeight: 900,
+                      minWidth: 130,
+                      textAlign: "center",
+                    }}
+                  >
+                    {formatGallons(qcWaterAdded)}
+                  </div>
+
+                  <button
+                    className="primary-btn"
+                    style={{
+                      width: isPhone ? 46 : 64,
+                      height: isPhone ? 42 : 52,
+                      marginTop: 0,
+                      fontSize: isPhone ? 20 : 26,
+                      fontWeight: 900,
+                      touchAction: "none",
+                      userSelect: "none",
+                    }}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      startWaterPress(1, "qc");
+                    }}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      finishWaterPress();
+                    }}
+                    onPointerLeave={finishWaterPress}
+                    onPointerCancel={finishWaterPress}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setStep(3);
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
           <>
             <div className="asset-details">
               <SummaryRow label="Ticket #" value={ticket.ticket_number} />
@@ -1138,7 +1528,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               type="button"
               onClick={() => {
                 setError("");
-                setStep(2);
+                setStep(4);
               }}
             >
               Next
@@ -1146,24 +1536,16 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           </>
         )}
 
-        {step === 2 && (
+        {step === 4 && (
           <>
-            <div className="asset-details">
-              <SummaryRow
-                label="Load Time"
-                value={formatCentralDateTime(ticket.load_time)}
-              />
-              <SummaryRow label="Time Limit" value={`${configuredLimitMinutes} min`} />
-              <SummaryRow label="Remaining Time" value={`${remainingMinutes} min`} />
-            </div>
 
             <label>Curb Line Signature</label>
             <select
               value={curbLineSignature}
               onChange={(e) => setCurbLineSignature(e.target.value)}
             >
+              <option>Not Needed</option>
               <option>Customer / Contractor Signature</option>
-              <option>Driver signed - no one available</option>
             </select>
 
             <InfoNotice>
@@ -1237,7 +1619,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     marginBottom: 12,
                   }}
                 >
-                  Water Added
+                  Customer Water Added
                 </div>
 
                 <div
@@ -1262,7 +1644,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterPress(-1);
+                      startWaterPress(-1, "customer");
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
@@ -1283,7 +1665,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       textAlign: "center",
                     }}
                   >
-                    {formatGallons(waterAdded)}
+                    {formatGallons(customerWaterAdded)}
                   </div>
 
                   <button
@@ -1300,7 +1682,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     type="button"
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      startWaterPress(1);
+                      startWaterPress(1, "customer");
                     }}
                     onPointerUp={(e) => {
                       e.preventDefault();
@@ -1315,65 +1697,68 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               </div>
             </div>
 
-            <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
-              Curb Line Signature
-            </div>
-              <canvas
-                className="signature-canvas"
-                ref={waterSignatureRef}
-                onPointerDown={(e) =>
-                  startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
-                }
-                onPointerMove={(e) =>
-                  moveSignature(
-                    e,
-                    waterSignatureRef,
-                    drawingWaterRef,
-                    lastWaterPointRef,
-                    setWaterSignatureDrawn
-                  )
-                }
-                onPointerUp={(e) =>
-                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-                }
-                onPointerLeave={(e) =>
-                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-                }
-                onPointerCancel={(e) =>
-                  endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
-                }
+            {curbLineSignature === "Customer / Contractor Signature" ? (
+              <>
+                <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
+                  Curb Line Signature
+                </div>
 
-                style={{
-                  width: "100%",
-                  height: "180px",
-                  minHeight: "180px",
-                  display: "block",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  touchAction: "none",
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                  marginTop: 10,
-                  background: "#0b1a2b",
-                }}
-              />
-            
+                <canvas
+                  className="signature-canvas"
+                  ref={waterSignatureRef}
+                  onPointerDown={(e) =>
+                    startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
+                  }
+                  onPointerMove={(e) =>
+                    moveSignature(
+                      e,
+                      waterSignatureRef,
+                      drawingWaterRef,
+                      lastWaterPointRef,
+                      setWaterSignatureDrawn
+                    )
+                  }
+                  onPointerUp={(e) =>
+                    endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                  }
+                  onPointerLeave={(e) =>
+                    endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                  }
+                  onPointerCancel={(e) =>
+                    endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                  }
+                  style={{
+                    width: "100%",
+                    height: "180px",
+                    minHeight: "180px",
+                    display: "block",
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    marginTop: 10,
+                    background: "#0b1a2b",
+                  }}
+                />
 
-            <div style={{ marginTop: 8 }}>
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() =>
-                  clearCanvas(
-                    waterSignatureRef,
-                    setWaterSignatureDrawn,
-                    setWaterSignatureDataUrl
-                  )
-                }
-              >
-                Clear Signature
-              </button>
-            </div>
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={() =>
+                      clearCanvas(
+                        waterSignatureRef,
+                        setWaterSignatureDrawn,
+                        setWaterSignatureDataUrl
+                      )
+                    }
+                  >
+                    Clear Signature
+                  </button>
+                </div>
+              </>
+            ) : null}
 
             <div style={{ marginTop: 12 }}>
               {error ? (
@@ -1394,7 +1779,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 <button
                   className="secondary-btn"
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(3)}
                 >
                   Back
                 </button>
@@ -1403,14 +1788,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   className="primary-btn"
                   type="button"
                   onClick={() => {
-                    if (!waterSignatureDrawn) {
+                    if (
+                      curbLineSignature === "Customer / Contractor Signature" &&
+                      !waterSignatureDrawn
+                    ) {
                       setError("Curb line signature is required before continuing.");
                       return;
                     }
 
                     setError("");
                     setCurbLineSignedAt(new Date().toISOString());
-                    setStep(3);
+                    setStep(5);
                   }}
                 >
                   Next
@@ -1420,13 +1808,13 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           </>
         )}
 
-        {step === 3 && (
+        {step === 5 && (
           <>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isPhone ? "1fr" : "7fr 3fr",
+                gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
                 gap: 14,
                 alignItems: "stretch",
               }}
@@ -1445,18 +1833,19 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  Confirm Water
+                  Confirm QC Water
                 </div>
 
                 <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
-                  {formatGallons(waterAdded)}
+                  {formatGallons(qcWaterAdded)}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 8 }}>
                   <button
                     className="primary-btn"
+                    type="button"
                     style={{ width: "auto", marginTop: 0 }}
-                    onClick={() => setConfirmWater(true)}
+                    onClick={() => setConfirmQcWater(true)}
                   >
                     Yes
                   </button>
@@ -1464,7 +1853,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     className="secondary-btn"
                     type="button"
                     onClick={() => {
-                      setConfirmWater(false);
+                      setConfirmQcWater(false);
                       setStep(2);
                     }}
                   >
@@ -1473,7 +1862,52 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 </div>
               </div>
 
-            <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "10px 18px",
+                  textAlign: "center",
+                  minHeight: 135,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
+                  Confirm Customer Water
+                </div>
+
+                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
+                  {formatGallons(customerWaterAdded)}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 8 }}>
+                  <button
+                    className="primary-btn"
+                    type="button"
+                    style={{ width: "auto", marginTop: 0 }}
+                    onClick={() => setConfirmCustomerWater(true)}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="secondary-btn"
+                    type="button"
+                    onClick={() => {
+                      setConfirmCustomerWater(false);
+                      setStep(4);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
             </div>
 
             <label style={{ marginTop: 14 }}>Ticket Acceptance</label>
@@ -1505,7 +1939,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <option value="Mechanical">Mechanical</option>
                   <option value="Dispatch">Dispatch</option>
                   <option value="Batch">Batch</option>
-                  <option value="Other">Other</option>
+                  <option value="Time">Other</option>
                 </select>
               </>
             ) : null}
@@ -1706,7 +2140,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   onClick={() => {
                     stopCamera();
                     setCameraStarted(false);
-                    setStep(2);
+                    setStep(4);
                   }}
                 >
                   Back
