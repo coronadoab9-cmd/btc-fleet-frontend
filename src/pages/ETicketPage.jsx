@@ -296,7 +296,7 @@ export default function ETicketPage() {
   useEffect(() => {
     if (signed) return;
 
-    if (step === 3) {
+    if (step === 5) {
       const id = setTimeout(() => {
         startCamera();
       }, 300);
@@ -304,7 +304,7 @@ export default function ETicketPage() {
       return () => clearTimeout(id);
     }
 
-    if (step !== 3) {
+    if (step !== 5) {
       stopCamera();
       setCameraStarted(false);
     }
@@ -312,11 +312,11 @@ export default function ETicketPage() {
 
   useEffect(() => {
     const id = setTimeout(() => {
-      if (step === 2) {
+      if (step === 4) {
         setupCanvas(waterSignatureRef.current, "#0b1a2b", waterSignatureDataUrl);
       }
 
-      if (step === 3) {
+      if (step === 5) {
         setupCanvas(finalSignatureRef.current, "#0b1a2b", finalSignatureDataUrl);
       }
     }, 150);
@@ -1939,7 +1939,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <option value="Mechanical">Mechanical</option>
                   <option value="Dispatch">Dispatch</option>
                   <option value="Batch">Batch</option>
-                  <option value="Time">Other</option>
+                  <option value="Time">Time</option>
                 </select>
               </>
             ) : null}
