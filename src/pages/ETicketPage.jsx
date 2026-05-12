@@ -228,8 +228,6 @@ export default function ETicketPage() {
   const [customerWaterAdded, setCustomerWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted Delivery");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [confirmQcWater, setConfirmQcWater] = useState(false);
-  const [confirmCustomerWater, setConfirmCustomerWater] = useState(false);
   const [locationData, setLocationData] = useState({
     latitude: null,
     longitude: null,
@@ -871,13 +869,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         throw new Error("Final signature is required");
       }
 
-      if (!confirmQcWater) {
-        throw new Error("Please confirm QC water added");
-      }
-
-      if (!confirmCustomerWater) {
-        throw new Error("Please confirm customer water added");
-      }
       if (ticketAcceptance === "Rejected Delivery" && !rejectionReason) {
         throw new Error("Please select a rejection reason.");
       }
@@ -1127,9 +1118,40 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <div className="asset-details">
               <SummaryRow label="Ticket #" value={ticket.ticket_number} />
               <SummaryRow label="Customer" value={ticket.customer_name} />
-              <SummaryRow label="Truck" value={ticket.truck_number} />
+              <SummaryRow label="Address" value={ticket.address} />
 
-              <SummaryRow label="Ordered Slump" value={mix.slump} />
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: 18,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--muted)",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    marginBottom: 8,
+                  }}
+                >
+                  Ordered Slump
+                </div>
+
+                <div
+                  style={{
+                    color: "#fff",
+                    fontSize: isPhone ? 42 : 56,
+                    fontWeight: 950,
+                    lineHeight: 1,
+                  }}
+                >
+                  4.5
+                </div>
+              </div>
             </div>
 
             <div
@@ -1143,76 +1165,73 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             >
               <div
                 style={{
-                  fontWeight: 800,
+                  fontWeight: 900,
                   color: "#fff",
                   marginBottom: 12,
-                  fontSize: 16,
+                  fontSize: 20,
+                  textAlign: "center",
                 }}
               >
                 Batch Weights
               </div>
 
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  color: "#fff",
-                  fontSize: 12,
-                }}
-              >
-                <thead>
-                  <tr>
-                    {[
-                      "Description",
-                      "Design",
-                      "Target",
-                      "Actual",
-                      "UOM",
-                      "% Var",
-                      "Moisture (%)",
-                      "Water (gal)",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        style={{
-                          borderBottom: "1px solid var(--border)",
-                          padding: 6,
-                          textAlign: "left",
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {[
-                    ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
-                    ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
-                    ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
-                    ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
-                    ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
-                    ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
-                    ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
-                  ].map((row, i) => (
-                    <tr key={i}>
-                      {row.map((cell, j) => (
-                        <td
-                          key={j}
-                          style={{
-                            borderBottom:
-                              "1px solid rgba(255,255,255,0.08)",
-                            padding: 6,
-                          }}
-                        >
-                          {cell}
-                        </td>
-                      ))}
+              <div style={{ overflowX: "auto", width: "100%" }}>
+                <table
+                  style={{
+                    width: isPhone ? 620 : "100%",
+                    borderCollapse: "collapse",
+                    color: "#fff",
+                    fontSize: isPhone ? 14 : 15,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {["Description", "Design", "Target", "Actual", "UOM", "% Var"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            style={{
+                              borderBottom: "1px solid var(--border)",
+                              padding: 8,
+                              textAlign: "left",
+                              fontSize: isPhone ? 13 : 14,
+                            }}
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+
+                  <tbody>
+                    {[
+                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6"],
+                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6"],
+                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2"],
+                      ["09-Water", "28", "230", "226", "gal", "-1.6"],
+                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2"],
+                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1"],
+                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9"],
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        {row.map((cell, j) => (
+                          <td
+                            key={j}
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              padding: 8,
+                              fontWeight: j === 0 ? 800 : 700,
+                            }}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <button
@@ -1230,31 +1249,239 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
         {step === 2 && (
           <>
-            <div className="asset-details">
-              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-              <SummaryRow label="Customer" value={ticket.customer_name} />
-              <SummaryRow label="Truck" value={ticket.truck_number} />
-              <SummaryRow label="Ordered Slump" value={mix.slump} />
-            </div>
-
             <div
               style={{
-                marginTop: 18,
                 background: "var(--panel-2)",
                 border: "1px solid var(--border)",
-                borderRadius: 14,
-                padding: 14,
+                borderRadius: 16,
+                padding: 16,
               }}
             >
               <div
                 style={{
-                  fontWeight: 800,
-                  color: "#fff",
-                  marginBottom: 12,
-                  fontSize: 16,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 14,
+                  alignItems: "flex-start",
                 }}
               >
-                Batch Weights
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontSize: isPhone ? 24 : 30,
+                      fontWeight: 950,
+                      marginBottom: 14,
+                    }}
+                  >
+                    BTC QC ETICKET
+                  </div>
+
+                  <div className="asset-details">
+                    <SummaryRow label="Customer" value={ticket.customer_name} />
+                    <SummaryRow label="Address" value={ticket.address} />
+                    <SummaryRow
+                      label="Load Time"
+                      value={formatCentralDateTime(ticket.load_time)}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "#fff",
+                    width: isPhone ? 110 : 140,
+                    height: isPhone ? 110 : 140,
+                    borderRadius: 12,
+                    display: "grid",
+                    placeItems: "center",
+                    overflow: "hidden",
+                    padding: 8,
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                      window.location.href
+                    )}`}
+                    alt="QC eTicket QR"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 14,
+                  padding: 12,
+                  color: "#d7e7f7",
+                  fontWeight: 800,
+                  textAlign: "center",
+                }}
+              >
+                QC informational view only.
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
+                  gap: 14,
+                  marginTop: 16,
+                }}
+              >
+                <div
+                  style={{
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    padding: isPhone ? 10 : 16,
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "var(--muted)",
+                      fontSize: isPhone ? 16 : 18,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Water Allowed
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontWeight: 900,
+                      fontSize: isPhone ? 24 : 38,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {formatGallons(waterAllowed)}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 14,
+                    padding: isPhone ? 10 : 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "100%",
+                      textAlign: "center",
+                      color: "var(--muted)",
+                      fontSize: isPhone ? 16 : 18,
+                      marginBottom: 12,
+                    }}
+                  >
+                    QC Water Added
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <button
+                      className="primary-btn"
+                      style={{
+                        width: isPhone ? 46 : 64,
+                        height: isPhone ? 42 : 52,
+                        marginTop: 0,
+                        fontSize: isPhone ? 20 : 26,
+                        fontWeight: 900,
+                        touchAction: "none",
+                        userSelect: "none",
+                      }}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        startWaterPress(-1, "qc");
+                      }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        finishWaterPress();
+                      }}
+                      onPointerLeave={finishWaterPress}
+                      onPointerCancel={finishWaterPress}
+                    >
+                      -
+                    </button>
+
+                    <div
+                      style={{
+                        color: "#fff",
+                        fontSize: isPhone ? 22 : 28,
+                        fontWeight: 900,
+                        minWidth: 130,
+                        textAlign: "center",
+                      }}
+                    >
+                      {formatGallons(qcWaterAdded)}
+                    </div>
+
+                    <button
+                      className="primary-btn"
+                      style={{
+                        width: isPhone ? 46 : 64,
+                        height: isPhone ? 42 : 52,
+                        marginTop: 0,
+                        fontSize: isPhone ? 20 : 26,
+                        fontWeight: 900,
+                        touchAction: "none",
+                        userSelect: "none",
+                      }}
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        startWaterPress(1, "qc");
+                      }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        finishWaterPress();
+                      }}
+                      onPointerLeave={finishWaterPress}
+                      onPointerCancel={finishWaterPress}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 16,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: "#fff",
+                  textAlign: "center",
+                  marginBottom: 12,
+                  fontSize: 20,
+                }}
+              >
+                Full Batch Weights
               </div>
 
               <div style={{ overflowX: "auto", width: "100%" }}>
@@ -1321,141 +1548,14 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
-                gap: 14,
-                marginTop: 16,
-              }}
-            >
-              <div
-                style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: isPhone ? 10 : 16,
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    color: "var(--muted)",
-                    fontSize: isPhone ? 16 : 18,
-                    marginBottom: 12,
-                  }}
-                >
-                  Water Allowed
-                </div>
-
-                <div
-                  style={{
-                    color: "#fff",
-                    fontWeight: 900,
-                    fontSize: isPhone ? 24 : 38,
-                    lineHeight: 1,
-                  }}
-                >
-                  {formatGallons(waterAllowed)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: isPhone ? 10 : 16,
-                }}
-              >
-                <div
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    color: "var(--muted)",
-                    fontSize: isPhone ? 16 : 18,
-                    marginBottom: 12,
-                  }}
-                >
-                  QC Water Added
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                  }}
-                >
-                  <button
-                    className="primary-btn"
-                    style={{
-                      width: isPhone ? 46 : 64,
-                      height: isPhone ? 42 : 52,
-                      marginTop: 0,
-                      fontSize: isPhone ? 20 : 26,
-                      fontWeight: 900,
-                      touchAction: "none",
-                      userSelect: "none",
-                    }}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      startWaterPress(-1, "qc");
-                    }}
-                    onPointerUp={(e) => {
-                      e.preventDefault();
-                      finishWaterPress();
-                    }}
-                    onPointerLeave={finishWaterPress}
-                    onPointerCancel={finishWaterPress}
-                  >
-                    -
-                  </button>
-
-                  <div
-                    style={{
-                      color: "#fff",
-                      fontSize: isPhone ? 22 : 28,
-                      fontWeight: 900,
-                      minWidth: 130,
-                      textAlign: "center",
-                    }}
-                  >
-                    {formatGallons(qcWaterAdded)}
-                  </div>
-
-                  <button
-                    className="primary-btn"
-                    style={{
-                      width: isPhone ? 46 : 64,
-                      height: isPhone ? 42 : 52,
-                      marginTop: 0,
-                      fontSize: isPhone ? 20 : 26,
-                      fontWeight: 900,
-                      touchAction: "none",
-                      userSelect: "none",
-                    }}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      startWaterPress(1, "qc");
-                    }}
-                    onPointerUp={(e) => {
-                      e.preventDefault();
-                      finishWaterPress();
-                    }}
-                    onPointerLeave={finishWaterPress}
-                    onPointerCancel={finishWaterPress}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </button>
 
               <button
                 className="primary-btn"
@@ -1523,16 +1623,26 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               />
             </div>
 
-            <button 
-              className="primary-btn"
-              type="button"
-              onClick={() => {
-                setError("");
-                setStep(4);
-              }}
-            >
-              Next
-            </button>
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => setStep(2)}
+              >
+                Back
+              </button>
+
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setStep(4);
+                }}
+              >
+                Next
+              </button>
+            </div>
           </>
         )}
 
@@ -1833,32 +1943,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  Confirm QC Water
+                  QC Water Added
                 </div>
 
                 <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
                   {formatGallons(qcWaterAdded)}
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 8 }}>
-                  <button
-                    className="primary-btn"
-                    type="button"
-                    style={{ width: "auto", marginTop: 0 }}
-                    onClick={() => setConfirmQcWater(true)}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    className="secondary-btn"
-                    type="button"
-                    onClick={() => {
-                      setConfirmQcWater(false);
-                      setStep(2);
-                    }}
-                  >
-                    Edit
-                  </button>
                 </div>
               </div>
 
@@ -1876,29 +1965,18 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  Confirm Customer Water
+                  Customer Water Added
                 </div>
 
                 <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
                   {formatGallons(customerWaterAdded)}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 8 }}>
-                  <button
-                    className="primary-btn"
-                    type="button"
-                    style={{ width: "auto", marginTop: 0 }}
-                    onClick={() => setConfirmCustomerWater(true)}
-                  >
-                    Yes
-                  </button>
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
                   <button
                     className="secondary-btn"
                     type="button"
-                    onClick={() => {
-                      setConfirmCustomerWater(false);
-                      setStep(4);
-                    }}
+                    onClick={() => setStep(4)}
                   >
                     Edit
                   </button>
