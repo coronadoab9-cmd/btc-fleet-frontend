@@ -1288,16 +1288,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      color: "#fff",
-                      fontSize: isPhone ? 24 : 30,
-                      fontWeight: 950,
-                      marginBottom: 14,
-                    }}
-                  >
-                    BTC QC ETICKET
-                  </div>
 
                   <div className="asset-details">
                     <SummaryRow label="Customer" value={ticket.customer_name} />
@@ -1333,21 +1323,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     }}
                   />
                 </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 14,
-                  padding: 12,
-                  color: "#d7e7f7",
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
-                QC informational view only.
               </div>
 
               <div
@@ -1571,13 +1546,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </button>
 
               <button
                 className="primary-btn"
