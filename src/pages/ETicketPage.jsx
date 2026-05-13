@@ -1325,7 +1325,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
                   <SummaryRow
                     label="Load Time"
-                    value={formatDateTime(ticket.load_time)}
+                    value={formatCentralDateTime(ticket.load_time)}
                   />
                 </div>
               </div>
