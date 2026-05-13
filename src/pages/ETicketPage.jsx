@@ -1324,7 +1324,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   >
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                        `https://fleet.btcfleet.app/api/etickets/${token}/qc-pdf`
+                        `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
                       )}`}
                       alt="QC QR"
                       style={{
