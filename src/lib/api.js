@@ -1,17 +1,13 @@
 export function getApiBase() {
   if (typeof window === "undefined") return "http://127.0.0.1:8000";
 
-  const { protocol, hostname } = window.location;
+  const { hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://127.0.0.1:8000";
   }
 
-  if (hostname === "app.btcfleet.app") {
-    return "https://fleet.btcfleet.app";
-  }
-
-  return `${protocol}//fleet.btcfleet.app`;
+  return "https://btc-fleet-backend.onrender.com";
 }
 
 export function getAppBase() {

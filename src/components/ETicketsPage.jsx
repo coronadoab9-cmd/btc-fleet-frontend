@@ -217,7 +217,7 @@ export default function ETicketsPage({ token }) {
     }
 
     try {
-      const res = await fetch("https://fleet.btcfleet.app/admin/etickets/export-pdfs", {
+      const res = await fetch(`${getApiBase()}/admin/etickets/export-pdfs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
