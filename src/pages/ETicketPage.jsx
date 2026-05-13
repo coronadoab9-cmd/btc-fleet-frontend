@@ -1281,52 +1281,60 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             >
               <div
                 style={{
-                  position: "relative",
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 18,
                   padding: isPhone ? 14 : 22,
                 }}
               >
-                {/* QR TOP RIGHT */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: 18,
-                    right: 18,
+                    display: "grid",
+                    gridTemplateColumns: isPhone ? "1fr" : "1fr 130px",
+                    gap: 14,
+                    alignItems: "start",
                   }}
                 >
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                      `https://fleet.btcfleet.app/api/etickets/${token}/qc-pdf`
-                    )}`}
-                    alt="QC QR"
+                  <div className="asset-details">
+                    <SummaryRow
+                      label="Customer"
+                      value={ticket.customer_name || "-"}
+                    />
+
+                    <SummaryRow
+                      label="Address"
+                      value={ticket.address || "-"}
+                    />
+
+                    <SummaryRow
+                      label="Load Time"
+                      value={formatCentralDateTime(ticket.load_time)}
+                    />
+                  </div>
+
+                  <div
                     style={{
-                      width: isPhone ? 90 : 120,
-                      height: isPhone ? 90 : 120,
-                      borderRadius: 12,
+                      justifySelf: isPhone ? "center" : "end",
                       background: "#fff",
+                      width: 120,
+                      height: 120,
+                      borderRadius: 12,
                       padding: 6,
+                      display: "grid",
+                      placeItems: "center",
                     }}
-                  />
-                </div>
-
-                {/* INFO */}
-                <div style={{ paddingRight: isPhone ? 0 : 150 }}>
-                  <SummaryRow
-                    label="Customer"
-                    value={ticket.customer_name || "-"}
-                  />
-
-                  <SummaryRow
-                    label="Address"
-                    value={ticket.address || "-"}
-                  />
-
-                  <SummaryRow
-                    label="Load Time"
-                    value={formatCentralDateTime(ticket.load_time)}
-                  />
+                  >
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                        `https://fleet.btcfleet.app/api/etickets/${token}/qc-pdf`
+                      )}`}
+                      alt="QC QR"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
