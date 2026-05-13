@@ -1171,7 +1171,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     lineHeight: 1,
                   }}
                 >
-                  4.5
+                  4.5 in
                 </div>
               </div>
             </div>
@@ -1658,12 +1658,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <option>Not Needed</option>
               <option>Customer / Contractor Signature</option>
             </select>
-
-            <InfoNotice>
-              <div style={{ marginTop: 8 }}>
-                We are not responsible for any property damage.
-              </div>
-            </InfoNotice>
 
             <div
               style={{
