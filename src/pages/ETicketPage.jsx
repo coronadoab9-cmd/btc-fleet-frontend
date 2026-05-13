@@ -1281,46 +1281,51 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             >
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 14,
-                  alignItems: "flex-start",
+                  position: "relative",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 18,
+                  padding: isPhone ? 14 : 22,
                 }}
               >
-                <div style={{ flex: 1 }}>
-
-                  <div className="asset-details">
-                    <SummaryRow label="Customer" value={ticket.customer_name} />
-                    <SummaryRow label="Address" value={ticket.address} />
-                    <SummaryRow
-                      label="Load Time"
-                      value={formatCentralDateTime(ticket.load_time)}
-                    />
-                  </div>
-                </div>
-
+                {/* QR TOP RIGHT */}
                 <div
                   style={{
-                    background: "#fff",
-                    width: isPhone ? 110 : 140,
-                    height: isPhone ? 110 : 140,
-                    borderRadius: 12,
-                    display: "grid",
-                    placeItems: "center",
-                    overflow: "hidden",
-                    padding: 8,
-                    flexShrink: 0,
+                    position: "absolute",
+                    top: 18,
+                    right: 18,
                   }}
                 >
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
                       `https://fleet.btcfleet.app/api/etickets/${token}/qc-pdf`
                     )}`}
-                    alt="QC eTicket QR"
+                    alt="QC QR"
                     style={{
-                      width: "100%",
-                      height: "100%",
+                      width: isPhone ? 90 : 120,
+                      height: isPhone ? 90 : 120,
+                      borderRadius: 12,
+                      background: "#fff",
+                      padding: 6,
                     }}
+                  />
+                </div>
+
+                {/* INFO */}
+                <div style={{ paddingRight: isPhone ? 0 : 150 }}>
+                  <SummaryRow
+                    label="Customer"
+                    value={ticket.customer_name || "-"}
+                  />
+
+                  <SummaryRow
+                    label="Address"
+                    value={ticket.address || "-"}
+                  />
+
+                  <SummaryRow
+                    label="Load Time"
+                    value={formatDateTime(ticket.load_time)}
                   />
                 </div>
               </div>
@@ -1478,7 +1483,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   fontSize: 20,
                 }}
               >
-                Full Batch Weights
+                Batch Weights
               </div>
 
               <div style={{ overflowX: "auto", width: "100%" }}>
