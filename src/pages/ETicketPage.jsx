@@ -1290,8 +1290,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isPhone ? "1fr" : "1fr 130px",
-                    gap: 14,
+                    gridTemplateColumns: isPhone ? "1fr" : "1fr auto",
+                    gap: 10,
                     alignItems: "start",
                   }}
                 >
@@ -1314,14 +1314,12 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
                   <div
                     style={{
-                      justifySelf: isPhone ? "center" : "end",
+                      justifySelf: "end",
+                      alignSelf: "start",
+                      marginLeft: 8,
                       background: "#fff",
-                      width: 120,
-                      height: 120,
-                      borderRadius: 12,
-                      padding: 6,
-                      display: "grid",
-                      placeItems: "center",
+                      width: 110,
+                      height: 110,
                     }}
                   >
                     <img
