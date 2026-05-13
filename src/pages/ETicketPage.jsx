@@ -351,6 +351,28 @@ export default function ETicketPage() {
   }, [token]);
 
   useEffect(() => {
+    if (signed || step !== 2) return;
+
+    async function saveQcWeather() {
+      try {
+        const loc = await fetchCurrentLocation();
+
+        await apiFetch(`/api/etickets/${token}/qc-weather`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(loc),
+        });
+
+        await loadTicket();
+      } catch (err) {
+        console.log("QC weather/location capture failed:", err);
+      }
+    }
+
+    saveQcWeather();
+  }, [step, signed, token]);
+
+  useEffect(() => {
     if (signed) return;
 
     fetchCurrentLocation().catch((err) => {
