@@ -420,11 +420,23 @@ export default function ETicketsPage({ token }) {
           ))}
         </div>
 
+        {eticketTab === "pending" ? (
+          <input
+            style={{
+              ...styles.input,
+              marginBottom: 16,
+            }}
+            value={ticketFilter}
+            onChange={(e) => setTicketFilter(e.target.value)}
+            placeholder="Search by ticket #"
+          />
+        ) : null}
+
         {loading ? (
           <div className="empty-state">Loading eTickets...</div>
         ) : (
           <div style={styles.mobileTicketList}>
-            {tickets.map((ticket) => (
+            {filteredTickets.map((ticket) => (
               <div key={ticket.token} style={styles.mobileTicketCard}>
                 <div style={styles.ticketCardTop}>
                   <div style={styles.ticketNumber}>
