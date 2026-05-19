@@ -559,7 +559,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   // Phone-only native touch listeners.
   // Tablet and desktop keep the regular pointer handlers that already work.
   useEffect(() => {
-    if (signed || !isTouchDevice) return;
+    if (signed || !isPhone) return;
 
     const configs = [
       {
@@ -651,7 +651,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [step, signed, isTouchDevice, curbLineSignature]);
+  }, [step, signed, isPhone, curbLineSignature]);
 
 
 
