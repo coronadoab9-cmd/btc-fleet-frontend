@@ -1374,7 +1374,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     fontSize: 14,
                   }}
                 >
-                  Opens QC informational PDF
                 </div>
               </div>
             </div>
