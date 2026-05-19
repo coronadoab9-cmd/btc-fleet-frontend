@@ -464,7 +464,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }, [signed, step, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   function startSignature(event, canvasRef, drawingRef, lastPointRef) {
-    if (isPhone && event.pointerType === "touch") return;
+    
 
     event.preventDefault();
     event.stopPropagation();
@@ -488,7 +488,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }
 
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
-    if (isPhone && event.pointerType === "touch") return;
+    
     if (!drawingRef.current || signed) return;
 
     event.preventDefault();
@@ -506,7 +506,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }
 
   function endSignature(event, canvasRef, drawingRef, setDataUrl) {
-    if (isPhone && event.pointerType === "touch") return;
+    
     if (!drawingRef.current) return;
 
     event.preventDefault();
