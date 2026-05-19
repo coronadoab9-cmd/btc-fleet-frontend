@@ -1558,28 +1558,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           <>
 
             <label>Curb Line Signature</label>
-            {curbLineSignature === "Customer / Contractor Signature" ? (
-              <div
-                style={{
-                  background: "rgba(255,165,0,0.10)",
-                  border: "1px solid rgba(255,165,0,0.35)",
-                  color: "#f3f4f6",
-                  borderRadius: 12,
-                  padding: "12px 14px",
-                  marginBottom: 12,
-                  fontSize: isPhone ? 11 : 13,
-                  lineHeight: 1.45,
-                  fontWeight: 600,
-                }}
-              >
-                By signing below, the customer/contractor acknowledges
-                responsibility for proper site conditions and accepts
-                delivery as requested. Big Town Concrete is not responsible
-                for property damage resulting from site access limitations,
-                unstable surfaces, underground utilities, customer-directed
-                vehicle movement, or conditions beyond driver control.
-              </div>
-            ) : null}
+            
             <select
               value={curbLineSignature}
               onChange={(e) => setCurbLineSignature(e.target.value)}
@@ -1736,6 +1715,29 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
                   Curb Line Signature
                 </div>
+
+                {curbLineSignature === "Customer / Contractor Signature" ? (
+                  <div
+                    style={{
+                      background: "rgba(255,165,0,0.10)",
+                      border: "1px solid rgba(255,165,0,0.35)",
+                      color: "#f3f4f6",
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      marginBottom: 12,
+                      fontSize: isPhone ? 11 : 13,
+                      lineHeight: 1.45,
+                      fontWeight: 600,
+                    }}
+                  >
+                    By signing below, the customer/contractor acknowledges
+                    responsibility for proper site conditions and accepts
+                    delivery as requested. Big Town Concrete is not responsible
+                    for property damage resulting from site access limitations,
+                    unstable surfaces, underground utilities, customer-directed
+                    vehicle movement, or conditions beyond driver control.
+                  </div>
+                ) : null}
 
                 <canvas
                   className="signature-canvas"
