@@ -1297,200 +1297,84 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           <>
             <div
               style={{
-                background: "var(--panel-2)",
-                border: "1px solid var(--border)",
-                borderRadius: 16,
-                padding: 16,
+                display: "grid",
+                gap: 14,
               }}
             >
+              {/* CUSTOMER INFO CARD */}
               <div
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 18,
-                  padding: isPhone ? 14 : 22,
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
                 }}
               >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isPhone ? "1fr" : "1fr auto",
-                    gap: 10,
-                    alignItems: "start",
-                  }}
-                >
-                  <div className="asset-details">
-                    <SummaryRow
-                      label="Customer"
-                      value={ticket.customer_name || "-"}
-                    />
-
-                    <SummaryRow
-                      label="Address"
-                      value={ticket.address || "-"}
-                    />
-
-                    <SummaryRow
-                      label="Load Time"
-                      value={formatCentralDateTime(ticket.load_time)}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      justifySelf: "end",
-                      alignSelf: "start",
-                      marginLeft: 8,
-                      background: "#fff",
-                      width: 110,
-                      height: 110,
-                    }}
-                  >
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                        `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
-                      )}`}
-                      alt="QC QR"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                    />
-                  </div>
+                <div className="asset-details">
+                  <SummaryRow label="Customer" value={ticket.customer_name || "-"} />
+                  <SummaryRow label="Address" value={ticket.address || "-"} />
+                  <SummaryRow
+                    label="Load Time"
+                    value={formatCentralDateTime(ticket.load_time)}
+                  />
                 </div>
               </div>
 
+              {/* QR CARD */}
               <div
                 style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
                   display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
-                  gap: 14,
-                  marginTop: 16,
+                  justifyItems: "center",
+                  textAlign: "center",
                 }}
               >
                 <div
                   style={{
-                    background: "var(--panel-2)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    padding: isPhone ? 10 : 16,
-                    textAlign: "center",
+                    color: "#fff",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    marginBottom: 12,
                   }}
                 >
-                  <div
-                    style={{
-                      color: "var(--muted)",
-                      fontSize: isPhone ? 16 : 18,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Water Allowed
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#fff",
-                      fontWeight: 900,
-                      fontSize: isPhone ? 24 : 38,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {formatGallons(waterAllowed)}
-                  </div>
+                  Scan for QC eTicket
                 </div>
 
                 <div
                   style={{
-                    background: "var(--panel-2)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    padding: isPhone ? 10 : 16,
+                    background: "#fff",
+                    width: isPhone ? 210 : 150,
+                    height: isPhone ? 210 : 150,
+                    borderRadius: 12,
+                    padding: 8,
+                    display: "grid",
+                    placeItems: "center",
                   }}
                 >
-                  <div
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+                      `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
+                    )}`}
+                    alt="QC QR"
                     style={{
                       width: "100%",
-                      textAlign: "center",
-                      color: "var(--muted)",
-                      fontSize: isPhone ? 16 : 18,
-                      marginBottom: 12,
+                      height: "100%",
                     }}
-                  >
-                    QC Water Added
-                  </div>
+                  />
+                </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <button
-                      className="primary-btn"
-                      style={{
-                        width: isPhone ? 46 : 64,
-                        height: isPhone ? 42 : 52,
-                        marginTop: 0,
-                        fontSize: isPhone ? 20 : 26,
-                        fontWeight: 900,
-                        touchAction: "none",
-                        userSelect: "none",
-                      }}
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        startWaterPress(-1, "qc");
-                      }}
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        finishWaterPress();
-                      }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
-                    >
-                      -
-                    </button>
-
-                    <div
-                      style={{
-                        color: "#fff",
-                        fontSize: isPhone ? 22 : 28,
-                        fontWeight: 900,
-                        minWidth: 130,
-                        textAlign: "center",
-                      }}
-                    >
-                      {formatGallons(qcWaterAdded)}
-                    </div>
-
-                    <button
-                      className="primary-btn"
-                      style={{
-                        width: isPhone ? 46 : 64,
-                        height: isPhone ? 42 : 52,
-                        marginTop: 0,
-                        fontSize: isPhone ? 20 : 26,
-                        fontWeight: 900,
-                        touchAction: "none",
-                        userSelect: "none",
-                      }}
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        startWaterPress(1, "qc");
-                      }}
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        finishWaterPress();
-                      }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
-                    >
-                      +
-                    </button>
-                  </div>
+                <div
+                  style={{
+                    color: "var(--muted)",
+                    fontWeight: 700,
+                    marginTop: 10,
+                    fontSize: 14,
+                  }}
+                >
+                  Opens QC informational PDF
                 </div>
               </div>
             </div>
