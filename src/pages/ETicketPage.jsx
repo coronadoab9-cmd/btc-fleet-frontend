@@ -61,7 +61,7 @@ function drawSignatureDot(canvas, point) {
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
-  ctx.arc(point.x, point.y, 1.7, 0, Math.PI * 2);
+  ctx.arc(point.x, point.y, 0.7, 0, Math.PI * 2);
   ctx.fill();
 }
 
