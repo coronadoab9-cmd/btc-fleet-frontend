@@ -220,6 +220,11 @@ export default function ETicketPage() {
   const [step, setStep] = useState(1);
   const [nowTick, setNowTick] = useState(Date.now());
   const isPhone = window.innerWidth <= 600;
+  const isTouchDevice =
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      navigator.msMaxTouchPoints > 0);
   const [loadingQc, setLoadingQc] = useState(false);
 
   const [curbLineSignature, setCurbLineSignature] = useState("Not Needed");
@@ -554,7 +559,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   // Phone-only native touch listeners.
   // Tablet and desktop keep the regular pointer handlers that already work.
   useEffect(() => {
-    if (signed || !isPhone) return;
+    if (signed || !isTouchDevice) return;
 
     const configs = [
       {
