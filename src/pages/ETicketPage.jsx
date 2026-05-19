@@ -1747,6 +1747,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 <canvas
                   className="signature-canvas"
                   ref={waterSignatureRef}
+                  onContextMenu={(e) => e.preventDefault()}
                   onPointerDown={(e) =>
                     startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
                   }
@@ -1779,6 +1780,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     WebkitTouchCallout: "none",
+                    WebkitTapHighlightColor: "transparent",
                     marginTop: 10,
                     background: "#0b1a2b",
                   }}
@@ -2054,6 +2056,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <canvas
                 className="signature-canvas"
                 ref={finalSignatureRef}
+                onContextMenu={(e) => e.preventDefault()}
                 onPointerDown={(e) =>
                   startSignature(e, finalSignatureRef, drawingFinalRef, lastFinalPointRef)
                 }
@@ -2087,6 +2090,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   WebkitTouchCallout: "none",
+                  WebkitTapHighlightColor: "transparent",
                   marginTop: 10,
                   background: "#0b1a2b",
                 }}
