@@ -333,7 +333,7 @@ export default function ETicketPage() {
     }, 150);
 
     return () => clearTimeout(id);
-  }, [step, isPhone, waterSignatureDataUrl, finalSignatureDataUrl]);
+  }, [step, isPhone, curbLineSignature, waterSignatureDataUrl, finalSignatureDataUrl]);
 
   async function loadTicket() {
     setLoading(true);
@@ -646,7 +646,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [step, signed, isPhone]);
+  }, [step, signed, isPhone, curbLineSignature]);
 
 
 
