@@ -220,6 +220,7 @@ export default function ETicketPage() {
   const [step, setStep] = useState(1);
   const [nowTick, setNowTick] = useState(Date.now());
   const isPhone = window.innerWidth <= 600;
+  const [loadingQc, setLoadingQc] = useState(false);
 
   const [curbLineSignature, setCurbLineSignature] = useState("Not Needed");
   const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
@@ -284,6 +285,18 @@ export default function ETicketPage() {
         }
       );
     });
+  };
+
+  const preloadQcPage = async () => {
+    try {
+      // preload current location
+      await fetchCurrentLocation();
+
+      // tiny delay so QC screen is instant
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    } catch (err) {
+      console.error("QC preload failed", err);
+    }
   };
 
   useEffect(() => {
@@ -1259,12 +1272,23 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <button
               className="primary-btn"
               type="button"
-              onClick={() => {
-                setError("");
-                setStep(2);
+              disabled={loadingQc}
+              onClick={async () => {
+                try {
+                  setError("");
+                  setLoadingQc(true);
+
+                  await preloadQcPage();
+
+                  setStep(2);
+                } catch (err) {
+                  console.error(err);
+                } finally {
+                  setLoadingQc(false);
+                }
               }}
             >
-              Next
+              {loadingQc ? "Loading QC..." : "Next"}
             </button>
           </>
         )}
