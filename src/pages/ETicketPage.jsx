@@ -651,7 +651,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     return () => {
       cleanups.forEach((cleanup) => cleanup());
     };
-  }, [step, signed, isPhone, curbLineSignature]);
+  }, [step, signed, isTouchDevice, curbLineSignature]);
 
 
 
@@ -1778,6 +1778,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     touchAction: "none",
                     userSelect: "none",
                     WebkitUserSelect: "none",
+                    WebkitTouchCallout: "none",
                     marginTop: 10,
                     background: "#0b1a2b",
                   }}
@@ -2085,6 +2086,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
+                  WebkitTouchCallout: "none",
                   marginTop: 10,
                   background: "#0b1a2b",
                 }}
