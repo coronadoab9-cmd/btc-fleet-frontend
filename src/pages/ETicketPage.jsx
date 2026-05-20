@@ -1590,40 +1590,41 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 gap: 14,
               }}
             >
-              {/* CUSTOMER INFO CARD */}
-              <div
-                style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 16,
-                  padding: 16,
-                }}
-              >
-                <div className="asset-details">
-                  <SummaryRow label={t("customer")} value={ticket.customer_name || "-"} />
-                  <SummaryRow label={t("address")} value={ticket.address || "-"} />
-                  <SummaryRow
-                    label={t("loadTime")}
-                    value={formatCentralDateTime(ticket.load_time)}
-                  />
-                </div>
-              </div>
-
-              {/* QR + WATER ROW */}
+              {/* CUSTOMER INFO + QR ROW */}
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
-                  gap: 16,
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 220px",
+                  gap: 14,
+                  alignItems: "stretch",
                 }}
               >
-                {/* LEFT SIDE - QR */}
+                {/* CUSTOMER INFO CARD */}
                 <div
                   style={{
                     background: "var(--panel-2)",
                     border: "1px solid var(--border)",
                     borderRadius: 16,
                     padding: 16,
+                  }}
+                >
+                  <div className="asset-details">
+                    <SummaryRow label={t("customer")} value={ticket.customer_name || "-"} />
+                    <SummaryRow label={t("address")} value={ticket.address || "-"} />
+                    <SummaryRow
+                      label={t("loadTime")}
+                      value={formatCentralDateTime(ticket.load_time)}
+                    />
+                  </div>
+                </div>
+
+                {/* QR CARD */}
+                <div
+                  style={{
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 12,
                     display: "grid",
                     justifyItems: "center",
                     alignContent: "center",
@@ -1634,8 +1635,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     style={{
                       color: "#fff",
                       fontWeight: 900,
-                      fontSize: 18,
-                      marginBottom: 12,
+                      fontSize: 15,
+                      marginBottom: 10,
                     }}
                   >
                     {t("scanQcEticket")}
@@ -1644,8 +1645,8 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <div
                     style={{
                       background: "#fff",
-                      width: isPhone ? 210 : 180,
-                      height: isPhone ? 210 : 180,
+                      width: isPhone ? 190 : 150,
+                      height: isPhone ? 190 : 150,
                       borderRadius: 12,
                       padding: 8,
                       display: "grid",
@@ -1664,106 +1665,135 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* RIGHT SIDE - WATER */}
+              {/* WATER ROW */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1.4fr",
+                  gap: 14,
+                }}
+              >
+                {/* WATER ALLOWED */}
                 <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 20,
+                    textAlign: "center",
                   }}
                 >
-                  {/* WATER ALLOWED */}
                   <div
                     style={{
-                      background: "var(--panel-2)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 16,
-                      padding: 20,
-                      textAlign: "center",
-                      flex: 1,
+                      color: "var(--muted)",
+                      fontSize: 18,
                     }}
                   >
-                    <div
-                      style={{
-                        color: "var(--muted)",
-                        fontSize: 18,
-                      }}
-                    >
-                      {t("waterAllowed")}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 42,
-                        fontWeight: 900,
-                        marginTop: 12,
-                        color: "#fff",
-                      }}
-                    >
-                      {waterAllowed} gal
-                    </div>
+                    {t("waterAllowed")}
                   </div>
 
-                  {/* QC WATER ADDED */}
                   <div
                     style={{
-                      background: "var(--panel-2)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 16,
-                      padding: 20,
-                      textAlign: "center",
-                      flex: 1,
+                      fontSize: 42,
+                      fontWeight: 900,
+                      marginTop: 12,
+                      color: "#fff",
                     }}
                   >
+                    {waterAllowed} gal
+                  </div>
+                </div>
+
+                {/* QC WATER ADDED */}
+                <div
+                  style={{
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "var(--muted)",
+                      fontSize: 18,
+                      marginBottom: 14,
+                    }}
+                  >
+                    {t("qcWaterAdded")}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isPhone ? "56px 1fr 56px" : "76px 1fr 76px",
+                      alignItems: "center",
+                      gap: 14,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      style={{
+                        height: isPhone ? 48 : 58,
+                        marginTop: 0,
+                        fontSize: isPhone ? 22 : 28,
+                        fontWeight: 900,
+                        touchAction: "none",
+                        userSelect: "none",
+                      }}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        startWaterPress(-1, "qc");
+                      }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        finishWaterPress();
+                      }}
+                      onPointerLeave={finishWaterPress}
+                      onPointerCancel={finishWaterPress}
+                    >
+                      -
+                    </button>
+
                     <div
                       style={{
-                        color: "var(--muted)",
-                        fontSize: 18,
-                        marginBottom: 14,
+                        fontSize: isPhone ? 28 : 40,
+                        fontWeight: 900,
+                        color: "#fff",
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {t("qcWaterAdded")}
+                      {Number(qcWaterAdded || 0).toFixed(1)} gal
                     </div>
 
-                    <div
+                    <button
+                      type="button"
+                      className="primary-btn"
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "70px 1fr 70px",
-                        alignItems: "center",
-                        gap: 12,
+                        height: isPhone ? 48 : 58,
+                        marginTop: 0,
+                        fontSize: isPhone ? 22 : 28,
+                        fontWeight: 900,
+                        touchAction: "none",
+                        userSelect: "none",
                       }}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        startWaterPress(1, "qc");
+                      }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        finishWaterPress();
+                      }}
+                      onPointerLeave={finishWaterPress}
+                      onPointerCancel={finishWaterPress}
                     >
-                      <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={() =>
-                          setQcWaterAdded((v) => Math.max(0, Number(v || 0) - 1))
-                        }
-                      >
-                        -
-                      </button>
-
-                      <div
-                        style={{
-                          fontSize: 34,
-                          fontWeight: 900,
-                          color: "#fff",
-                        }}
-                      >
-                        {Number(qcWaterAdded || 0).toFixed(1)} gal
-                      </div>
-
-                      <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={() =>
-                          setQcWaterAdded((v) => Number(v || 0) + 1)
-                        }
-                      >
-                        +
-                      </button>
-                    </div>
+                      +
+                    </button>
                   </div>
                 </div>
               </div>
