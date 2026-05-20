@@ -1397,19 +1397,71 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   return (
     <div className="app-shell" style={{ padding: 14 }}>
       <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="panel-title">{t("btcEticket")}</div>
-
-        <button
-          className="secondary-btn"
-          type="button"
-          onClick={() => setLanguage(language === "en" ? "es" : "en")}
+        <div
           style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: 12,
-            maxWidth: 220,
           }}
         >
-          {t("languageButton")}
-        </button>
+          <div
+            className="panel-title"
+            style={{
+              marginBottom: 0,
+            }}
+          >
+            {t("btcEticket")}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              background: "var(--panel-2)",
+              border: "1px solid var(--border)",
+              borderRadius: 999,
+              padding: 4,
+              overflow: "hidden",
+              minWidth: isPhone ? 120 : 150,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLanguage("en")}
+              style={{
+                flex: 1,
+                border: "none",
+                borderRadius: 999,
+                padding: isPhone ? "6px 10px" : "8px 14px",
+                fontWeight: 900,
+                fontSize: isPhone ? 12 : 14,
+                color: language === "en" ? "#fff" : "var(--muted)",
+                background: language === "en" ? "#f97316" : "transparent",
+                transition: "all 0.2s ease",
+              }}
+            >
+              ENG
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLanguage("es")}
+              style={{
+                flex: 1,
+                border: "none",
+                borderRadius: 999,
+                padding: isPhone ? "6px 10px" : "8px 14px",
+                fontWeight: 900,
+                fontSize: isPhone ? 12 : 14,
+                color: language === "es" ? "#fff" : "var(--muted)",
+                background: language === "es" ? "#f97316" : "transparent",
+                transition: "all 0.2s ease",
+              }}
+            >
+              ESP
+            </button>
+          </div>
+        </div>
 
         <div
           style={{
