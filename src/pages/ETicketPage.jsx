@@ -4,6 +4,150 @@ import { apiFetch, buildEticketPdfUrl } from "../lib/api";
 const API_QR_TERMS = "https://btcfleet.app/qr/terms";
 const CENTRAL_TZ = "America/Chicago";
 
+
+const UI_TEXT = {
+  en: {
+    btcEticket: "BTC eTicket",
+    signedEticket: "Signed eTicket",
+    driver: "Driver",
+    qc: "QC",
+    ticket: "Ticket",
+    water: "Water",
+    submit: "Submit",
+    submitting: "Submitting...",
+    next: "Next",
+    back: "Back",
+    edit: "Edit",
+    exitReturn: "Exit / Return",
+    loadingTicket: "Loading ticket...",
+    loadingQc: "Loading QC...",
+    ticketNumber: "Ticket #",
+    customer: "Customer",
+    address: "Address",
+    truck: "Truck",
+    signedBy: "Signed By",
+    acceptance: "Acceptance",
+    signedAtCdt: "Signed At (CDT)",
+    scanSignedPdf: "Scan to Open Signed PDF",
+    orderedSlump: "Ordered Slump",
+    batchWeights: "Batch Weights",
+    description: "Description",
+    design: "Design",
+    target: "Target",
+    actual: "Actual",
+    uom: "UOM",
+    variance: "% Var",
+    moisture: "Moisture (%)",
+    waterGallons: "Water (gal)",
+    scanQcEticket: "Scan for QC eTicket",
+    waterAllowed: "Water Allowed",
+    qcWaterAdded: "QC Water Added",
+    customerWaterAdded: "Customer Water Added",
+    totalWaterAllowed: "Total Water Allowed",
+    customerWaterAllowed: "Customer Water Allowed",
+    curbLineSignature: "Curb Line Signature",
+    notNeeded: "Not Needed",
+    customerContractorSignature: "Customer / Contractor Signature",
+    curbLineNotice: "By signing below, the customer/contractor acknowledges responsibility for proper site conditions and accepts delivery as requested. Big Town Concrete is not responsible for property damage resulting from site access limitations, unstable surfaces, underground utilities, customer-directed vehicle movement, or conditions beyond driver control.",
+    clearSignature: "Clear Signature",
+    finalSignature: "Final Signature",
+    btcTerms: "BTC Terms & Conditions",
+    ticketAcceptance: "Ticket Acceptance",
+    acceptedDelivery: "Accepted Delivery",
+    rejectedDelivery: "Rejected Delivery",
+    rejectionReason: "Rejection Reason",
+    selectReason: "Select reason",
+    slump: "Slump",
+    air: "Air",
+    mechanical: "Mechanical",
+    dispatch: "Dispatch",
+    batch: "Batch",
+    time: "Time",
+    mixNumber: "Mix #",
+    strength: "Strength",
+    loadTime: "Load Time",
+    loadSize: "Load Size",
+    quantityDeliveredTotal: "Quantity Delivered Total",
+    orderTotal: "Order Total",
+    signedOnSite: "Signed on site",
+    signedCustomerContractor: "Customer / Contractor Signature",
+    driverSignedNoOneAvailable: "Driver signed - no one available",
+    rejected: "Rejected",
+    accepted: "Accepted",
+    languageButton: "Español"
+  },
+  es: {
+    btcEticket: "BTC eTicket",
+    signedEticket: "eTicket firmado",
+    driver: "Chofer",
+    qc: "QC",
+    ticket: "Ticket",
+    water: "Agua",
+    submit: "Enviar",
+    submitting: "Enviando...",
+    next: "Siguiente",
+    back: "Atrás",
+    edit: "Editar",
+    exitReturn: "Salir / Regresar",
+    loadingTicket: "Cargando ticket...",
+    loadingQc: "Cargando QC...",
+    ticketNumber: "Ticket #",
+    customer: "Cliente",
+    address: "Dirección",
+    truck: "Camión",
+    signedBy: "Firmado por",
+    acceptance: "Aceptación",
+    signedAtCdt: "Firmado a las (CDT)",
+    scanSignedPdf: "Escanee para abrir el PDF firmado",
+    orderedSlump: "Revenimiento ordenado",
+    batchWeights: "Pesos de la mezcla",
+    description: "Descripción",
+    design: "Diseño",
+    target: "Meta",
+    actual: "Actual",
+    uom: "Unidad",
+    variance: "% Var",
+    moisture: "Humedad (%)",
+    waterGallons: "Agua (gal)",
+    scanQcEticket: "Escanear eTicket de QC",
+    waterAllowed: "Agua permitida",
+    qcWaterAdded: "Agua agregada por QC",
+    customerWaterAdded: "Agua agregada por el cliente",
+    totalWaterAllowed: "Total de agua permitida",
+    customerWaterAllowed: "Agua permitida al cliente",
+    curbLineSignature: "Firma para banqueta",
+    notNeeded: "No se necesita",
+    customerContractorSignature: "Firma del cliente / contratista",
+    curbLineNotice: "Al firmar abajo, el cliente/contratista reconoce que es responsable de las condiciones adecuadas del sitio y acepta la entrega solicitada. Big Town Concrete no se hace responsable por daños a la propiedad causados por limitaciones de acceso al sitio, superficies inestables, servicios subterráneos, movimientos del vehículo indicados por el cliente o condiciones fuera del control del chofer.",
+    clearSignature: "Borrar firma",
+    finalSignature: "Firma final",
+    btcTerms: "Términos y condiciones de BTC",
+    ticketAcceptance: "Aceptación del ticket",
+    acceptedDelivery: "Entrega aceptada",
+    rejectedDelivery: "Entrega rechazada",
+    rejectionReason: "Motivo del rechazo",
+    selectReason: "Seleccione motivo",
+    slump: "Revenimiento",
+    air: "Aire",
+    mechanical: "Mecánico",
+    dispatch: "Despacho",
+    batch: "Carga",
+    time: "Tiempo",
+    mixNumber: "Mezcla #",
+    strength: "Resistencia",
+    loadTime: "Hora de carga",
+    loadSize: "Tamaño de carga",
+    quantityDeliveredTotal: "Cantidad total entregada",
+    orderTotal: "Total del pedido",
+    signedOnSite: "Firmado en el sitio",
+    signedCustomerContractor: "Firma del cliente / contratista",
+    driverSignedNoOneAvailable: "Firmado por el chofer - no había nadie disponible",
+    rejected: "Rechazado",
+    accepted: "Aceptado",
+    languageButton: "English"
+  }
+};
+
 function getPoint(event, canvas) {
   const rect = canvas.getBoundingClientRect();
   const e = event.nativeEvent || event;
@@ -352,6 +496,8 @@ export default function ETicketPage() {
       navigator.maxTouchPoints > 0 ||
       navigator.msMaxTouchPoints > 0);
   const [loadingQc, setLoadingQc] = useState(false);
+  const [language, setLanguage] = useState("en");
+  const t = (key) => UI_TEXT[language]?.[key] || UI_TEXT.en[key] || key;
 
   const [curbLineSignature, setCurbLineSignature] = useState("Not Needed");
   const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
@@ -1122,7 +1268,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   }, []);
 
   if (loading) {
-    return <div className="full-screen-center">Loading ticket...</div>;
+    return <div className="full-screen-center">{t("loadingTicket")}</div>;
   }
 
   if (error && !ticket) {
@@ -1133,40 +1279,40 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     return (
       <div className="app-shell" style={{ padding: 16 }}>
         <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-          <div className="panel-title">Signed eTicket</div>
+          <div className="panel-title">{t("signedEticket")}</div>
 
           {success ? <div className="message-box">{success}</div> : null}
 
           <div className="asset-details">
-            <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-            <SummaryRow label="Customer" value={ticket.customer_name} />
-            <SummaryRow label="Truck" value={ticket.truck_number} />
+            <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
+            <SummaryRow label={t("customer")} value={ticket.customer_name} />
+            <SummaryRow label={t("truck")} value={ticket.truck_number} />
             <SummaryRow
-              label="Signed By"
+              label={t("signedBy")}
               value={
                 String(ticket.ticket_acceptance || "").includes("Driver signed")
-                  ? "Driver signed - no one available"
-                  : "Customer / Contractor Signature"
+                  ? t("driverSignedNoOneAvailable")
+                  : t("signedCustomerContractor")
               }
             />
 
             <SummaryRow
-              label="Acceptance"
+              label={t("acceptance")}
               value={
                 String(ticket.ticket_acceptance || "").includes("Reason:")
-                  ? `Rejected - ${
+                  ? `${t("rejected")} - ${
                       String(ticket.ticket_acceptance)
                         .split("Reason:")[1]
                         .split("|")[0]
                         .trim()
                     }`
                   : String(ticket.ticket_acceptance || "").includes("Rejected")
-                  ? "Rejected"
-                  : "Accepted"
+                  ? t("rejected")
+                  : t("accepted")
               }
             />
             <SummaryRow
-              label="Signed At (CDT)"
+              label={t("signedAtCdt")}
               value={formatCentralDateTime(ticket.signed_at)}
             />
           </div>
@@ -1186,7 +1332,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 fontSize: 18,
               }}
             >
-              Scan to Open Signed PDF
+              {t("scanSignedPdf")}
             </div>
 
             <div
@@ -1223,7 +1369,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   marginTop: 16,
                 }}
               >
-                Exit / Return
+                {t("exitReturn")}
               </button>
           </div>
         </div>
@@ -1251,7 +1397,19 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
   return (
     <div className="app-shell" style={{ padding: 14 }}>
       <div className="panel-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="panel-title">BTC eTicket</div>
+        <div className="panel-title">{t("btcEticket")}</div>
+
+        <button
+          className="secondary-btn"
+          type="button"
+          onClick={() => setLanguage(language === "en" ? "es" : "en")}
+          style={{
+            marginBottom: 12,
+            maxWidth: 220,
+          }}
+        >
+          {t("languageButton")}
+        </button>
 
         <div
           style={{
@@ -1263,28 +1421,28 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           }}
         >
           <span style={{ color: step === 1 ? "#fff" : "var(--muted)" }}>
-            Driver
+            {t("driver")}
           </span>
           <span style={{ color: step === 2 ? "#fff" : "var(--muted)" }}>
-            QC
+            {t("qc")}
           </span>
           <span style={{ color: step === 3 ? "#fff" : "var(--muted)" }}>
-            Ticket
+            {t("ticket")}
           </span>
           <span style={{ color: step === 4 ? "#fff" : "var(--muted)" }}>
-            Water
+            {t("water")}
           </span>
           <span style={{ color: step === 5 ? "#fff" : "var(--muted)" }}>
-            Submit
+            {t("submit")}
           </span>
         </div>
 
         {step === 1 && (
           <>
             <div className="asset-details">
-              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-              <SummaryRow label="Customer" value={ticket.customer_name} />
-              <SummaryRow label="Address" value={ticket.address} />
+              <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
+              <SummaryRow label={t("customer")} value={ticket.customer_name} />
+              <SummaryRow label={t("address")} value={ticket.address} />
 
               <div
                 style={{
@@ -1304,7 +1462,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     marginBottom: 8,
                   }}
                 >
-                  Ordered Slump
+                  {t("orderedSlump")}
                 </div>
 
                 <div
@@ -1338,7 +1496,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   textAlign: "center",
                 }}
               >
-                Batch Weights
+                {t("batchWeights")}
               </div>
 
               <div style={{ overflowX: "auto", width: "100%" }}>
@@ -1352,7 +1510,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 >
                   <thead>
                     <tr>
-                      {["Description", "Design", "Target", "Actual", "UOM", "% Var"].map(
+                      {[t("description"), t("design"), t("target"), t("actual"), t("uom"), t("variance")].map(
                         (h) => (
                           <th
                             key={h}
@@ -1419,49 +1577,53 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }
               }}
             >
-              {loadingQc ? "Loading QC..." : "Next"}
+              {loadingQc ? t("loadingQc") : t("next")}
             </button>
           </>
         )}
 
         {step === 2 && (
           <>
-            <div style={{ display: "grid", gap: 14 }}>
-              {/* CUSTOMER INFO + QR ROW */}
+            <div
+              style={{
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              {/* CUSTOMER INFO CARD */}
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <div className="asset-details">
+                  <SummaryRow label={t("customer")} value={ticket.customer_name || "-"} />
+                  <SummaryRow label={t("address")} value={ticket.address || "-"} />
+                  <SummaryRow
+                    label={t("loadTime")}
+                    value={formatCentralDateTime(ticket.load_time)}
+                  />
+                </div>
+              </div>
+
+              {/* QR + WATER ROW */}
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "1fr 220px",
-                  gap: 14,
-                  alignItems: "stretch",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
+                  gap: 16,
                 }}
               >
-                {/* CUSTOMER INFO CARD */}
+                {/* LEFT SIDE - QR */}
                 <div
                   style={{
                     background: "var(--panel-2)",
                     border: "1px solid var(--border)",
                     borderRadius: 16,
                     padding: 16,
-                  }}
-                >
-                  <div className="asset-details">
-                    <SummaryRow label="Customer" value={ticket.customer_name || "-"} />
-                    <SummaryRow label="Address" value={ticket.address || "-"} />
-                    <SummaryRow
-                      label="Load Time"
-                      value={formatCentralDateTime(ticket.load_time)}
-                    />
-                  </div>
-                </div>
-
-                {/* QR CARD */}
-                <div
-                  style={{
-                    background: "var(--panel-2)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 16,
-                    padding: 12,
                     display: "grid",
                     justifyItems: "center",
                     alignContent: "center",
@@ -1472,18 +1634,18 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     style={{
                       color: "#fff",
                       fontWeight: 900,
-                      fontSize: 15,
-                      marginBottom: 10,
+                      fontSize: 18,
+                      marginBottom: 12,
                     }}
                   >
-                    Scan for QC eTicket
+                    {t("scanQcEticket")}
                   </div>
 
                   <div
                     style={{
                       background: "#fff",
-                      width: isPhone ? 190 : 150,
-                      height: isPhone ? 190 : 150,
+                      width: isPhone ? 210 : 180,
+                      height: isPhone ? 210 : 180,
                       borderRadius: 12,
                       padding: 8,
                       display: "grid",
@@ -1495,140 +1657,117 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                         `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
                       )}`}
                       alt="QC QR"
-                      style={{ width: "100%", height: "100%" }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* WATER ROW */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1.4fr",
-                  gap: 14,
-                }}
-              >
-                {/* WATER ALLOWED */}
+                {/* RIGHT SIDE - WATER */}
                 <div
                   style={{
-                    background: "var(--panel-2)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 16,
-                    padding: 20,
-                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
                   }}
                 >
-                  <div style={{ color: "var(--muted)", fontSize: 18 }}>
-                    Water Allowed
-                  </div>
-
+                  {/* WATER ALLOWED */}
                   <div
                     style={{
-                      fontSize: 42,
-                      fontWeight: 900,
-                      marginTop: 12,
-                      color: "#fff",
+                      background: "var(--panel-2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 20,
+                      textAlign: "center",
+                      flex: 1,
                     }}
                   >
-                    {waterAllowed} gal
-                  </div>
-                </div>
-
-                {/* QC WATER ADDED */}
-                <div
-                  style={{
-                    background: "var(--panel-2)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 16,
-                    padding: 20,
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "var(--muted)",
-                      fontSize: 18,
-                      marginBottom: 14,
-                    }}
-                  >
-                    QC Water Added
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isPhone ? "56px 1fr 56px" : "76px 1fr 76px",
-                      alignItems: "center",
-                      gap: 14,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="primary-btn"
+                    <div
                       style={{
-                        height: isPhone ? 48 : 58,
-                        marginTop: 0,
-                        fontSize: isPhone ? 22 : 28,
-                        fontWeight: 900,
-                        touchAction: "none",
-                        userSelect: "none",
+                        color: "var(--muted)",
+                        fontSize: 18,
                       }}
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        startWaterPress(-1, "qc");
-                      }}
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        finishWaterPress();
-                      }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
                     >
-                      -
-                    </button>
+                      {t("waterAllowed")}
+                    </div>
 
                     <div
                       style={{
-                        fontSize: isPhone ? 28 : 40,
+                        fontSize: 42,
                         fontWeight: 900,
+                        marginTop: 12,
                         color: "#fff",
-                        whiteSpace: "nowrap",
                       }}
                     >
-                      {Number(qcWaterAdded || 0).toFixed(1)} gal
+                      {waterAllowed} gal
+                    </div>
+                  </div>
+
+                  {/* QC WATER ADDED */}
+                  <div
+                    style={{
+                      background: "var(--panel-2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 20,
+                      textAlign: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "var(--muted)",
+                        fontSize: 18,
+                        marginBottom: 14,
+                      }}
+                    >
+                      {t("qcWaterAdded")}
                     </div>
 
-                    <button
-                      type="button"
-                      className="primary-btn"
+                    <div
                       style={{
-                        height: isPhone ? 48 : 58,
-                        marginTop: 0,
-                        fontSize: isPhone ? 22 : 28,
-                        fontWeight: 900,
-                        touchAction: "none",
-                        userSelect: "none",
+                        display: "grid",
+                        gridTemplateColumns: "70px 1fr 70px",
+                        alignItems: "center",
+                        gap: 12,
                       }}
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        startWaterPress(1, "qc");
-                      }}
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        finishWaterPress();
-                      }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
                     >
-                      +
-                    </button>
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() =>
+                          setQcWaterAdded((v) => Math.max(0, Number(v || 0) - 1))
+                        }
+                      >
+                        -
+                      </button>
+
+                      <div
+                        style={{
+                          fontSize: 34,
+                          fontWeight: 900,
+                          color: "#fff",
+                        }}
+                      >
+                        {Number(qcWaterAdded || 0).toFixed(1)} gal
+                      </div>
+
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() =>
+                          setQcWaterAdded((v) => Number(v || 0) + 1)
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* keep your existing Batch Weights section and Next button below this */}
 
             <div
               style={{
@@ -1648,7 +1787,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   fontSize: 20,
                 }}
               >
-                Batch Weights
+                {t("batchWeights")}
               </div>
 
               <div style={{ overflowX: "auto", width: "100%" }}>
@@ -1663,14 +1802,14 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <thead>
                     <tr>
                       {[
-                        "Description",
-                        "Design",
-                        "Target",
-                        "Actual",
-                        "UOM",
-                        "% Var",
-                        "Moisture (%)",
-                        "Water (gal)",
+                        t("description"),
+                        t("design"),
+                        t("target"),
+                        t("actual"),
+                        t("uom"),
+                        t("variance"),
+                        t("moisture"),
+                        t("waterGallons"),
                       ].map((h) => (
                         <th
                           key={h}
@@ -1725,7 +1864,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   setStep(3);
                 }}
               >
-                Next
+                {t("next")}
               </button>
             </div>
           </>
@@ -1742,10 +1881,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   padding: 16,
                 }}
               >
-                <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-                <SummaryRow label="Customer" value={ticket.customer_name} />
-                <SummaryRow label="Address" value={ticket.address} />
-                <SummaryRow label="Truck" value={ticket.truck_number} />
+                <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
+                <SummaryRow label={t("customer")} value={ticket.customer_name} />
+                <SummaryRow label={t("address")} value={ticket.address} />
+                <SummaryRow label={t("truck")} value={ticket.truck_number} />
               </div>
 
               <div
@@ -1757,7 +1896,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <SummaryRow
-                  label="Mix #"
+                  label={t("mixNumber")}
                   value={
                     ticket?.mix_number ||
                     String(ticket?.product || "").trim().split(/\s+/)[0] ||
@@ -1766,7 +1905,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 />
 
                 <SummaryRow
-                  label="Description"
+                  label={t("description")}
                   value={
                     ticket?.mix_description ||
                     String(ticket?.product || "")
@@ -1778,9 +1917,9 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   }
                 />
 
-                <SummaryRow label="Strength" value={mix.strength} />
-                <SummaryRow label="Slump" value={mix.slump} />
-                <SummaryRow label="Air" value={mix.airContent} />
+                <SummaryRow label={t("strength")} value={mix.strength} />
+                <SummaryRow label={t("slump")} value={mix.slump} />
+                <SummaryRow label={t("air")} value={mix.airContent} />
               </div>
 
               <div
@@ -1792,24 +1931,24 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <SummaryRow
-                  label="Load Time"
+                  label={t("loadTime")}
                   value={formatCentralDateTime(ticket.load_time)}
                 />
 
                 <SummaryRow
-                  label="Load Size"
+                  label={t("loadSize")}
                   value={`${Number(ticket.quantity || 0).toFixed(0)} cys`}
                 />
 
                 <SummaryRow
-                  label="Quantity Delivered Total"
+                  label={t("quantityDeliveredTotal")}
                   value={`${Number(
                     ticket.delivered_qty_total || ticket.quantity || 0
                   ).toFixed(0)} cys`}
                 />
 
                 <SummaryRow
-                  label="Order Total"
+                  label={t("orderTotal")}
                   value={`${Number(
                     ticket.order_total || ticket.quantity || 0
                   ).toFixed(0)} cys`}
@@ -1823,7 +1962,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 type="button"
                 onClick={() => setStep(2)}
               >
-                Back
+                {t("back")}
               </button>
 
               <button
@@ -1834,7 +1973,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   setStep(4);
                 }}
               >
-                Next
+                {t("next")}
               </button>
             </div>
           </>
@@ -1843,14 +1982,14 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         {step === 4 && (
           <>
 
-            <label>Curb Line Signature</label>
+            <label>{t("curbLineSignature")}</label>
             
             <select
               value={curbLineSignature}
               onChange={(e) => setCurbLineSignature(e.target.value)}
             >
-              <option>Not Needed</option>
-              <option>Customer / Contractor Signature</option>
+              <option value="Not Needed">{t("notNeeded")}</option>
+              <option value="Customer / Contractor Signature">{t("customerContractorSignature")}</option>
             </select>
 
             {Number(qcWaterAdded || 0) > 0 ? (
@@ -1863,19 +2002,19 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <WaterInfoBox
-                  title="Total Water Allowed"
+                  title={t("totalWaterAllowed")}
                   value={formatGallons(waterAllowed)}
                   isPhone={isPhone}
                 />
 
                 <WaterInfoBox
-                  title="QC Water Added"
+                  title={t("qcWaterAdded")}
                   value={formatGallons(qcWaterAdded)}
                   isPhone={isPhone}
                 />
 
                 <WaterInfoBox
-                  title="Customer Water Allowed"
+                  title={t("customerWaterAllowed")}
                   value={formatGallons(
                     Math.max(0, Number(waterAllowed || 0) - Number(qcWaterAdded || 0))
                   )}
@@ -1899,7 +2038,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <WaterInfoBox
-                  title="Customer Water Allowed"
+                  title={t("customerWaterAllowed")}
                   value={formatGallons(waterAllowed)}
                   isPhone={isPhone}
                 />
@@ -1916,7 +2055,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             {curbLineSignature === "Customer / Contractor Signature" ? (
               <>
                 <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
-                  Curb Line Signature
+                  {t("curbLineSignature")}
                 </div>
 
                 {curbLineSignature === "Customer / Contractor Signature" ? (
@@ -1933,12 +2072,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       fontWeight: 600,
                     }}
                   >
-                    By signing below, the customer/contractor acknowledges
-                    responsibility for proper site conditions and accepts
-                    delivery as requested. Big Town Concrete is not responsible
-                    for property damage resulting from site access limitations,
-                    unstable surfaces, underground utilities, customer-directed
-                    vehicle movement, or conditions beyond driver control.
+                    {t("curbLineNotice")}
                   </div>
                 ) : null}
 
@@ -1996,7 +2130,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       )
                     }
                   >
-                    Clear Signature
+                    {t("clearSignature")}
                   </button>
                 </div>
               </>
@@ -2023,7 +2157,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   type="button"
                   onClick={() => setStep(3)}
                 >
-                  Back
+                  {t("back")}
                 </button>
 
                 <button
@@ -2043,7 +2177,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     setStep(5);
                   }}
                 >
-                  Next
+                  {t("next")}
                 </button>
               </div>
             </div>
@@ -2075,7 +2209,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  QC Water Added
+                  {t("qcWaterAdded")}
                 </div>
 
                 <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
@@ -2097,7 +2231,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, color: "#fff" }}>
-                  Customer Water Added
+                  {t("customerWaterAdded")}
                 </div>
 
                 <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", marginTop: 4 }}>
@@ -2110,17 +2244,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     type="button"
                     onClick={() => setStep(4)}
                   >
-                    Edit
+                    {t("edit")}
                   </button>
                 </div>
               </div>
             </div>
 
             <div style={{ marginTop: 14 }}>
-              <QrCard title="BTC Terms & Conditions" url={API_QR_TERMS} />
+              <QrCard title={t("btcTerms")} url={API_QR_TERMS} />
             </div>
 
-            <label style={{ marginTop: 14 }}>Ticket Acceptance</label>
+            <label style={{ marginTop: 14 }}>{t("ticketAcceptance")}</label>
             <select
               value={ticketAcceptance}
               onChange={(e) => {
@@ -2132,24 +2266,24 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 }
               }}
             >
-              <option>Accepted Delivery</option>
-              <option>Rejected Delivery</option>
+              <option value="Accepted Delivery">{t("acceptedDelivery")}</option>
+              <option value="Rejected Delivery">{t("rejectedDelivery")}</option>
             </select>
 
             {ticketAcceptance === "Rejected Delivery" ? (
               <>
-                <label>Rejection Reason</label>
+                <label>{t("rejectionReason")}</label>
                 <select
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                 >
-                  <option value="">Select reason</option>
-                  <option value="Slump">Slump</option>
-                  <option value="Air">Air</option>
-                  <option value="Mechanical">Mechanical</option>
-                  <option value="Dispatch">Dispatch</option>
-                  <option value="Batch">Batch</option>
-                  <option value="Time">Time</option>
+                  <option value="">{t("selectReason")}</option>
+                  <option value="Slump">{t("slump")}</option>
+                  <option value="Air">{t("air")}</option>
+                  <option value="Mechanical">{t("mechanical")}</option>
+                  <option value="Dispatch">{t("dispatch")}</option>
+                  <option value="Batch">{t("batch")}</option>
+                  <option value="Time">{t("time")}</option>
                 </select>
               </>
             ) : null}
@@ -2174,7 +2308,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   fontSize: 18,
                 }}
               >
-                Batch Weights
+                {t("batchWeights")}
               </div>
 
               <div style={{ overflowX: "auto", width: "100%" }}>
@@ -2189,14 +2323,14 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <thead>
                     <tr>
                       {[
-                        "Description",
-                        "Design",
-                        "Target",
-                        "Actual",
-                        "UOM",
-                        "% Var",
-                        "Moisture (%)",
-                        "Water (gal)",
+                        t("description"),
+                        t("design"),
+                        t("target"),
+                        t("actual"),
+                        t("uom"),
+                        t("variance"),
+                        t("moisture"),
+                        t("waterGallons"),
                       ].map((h) => (
                         <th
                           key={h}
@@ -2249,7 +2383,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 textAlign: "center",
               }}
             >
-              Final Signature
+              {t("finalSignature")}
             </div>
               <canvas
                 className="signature-canvas"
@@ -2307,7 +2441,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   )
                 }
               >
-                Clear Signature
+                {t("clearSignature")}
               </button>
             </div>
 
@@ -2356,7 +2490,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     setStep(4);
                   }}
                 >
-                  Back
+                  {t("back")}
                 </button>
 
                 <button
@@ -2365,7 +2499,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   onClick={submitTicket}
                   disabled={submitting}
                 >
-                  {submitting ? "Submitting..." : "Submit"}
+                  {submitting ? t("submitting") : t("submit")}
                 </button>
               </div>
 
