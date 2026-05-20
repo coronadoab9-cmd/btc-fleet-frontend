@@ -184,6 +184,132 @@ function QrCard({ title, url }) {
     </div>
   );
 }
+function WaterInfoBox({ title, value, isPhone }) {
+  return (
+    <div
+      style={{
+        background: "var(--panel-2)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: isPhone ? 10 : 16,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ color: "var(--muted)", fontSize: isPhone ? 15 : 18 }}>
+        {title}
+      </div>
+
+      <div
+        style={{
+          color: "#fff",
+          fontWeight: 900,
+          fontSize: isPhone ? 22 : 38,
+          marginTop: 12,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function CustomerWaterAddedBox({
+  customerWaterAdded,
+  isPhone,
+  startWaterPress,
+  finishWaterPress,
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--panel-2)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: isPhone ? 10 : 16,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ color: "var(--muted)", fontSize: isPhone ? 15 : 18 }}>
+        Customer Water Added
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <button
+          className="primary-btn"
+          style={{
+            width: isPhone ? 46 : 64,
+            height: isPhone ? 42 : 52,
+            marginTop: 0,
+            fontSize: isPhone ? 20 : 26,
+            fontWeight: 900,
+            touchAction: "none",
+            userSelect: "none",
+          }}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            startWaterPress(-1, "customer");
+          }}
+          onPointerUp={(e) => {
+            e.preventDefault();
+            finishWaterPress();
+          }}
+          onPointerLeave={finishWaterPress}
+          onPointerCancel={finishWaterPress}
+        >
+          -
+        </button>
+
+        <div
+          style={{
+            color: "#fff",
+            fontSize: isPhone ? 20 : 28,
+            fontWeight: 900,
+            minWidth: isPhone ? 90 : 130,
+            textAlign: "center",
+          }}
+        >
+          {formatGallons(customerWaterAdded)}
+        </div>
+
+        <button
+          className="primary-btn"
+          style={{
+            width: isPhone ? 46 : 64,
+            height: isPhone ? 42 : 52,
+            marginTop: 0,
+            fontSize: isPhone ? 20 : 26,
+            fontWeight: 900,
+            touchAction: "none",
+            userSelect: "none",
+          }}
+          type="button"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            startWaterPress(1, "customer");
+          }}
+          onPointerUp={(e) => {
+            e.preventDefault();
+            finishWaterPress();
+          }}
+          onPointerLeave={finishWaterPress}
+          onPointerCancel={finishWaterPress}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ETicketPage() {
   const token = useMemo(() => {
@@ -1588,71 +1714,89 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
         {step === 3 && (
           <>
-            <div style={{ display: "grid", gap: 14 }}>
-            {/* SECTION 1 - TICKET / CUSTOMER */}
-            <div className="asset-details">
-              <SummaryRow label="Ticket #" value={ticket.ticket_number} />
-              <SummaryRow label="Customer" value={ticket.customer_name} />
-              <SummaryRow label="Address" value={ticket.address} />
-              <SummaryRow label="Truck" value={ticket.truck_number} />
+            <div style={{ display: "grid", gap: 16 }}>
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <SummaryRow label="Ticket #" value={ticket.ticket_number} />
+                <SummaryRow label="Customer" value={ticket.customer_name} />
+                <SummaryRow label="Address" value={ticket.address} />
+                <SummaryRow label="Truck" value={ticket.truck_number} />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <SummaryRow
+                  label="Mix #"
+                  value={
+                    ticket?.mix_number ||
+                    String(ticket?.product || "").trim().split(/\s+/)[0] ||
+                    "-"
+                  }
+                />
+
+                <SummaryRow
+                  label="Description"
+                  value={
+                    ticket?.mix_description ||
+                    String(ticket?.product || "")
+                      .trim()
+                      .split(/\s+/)
+                      .slice(1)
+                      .join(" ") ||
+                    "-"
+                  }
+                />
+
+                <SummaryRow label="Strength" value={mix.strength} />
+                <SummaryRow label="Slump" value={mix.slump} />
+                <SummaryRow label="Air" value={mix.airContent} />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <SummaryRow
+                  label="Load Time"
+                  value={formatCentralDateTime(ticket.load_time)}
+                />
+
+                <SummaryRow
+                  label="Load Size"
+                  value={`${Number(ticket.quantity || 0).toFixed(0)} cys`}
+                />
+
+                <SummaryRow
+                  label="Quantity Delivered Total"
+                  value={`${Number(
+                    ticket.delivered_qty_total || ticket.quantity || 0
+                  ).toFixed(0)} cys`}
+                />
+
+                <SummaryRow
+                  label="Order Total"
+                  value={`${Number(
+                    ticket.order_total || ticket.quantity || 0
+                  ).toFixed(0)} cys`}
+                />
+              </div>
             </div>
-
-            {/* SECTION 2 - MIX INFO */}
-            <div className="asset-details">
-              <SummaryRow
-                label="Mix #"
-                value={
-                  ticket?.mix_number ||
-                  String(ticket?.product || "").trim().split(/\s+/)[0] ||
-                  "-"
-                }
-              />
-
-              <SummaryRow
-                label="Description"
-                value={
-                  ticket?.mix_description ||
-                  String(ticket?.product || "")
-                    .trim()
-                    .split(/\s+/)
-                    .slice(1)
-                    .join(" ") ||
-                  "-"
-                }
-              />
-
-              <SummaryRow label="Strength" value={mix.strength} />
-              <SummaryRow label="Slump" value={mix.slump} />
-              <SummaryRow label="Air" value={mix.airContent} />
-            </div>
-
-            {/* SECTION 3 - LOAD INFO */}
-            <div className="asset-details">
-              <SummaryRow
-                label="Load Time"
-                value={formatCentralDateTime(ticket.load_time)}
-              />
-
-              <SummaryRow
-                label="Load Size"
-                value={`${Number(ticket.quantity || 0).toFixed(0)} cys`}
-              />
-
-              <SummaryRow
-                label="Quantity Delivered Total"
-                value={`${Number(
-                  ticket.delivered_qty_total || ticket.quantity || 0
-                ).toFixed(0)} cys`}
-              />
-
-              <SummaryRow
-                label="Order Total"
-                value={`${Number(
-                  ticket.order_total || ticket.quantity || 0
-                ).toFixed(0)} cys`}
-              />
-            </div>
-          </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
               <button
@@ -1690,148 +1834,65 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <option>Customer / Contractor Signature</option>
             </select>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isPhone ? "1fr 1fr" : "1fr 1fr",
-                gap: 14,
-                marginTop: 16,
-              }}
-            >
+            {Number(qcWaterAdded || 0) > 0 ? (
               <div
                 style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: isPhone ? 10 : 16,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 14,
+                  marginTop: 16,
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "var(--muted)",
-                      fontSize: isPhone ? 16 : 18,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Water Allowed
-                  </div>
+                <WaterInfoBox
+                  title="Total Water Allowed"
+                  value={formatGallons(waterAllowed)}
+                  isPhone={isPhone}
+                />
 
-                  <div
-                    style={{
-                      color: "#fff",
-                      fontWeight: 900,
-                      fontSize: isPhone ? 24 : 38,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {formatGallons(waterAllowed)}
-                  </div>
-                </div>
+                <WaterInfoBox
+                  title="QC Water Added"
+                  value={formatGallons(qcWaterAdded)}
+                  isPhone={isPhone}
+                />
+
+                <WaterInfoBox
+                  title="Customer Water Allowed"
+                  value={formatGallons(
+                    Math.max(0, Number(waterAllowed || 0) - Number(qcWaterAdded || 0))
+                  )}
+                  isPhone={isPhone}
+                />
+
+                <CustomerWaterAddedBox
+                  customerWaterAdded={customerWaterAdded}
+                  isPhone={isPhone}
+                  startWaterPress={startWaterPress}
+                  finishWaterPress={finishWaterPress}
+                />
               </div>
-
+            ) : (
               <div
                 style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14,
-                  padding: isPhone ? 10 : 16,
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 14,
+                  marginTop: 16,
                 }}
               >
-                <div
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    color: "var(--muted)",
-                    fontSize: isPhone ? 16 : 18,
-                    marginBottom: 12,
-                  }}
-                >
-                  Customer Water Added
-                </div>
+                <WaterInfoBox
+                  title="Customer Water Allowed"
+                  value={formatGallons(waterAllowed)}
+                  isPhone={isPhone}
+                />
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                  }}
-                >
-                  <button
-                    className="primary-btn"
-                    style={{
-                      width: isPhone ? 46 : 64,
-                      height: isPhone ? 42 : 52,
-                      marginTop: 0,
-                      fontSize: isPhone ? 20 : 26,
-                      fontWeight: 900,
-                      touchAction: "none",
-                      userSelect: "none",
-                    }}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      startWaterPress(-1, "customer");
-                    }}
-                    onPointerUp={(e) => {
-                      e.preventDefault();
-                      finishWaterPress();
-                    }}
-                    onPointerLeave={finishWaterPress}
-                    onPointerCancel={finishWaterPress}
-                  >
-                    -
-                  </button>
-
-                  <div
-                    style={{
-                      color: "#fff",
-                      fontSize: isPhone ? 22 : 28,
-                      fontWeight: 900,
-                      minWidth: 130,
-                      textAlign: "center",
-                    }}
-                  >
-                    {formatGallons(customerWaterAdded)}
-                  </div>
-
-                  <button
-                    className="primary-btn"
-                    style={{
-                      width: isPhone ? 46 : 64,
-                      height: isPhone ? 42 : 52,
-                      marginTop: 0,
-                      fontSize: isPhone ? 20 : 26,
-                      fontWeight: 900,
-                      touchAction: "none",
-                      userSelect: "none",
-                    }}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      startWaterPress(1, "customer");
-                    }}
-                    onPointerUp={(e) => {
-                      e.preventDefault();
-                      finishWaterPress();
-                    }}
-                    onPointerLeave={finishWaterPress}
-                    onPointerCancel={finishWaterPress}
-                  >
-                    +
-                  </button>
-                </div>
+                <CustomerWaterAddedBox
+                  customerWaterAdded={customerWaterAdded}
+                  isPhone={isPhone}
+                  startWaterPress={startWaterPress}
+                  finishWaterPress={finishWaterPress}
+                />
               </div>
-            </div>
+            )}
 
             {curbLineSignature === "Customer / Contractor Signature" ? (
               <>
