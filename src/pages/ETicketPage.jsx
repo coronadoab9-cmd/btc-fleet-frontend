@@ -1325,60 +1325,162 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 </div>
               </div>
 
-              {/* QR CARD */}
+              {/* QR + WATER ROW */}
               <div
                 style={{
-                  background: "var(--panel-2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 16,
-                  padding: 16,
                   display: "grid",
-                  justifyItems: "center",
-                  textAlign: "center",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
+                  gap: 16,
                 }}
               >
+                {/* LEFT SIDE - QR */}
                 <div
                   style={{
-                    color: "#fff",
-                    fontWeight: 900,
-                    fontSize: 18,
-                    marginBottom: 12,
-                  }}
-                >
-                  Scan for QC eTicket
-                </div>
-
-                <div
-                  style={{
-                    background: "#fff",
-                    width: isPhone ? 210 : 150,
-                    height: isPhone ? 210 : 150,
-                    borderRadius: 12,
-                    padding: 8,
+                    background: "var(--panel-2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 16,
                     display: "grid",
-                    placeItems: "center",
+                    justifyItems: "center",
+                    alignContent: "center",
+                    textAlign: "center",
                   }}
                 >
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-                      `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
-                    )}`}
-                    alt="QC QR"
+                  <div
                     style={{
-                      width: "100%",
-                      height: "100%",
+                      color: "#fff",
+                      fontWeight: 900,
+                      fontSize: 18,
+                      marginBottom: 12,
                     }}
-                  />
+                  >
+                    Scan for QC eTicket
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#fff",
+                      width: isPhone ? 210 : 180,
+                      height: isPhone ? 210 : 180,
+                      borderRadius: 12,
+                      padding: 8,
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+                        `https://btc-fleet-backend.onrender.com/api/etickets/${token}/qc-pdf`
+                      )}`}
+                      alt="QC QR"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  </div>
                 </div>
 
+                {/* RIGHT SIDE - WATER */}
                 <div
                   style={{
-                    color: "var(--muted)",
-                    fontWeight: 700,
-                    marginTop: 10,
-                    fontSize: 14,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
                   }}
                 >
+                  {/* WATER ALLOWED */}
+                  <div
+                    style={{
+                      background: "var(--panel-2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 20,
+                      textAlign: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "var(--muted)",
+                        fontSize: 18,
+                      }}
+                    >
+                      Water Allowed
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 42,
+                        fontWeight: 900,
+                        marginTop: 12,
+                        color: "#fff",
+                      }}
+                    >
+                      {waterAllowed} gal
+                    </div>
+                  </div>
+
+                  {/* QC WATER ADDED */}
+                  <div
+                    style={{
+                      background: "var(--panel-2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 20,
+                      textAlign: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "var(--muted)",
+                        fontSize: 18,
+                        marginBottom: 14,
+                      }}
+                    >
+                      QC Water Added
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "70px 1fr 70px",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() =>
+                          setQcWaterAdded((v) => Math.max(0, Number(v || 0) - 1))
+                        }
+                      >
+                        -
+                      </button>
+
+                      <div
+                        style={{
+                          fontSize: 34,
+                          fontWeight: 900,
+                          color: "#fff",
+                        }}
+                      >
+                        {Number(qcWaterAdded || 0).toFixed(1)} gal
+                      </div>
+
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() =>
+                          setQcWaterAdded((v) => Number(v || 0) + 1)
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
