@@ -1588,11 +1588,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
         {step === 3 && (
           <>
+            <div style={{ display: "grid", gap: 14 }}>
+            {/* SECTION 1 - TICKET / CUSTOMER */}
             <div className="asset-details">
               <SummaryRow label="Ticket #" value={ticket.ticket_number} />
               <SummaryRow label="Customer" value={ticket.customer_name} />
               <SummaryRow label="Address" value={ticket.address} />
               <SummaryRow label="Truck" value={ticket.truck_number} />
+            </div>
+
+            {/* SECTION 2 - MIX INFO */}
+            <div className="asset-details">
               <SummaryRow
                 label="Mix #"
                 value={
@@ -1614,9 +1620,18 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   "-"
                 }
               />
+
               <SummaryRow label="Strength" value={mix.strength} />
               <SummaryRow label="Slump" value={mix.slump} />
               <SummaryRow label="Air" value={mix.airContent} />
+            </div>
+
+            {/* SECTION 3 - LOAD INFO */}
+            <div className="asset-details">
+              <SummaryRow
+                label="Load Time"
+                value={formatCentralDateTime(ticket.load_time)}
+              />
 
               <SummaryRow
                 label="Load Size"
@@ -1637,6 +1652,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 ).toFixed(0)} cys`}
               />
             </div>
+          </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
               <button
