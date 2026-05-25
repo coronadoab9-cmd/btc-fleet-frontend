@@ -48,6 +48,8 @@ export default function ETicketsPage({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedArchivedIds, setSelectedArchivedIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [reassignOptions, setReassignOptions] = useState({
     admins: [],
     trucks: [],
@@ -387,6 +389,71 @@ export default function ETicketsPage({ token }) {
     }
   }
 
+  function toggleArchivedSelection(ticketId) {
+    setSelectedArchivedIds((prev) =>
+      prev.includes(ticketId)
+        ? prev.filter((id) => id !== ticketId)
+        : [...prev, ticketId]
+    );
+  }
+
+  function toggleSelectAllArchived() {
+    const ids = filteredTickets.map((t) => t.id);
+
+    const allSelected =
+      ids.length > 0 && ids.every((id) => selectedArchivedIds.includes(id));
+
+    setSelectedArchivedIds(allSelected ? [] : ids);
+  }
+
+  async function deleteSelectedArchivedEtickets() {
+    setError("");
+    setMessage("");
+
+    if (eticketTab !== "archived") return;
+
+    if (!selectedArchivedIds.length) {
+      setError("Select at least one archived eTicket to delete.");
+      return;
+    }
+
+    const confirmedFirst = window.confirm(
+      `Permanently delete ${selectedArchivedIds.length} archived eTicket(s)? This cannot be undone.`
+    );
+
+    if (!confirmedFirst) return;
+
+    const confirmedSecond = window.confirm(
+      "Are you absolutely sure? These archived eTickets and PDFs will be permanently removed."
+    );
+
+    if (!confirmedSecond) return;
+
+    setBulkDeleting(true);
+
+    try {
+      await Promise.all(
+        selectedArchivedIds.map((ticketId) =>
+          apiFetch(`/admin/etickets/${ticketId}/delete`, {
+            method: "DELETE",
+            headers: {
+              "X-Admin-Token": token,
+            },
+          })
+        )
+      );
+
+      setMessage(`${selectedArchivedIds.length} archived eTicket(s) permanently deleted`);
+      setSelectedArchivedIds([]);
+      setSelectedToken("");
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Could not delete selected archived eTickets");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   if (window.innerWidth <= 768) {
     return (
       <div className="admin-page">
@@ -413,6 +480,7 @@ export default function ETicketsPage({ token }) {
                 setSelectedToken("");
                 setFilterStatus("all");
                 setEticketTab(key);
+                setSelectedArchivedIds([]);
               }}
             >
               {label}
@@ -548,6 +616,7 @@ export default function ETicketsPage({ token }) {
               setSelectedToken("");
               setFilterStatus("all");
               setEticketTab(key);
+              setSelectedArchivedIds([]);
             }}
           >
             {label}
@@ -580,6 +649,32 @@ export default function ETicketsPage({ token }) {
         <input style={styles.input} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
       </div>
 
+      {eticketTab === "archived" ? (
+        <div style={{ ...styles.actionRow, marginBottom: 16 }}>
+          <button
+            style={styles.secondaryButton}
+            type="button"
+            onClick={toggleSelectAllArchived}
+          >
+            {filteredTickets.length > 0 &&
+            filteredTickets.every((t) => selectedArchivedIds.includes(t.id))
+              ? "Unselect All"
+              : "Select All"}
+          </button>
+
+          <button
+            style={styles.dangerButton}
+            type="button"
+            onClick={deleteSelectedArchivedEtickets}
+            disabled={bulkDeleting || selectedArchivedIds.length === 0}
+          >
+            {bulkDeleting
+              ? "Deleting..."
+              : `Delete Selected (${selectedArchivedIds.length})`}
+          </button>
+        </div>
+      ) : null}
+
       {loading ? (
         <div>Loading eTickets...</div>
       ) : (
@@ -595,6 +690,18 @@ export default function ETicketsPage({ token }) {
                 onClick={() => setSelectedToken(ticket.token)}
               >
                 <div style={styles.ticketCardTop}>
+                {eticketTab === "archived" ? (
+                  <input
+                    type="checkbox"
+                    checked={selectedArchivedIds.includes(ticket.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleArchivedSelection(ticket.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={styles.checkbox}
+                  />
+                ) : null}
                   <div style={styles.ticketNumber}>#{ticket.ticket_number || "-"}</div>
                   <div style={ticket.status === "signed" ? styles.signedPill : styles.pendingPill}>
                     {ticket.status === "signed" ? "SIGNED" : "PENDING"}
@@ -960,6 +1067,11 @@ const styles = {
   infoLabel: { color: "#b9d3ee", marginBottom: 10, fontSize: 14 },
   infoValue: { color: "#fff", fontSize: 16, fontWeight: 700, wordBreak: "break-word" },
   actionRow: { display: "flex", gap: 10, flexWrap: "wrap" },
+  checkbox: {
+    width: 20,
+    height: 20,
+    cursor: "pointer",
+  },
   input: { width: "100%", height: 52, padding: "0 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--panel-2)", color: "#fff", fontSize: 15 },
   primaryButton: { background: "linear-gradient(90deg, #ff7a18, #ff8f3d)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 16, fontWeight: 800, cursor: "pointer" },
   secondaryButton: { background: "#1d4572", color: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", fontSize: 16, cursor: "pointer" },
