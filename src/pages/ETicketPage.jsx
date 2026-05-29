@@ -501,7 +501,16 @@ export default function ETicketPage() {
 
   const [curbLineSignature, setCurbLineSignature] = useState("Not Needed");
   const [curbLineSignedAt, setCurbLineSignedAt] = useState("");
-  const [waterAllowed] = useState(25);
+  const waterAllowed = useMemo(() => {
+    const value = Number(
+      ticket?.water_allowed_gallons ??
+        ticket?.water_allowed ??
+        ticket?.waterAllowed ??
+        25
+    );
+
+    return Number.isFinite(value) && value > 0 ? value : 25;
+  }, [ticket?.water_allowed_gallons, ticket?.water_allowed, ticket?.waterAllowed]);
   const [qcWaterAdded, setQcWaterAdded] = useState(0);
   const [customerWaterAdded, setCustomerWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted Delivery");
