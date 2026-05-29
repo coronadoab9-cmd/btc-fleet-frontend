@@ -284,25 +284,32 @@ function formatBatchRow(row) {
 }
 
 function parseMixDetails(ticket = {}) {
+  const description =
+    ticket?.mix_description ||
+    ticket?.product ||
+    "";
+
+  const strengthMatch = description.match(/(\d{3,5})\s*PSI/i);
+
   return {
-    strength:
-      ticket?.strength ||
-      ticket?.mix_strength ||
-      ticket?.strength_description ||
-      "-",
+    strength: strengthMatch
+      ? `${strengthMatch[1]} PSI`
+      : (
+          ticket?.strength ||
+          ticket?.mix_strength ||
+          "-"
+        ),
 
     slump:
       ticket?.ordered_slump ||
       ticket?.slump ||
       ticket?.slump_target ||
-      ticket?.mix_slump ||
       "-",
 
     airContent:
-      ticket?.air ||
       ticket?.air_content ||
+      ticket?.air ||
       ticket?.air_target ||
-      ticket?.mix_air ||
       "-",
   };
 }

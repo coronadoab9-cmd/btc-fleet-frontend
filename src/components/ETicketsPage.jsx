@@ -9,6 +9,25 @@ function formatDateTime(value) {
     return value;
   }
 }
+function formatCentralDateTime(value) {
+  if (!value) return "-";
+
+  try {
+    const dt = new Date(value);
+
+    return dt.toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return value;
+  }
+}
 
 function formatGallons(val) {
   const num = Number(val);
@@ -873,7 +892,10 @@ export default function ETicketsPage({ token }) {
                   }
                 />
 
-                  <Info label="Load Time" value={formatDateTime(selectedTicket.load_time)} />
+                  <Info
+                    label="Load Time"
+                    value={formatCentralDateTime(selectedTicket.load_time)}
+                  />
                   <Info label="Assigned To" value={selectedTicket.assigned_to_name} />
                   <Info label="Assigned At" value={formatDateTime(selectedTicket.assigned_at)} />
                 </div>
