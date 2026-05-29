@@ -217,16 +217,21 @@ function formatGallons(value) {
 
 function formatCentralDateTime(value) {
   if (!value) return "-";
+
   try {
+    const dt = new Date(value);
+
+    // Sysdyne load times are currently arriving 11 hours ahead
+    dt.setHours(dt.getHours() - 11);
+
     return new Intl.DateTimeFormat("en-US", {
-      timeZone: CENTRAL_TZ,
       month: "2-digit",
       day: "2-digit",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    }).format(new Date(value));
+    }).format(dt);
   } catch {
     return value;
   }
