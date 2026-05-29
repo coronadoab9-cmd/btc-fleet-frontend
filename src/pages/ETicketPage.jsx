@@ -257,6 +257,7 @@ function materialName(value) {
     "10": "10-#57 Crushed Rock",
     "36": "36-SIKA 686 (MRWR)",
     "37": "37-SIKA Air",
+    "38": "38-Retarder",
   };
 
   return names[code] || raw;
