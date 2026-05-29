@@ -232,6 +232,51 @@ function formatCentralDateTime(value) {
   }
 }
 
+function formatWhole(value) {
+  const num = Number(String(value ?? "").replace(/,/g, ""));
+  if (!Number.isFinite(num)) return value || "-";
+  return String(Math.round(num));
+}
+
+function formatOneDecimal(value) {
+  const num = Number(String(value ?? "").replace(/,/g, ""));
+  if (!Number.isFinite(num)) return value || "-";
+  return num.toFixed(1);
+}
+
+function materialName(value) {
+  const raw = String(value || "").trim();
+  const code = raw.split("-")[0].padStart(2, "0");
+
+  const names = {
+    "01": "01-Cement",
+    "04": "04-Slag",
+    "05": "05-Coarse Aggregate",
+    "06": "06-Natural Sand",
+    "09": "09-Water",
+    "10": "10-#57 Crushed Rock",
+    "36": "36-SIKA 686 (MRWR)",
+    "37": "37-SIKA Air",
+  };
+
+  return names[code] || raw;
+}
+
+function formatBatchRow(row) {
+  const source = Array.isArray(row) ? row : [];
+
+  return [
+    materialName(source[0]),
+    formatWhole(source[1]),
+    formatWhole(source[2]),
+    formatWhole(source[3]),
+    source[5] || "-",      // UOM
+    formatOneDecimal(source[4]), // % Var
+    source[6] || "-",
+    source[7] || "-",
+  ];
+}
+
 function parseMixDetails(product = "") {
   const text = String(product || "").toUpperCase();
   const strengthMatch = text.match(/(\d{4})\s*PSI/);
@@ -534,18 +579,20 @@ export default function ETicketPage() {
       ticket?.batch_weights ||
       [];
 
-    if (Array.isArray(raw)) return raw;
+    let parsed = [];
 
-    if (typeof raw === "string" && raw.trim()) {
+    if (Array.isArray(raw)) {
+      parsed = raw;
+    } else if (typeof raw === "string" && raw.trim()) {
       try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        const next = JSON.parse(raw);
+        parsed = Array.isArray(next) ? next : [];
       } catch {
-        return [];
+        parsed = [];
       }
     }
 
-    return [];
+    return parsed.map(formatBatchRow);
   }, [ticket]);
 
   const loadTimeMs = useMemo(() => {
@@ -1554,7 +1601,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     lineHeight: 1,
                   }}
                 >
-                  4.5 in
+                  {ticket?.ordered_slump || ticket?.slump || ticket?.slump_target || "4.5 in"}
                 </div>
               </div>
             </div>
@@ -1612,7 +1659,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <tbody>
                     {batchRows.map((row, i) => (
                       <tr key={i}>
-                        {row.map((cell, j) => (
+                        {row.slice(0, 6).map((cell, j) => (
                           <td
                             key={j}
                             style={{
@@ -1775,7 +1822,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       color: "#fff",
                     }}
                   >
-                    {waterAllowed} gal
+                    {Number(waterAllowed || 0).toFixed(1)} gal
                   </div>
                 </div>
 
