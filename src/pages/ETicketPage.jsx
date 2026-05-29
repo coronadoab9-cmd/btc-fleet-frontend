@@ -277,22 +277,27 @@ function formatBatchRow(row) {
   ];
 }
 
-function parseMixDetails(product = "") {
-  const text = String(product || "").toUpperCase();
-  const strengthMatch = text.match(/(\d{4})\s*PSI/);
-  const sackMatch = text.match(/(\d+(?:\.\d+)?)\s*SK/);
-  const hasSlag = text.includes("SLAG");
-  const hasAsh = text.includes("ASH");
-  const noAir = text.includes("NO AIR");
-  const hasAir = /\bAIR\b/.test(text) && !noAir;
-
+function parseMixDetails(ticket = {}) {
   return {
-    strength: strengthMatch ? `${strengthMatch[1]} PSI in 28 Days` : "-",
-    slump: "4.5 in ± 1.5 in",
-    airContent: hasAir ? "4.5% ± 1.5%" : "1.5% ± 1.5%",
-    description: `${sackMatch ? sackMatch[1] : "-"} SK | ${
-      hasSlag ? "Slag" : hasAsh ? "Ash" : "Standard"
-    } | ${hasAir ? "Air" : "No Air"}`,
+    strength:
+      ticket?.strength ||
+      ticket?.mix_strength ||
+      ticket?.strength_description ||
+      "-",
+
+    slump:
+      ticket?.ordered_slump ||
+      ticket?.slump ||
+      ticket?.slump_target ||
+      ticket?.mix_slump ||
+      "-",
+
+    airContent:
+      ticket?.air ||
+      ticket?.air_content ||
+      ticket?.air_target ||
+      ticket?.mix_air ||
+      "-",
   };
 }
 
@@ -571,7 +576,7 @@ export default function ETicketPage() {
   const [finalSignatureDataUrl, setFinalSignatureDataUrl] = useState("");
   const [cameraStarted, setCameraStarted] = useState(false);
 
-  const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
+  const mix = useMemo(() => parseMixDetails(ticket || {}), [ticket]);
 
   const batchRows = useMemo(() => {
     const raw =
@@ -1601,7 +1606,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     lineHeight: 1,
                   }}
                 >
-                  {ticket?.ordered_slump || ticket?.slump || ticket?.slump_target || "4.5 in"}
+                  {mix.slump}
                 </div>
               </div>
             </div>
@@ -2079,21 +2084,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
                 <SummaryRow
                   label={t("loadSize")}
-                  value={`${Number(ticket.quantity || 0).toFixed(0)} cys`}
+                  value={`${Number(ticket.load_size || ticket.quantity || 0).toFixed(0)} cys`}
                 />
 
                 <SummaryRow
                   label={t("quantityDeliveredTotal")}
-                  value={`${Number(
-                    ticket.delivered_qty_total || ticket.quantity || 0
-                  ).toFixed(0)} cys`}
+                  value={`${Number(ticket.delivered_qty_total || ticket.quantity_delivered_total || 0).toFixed(0)} cys`}
                 />
 
                 <SummaryRow
                   label={t("orderTotal")}
-                  value={`${Number(
-                    ticket.order_total || ticket.quantity || 0
-                  ).toFixed(0)} cys`}
+                  value={`${Number(ticket.order_total || ticket.ordered_qty_total || ticket.total_order_qty || 0).toFixed(0)} cys`}
                 />
               </div>
             </div>
