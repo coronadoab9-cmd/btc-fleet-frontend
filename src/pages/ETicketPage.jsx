@@ -528,6 +528,26 @@ export default function ETicketPage() {
 
   const mix = useMemo(() => parseMixDetails(ticket?.product), [ticket]);
 
+  const batchRows = useMemo(() => {
+    const raw =
+      ticket?.batch_weights_json ||
+      ticket?.batch_weights ||
+      [];
+
+    if (Array.isArray(raw)) return raw;
+
+    if (typeof raw === "string" && raw.trim()) {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
+  }, [ticket]);
+
   const loadTimeMs = useMemo(() => {
     if (!ticket?.load_time) return null;
     const ms = new Date(ticket.load_time).getTime();
@@ -1590,15 +1610,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   </thead>
 
                   <tbody>
-                    {[
-                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6"],
-                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6"],
-                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2"],
-                      ["09-Water", "28", "230", "226", "gal", "-1.6"],
-                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2"],
-                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1"],
-                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9"],
-                    ].map((row, i) => (
+                    {batchRows.map((row, i) => (
                       <tr key={i}>
                         {row.map((cell, j) => (
                           <td
@@ -1917,15 +1929,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   </thead>
 
                   <tbody>
-                    {[
-                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
-                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
-                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
-                      ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
-                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
-                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
-                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
-                    ].map((row, i) => (
+                    {batchRows.map((row, i) => (
                       <tr key={i}>
                         {row.map((cell, j) => (
                           <td
@@ -2438,15 +2442,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   </thead>
 
                   <tbody>
-                    {[
-                      ["01-Cement", "388", "3,880", "3,940", "lb", "1.6", "-", "-"],
-                      ["04-Slag", "129", "1,290", "1,310", "lb", "1.6", "-", "-"],
-                      ["06-Natural Sand", "1,400", "14,263", "14,230", "lb", "-0.2", "3.00", "31.46"],
-                      ["09-Water", "28", "230", "226", "gal", "-1.6", "-", "-"],
-                      ["10-#57 Crushed Rock", "1,885", "18,794", "18,760", "lb", "-0.2", "0.50", "-6.71"],
-                      ["36-SIKA 686 (MRWR)", "41", "414", "414", "floz", "0.1", "0.00", "0.00"],
-                      ["37-SIKA Air", "2", "21", "21", "floz", "-0.9", "0.00", "0.00"],
-                    ].map((row, i) => (
+                    {batchRows.map((row, i) => (
                       <tr key={i}>
                         {row.map((cell, j) => (
                           <td
