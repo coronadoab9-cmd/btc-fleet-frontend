@@ -131,9 +131,24 @@ export default function ETicketsPage({ token }) {
         !truckFilter.trim() ||
         (t.truck_number || "").toLowerCase().includes(truckFilter.trim().toLowerCase());
 
-      const signedAt = t.signed_at ? new Date(t.signed_at) : null;
-      const fromOk = !dateFrom || !signedAt || signedAt >= new Date(`${dateFrom}T00:00:00`);
-      const toOk = !dateTo || !signedAt || signedAt <= new Date(`${dateTo}T23:59:59`);
+      const filterDateValue =
+        eticketTab === "signed"
+          ? t.signed_at
+          : t.load_time;
+
+      const ticketDate = filterDateValue
+        ? new Date(filterDateValue)
+        : null;
+
+      const fromOk =
+        !dateFrom ||
+        !ticketDate ||
+        ticketDate >= new Date(`${dateFrom}T00:00:00`);
+
+      const toOk =
+        !dateTo ||
+        !ticketDate ||
+        ticketDate <= new Date(`${dateTo}T23:59:59`);
 
       return statusOk && customerOk && ticketOk && orderOk && truckOk && fromOk && toOk;
     });
