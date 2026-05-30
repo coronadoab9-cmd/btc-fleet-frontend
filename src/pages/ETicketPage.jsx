@@ -255,14 +255,29 @@ function materialName(value) {
 
   const names = {
     "01": "01-Cement",
+    "03": "03-Fly Ash",
     "04": "04-Slag",
     "05": "05-Washed Sand",
     "06": "06-Natural Sand",
+    "07": "07-Wet Ash",
+    "08": "08-Tempered Water",
     "09": "09-Water",
-    "10": "10-#57 Rock",
+    "10": "10-#57 Crushed Stone",
+    "11": "11-Decorative Pea Gravel",
+    "12": "12-#67 Crushed 3/4 Rock",
+    "13": "13-#89 Crushed 3/8 Rock",
+    "14": "14-Lightweight Rock",
+    "16": "16-#468 1.5 Crushed Stone",
+    "34": "34-SIKATARD 440",
+    "35": "35-SIKA Viscocrete (HRWR)",
     "36": "36-SIKA 686 (MRWR)",
     "37": "37-SIKA Air",
     "38": "38-SIKA Plastiment (Retarder)",
+    "39": "39-SIKA NC4 (Accelerator)",
+    "40": "40-Cemex Air",
+    "41": "41-Cemex 7350 WR",
+    "42": "42-Cemex 8600 MR",
+    "50": "50-Sika Litecrete",
   };
 
   return names[code] || raw;
