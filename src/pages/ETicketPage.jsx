@@ -256,13 +256,13 @@ function materialName(value) {
   const names = {
     "01": "01-Cement",
     "04": "04-Slag",
-    "05": "05-Coarse Aggregate",
+    "05": "05-Washed Sand",
     "06": "06-Natural Sand",
     "09": "09-Water",
-    "10": "10-#57 Crushed Rock",
+    "10": "10-#57 Rock",
     "36": "36-SIKA 686 (MRWR)",
     "37": "37-SIKA Air",
-    "38": "38-Retarder",
+    "38": "38-SIKA Plastiment (Retarder)",
   };
 
   return names[code] || raw;
