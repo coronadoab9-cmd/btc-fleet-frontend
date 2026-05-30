@@ -15,15 +15,17 @@ function formatCentralDateTime(value) {
   try {
     const dt = new Date(value);
 
-    return dt.toLocaleString("en-US", {
-      timeZone: "America/Chicago",
+    // Match the working eTicket page correction
+    dt.setHours(dt.getHours() - 11);
+
+    return new Intl.DateTimeFormat("en-US", {
       month: "2-digit",
       day: "2-digit",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    });
+    }).format(dt);
   } catch {
     return value;
   }
