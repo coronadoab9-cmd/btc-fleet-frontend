@@ -268,7 +268,7 @@ function materialName(value) {
     "13": "13-#89 Crushed 3/8 Rock",
     "14": "14-Lightweight Rock",
     "16": "16-#468 1.5 Crushed Stone",
-    "34": "34-SIKATARD 440",
+    "34": "34-SIKATARD 440", 
     "35": "35-SIKA Viscocrete (HRWR)",
     "36": "36-SIKA 686 (MRWR)",
     "37": "37-SIKA Air",
@@ -281,6 +281,13 @@ function materialName(value) {
   };
 
   return names[code] || raw;
+}
+
+function materialSortKey(row) {
+  const raw = Array.isArray(row) ? String(row[0] || "") : String(row || "");
+  const code = raw.split("-")[0].trim();
+  const num = Number(code);
+  return Number.isFinite(num) ? num : 9999;
 }
 
 function formatBatchRow(row) {
@@ -625,7 +632,9 @@ export default function ETicketPage() {
       }
     }
 
-    return parsed.map(formatBatchRow);
+    return [...parsed]
+      .sort((a, b) => materialSortKey(a) - materialSortKey(b))
+      .map(formatBatchRow);
   }, [ticket]);
 
   const loadTimeMs = useMemo(() => {
