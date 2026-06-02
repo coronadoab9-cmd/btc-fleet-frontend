@@ -332,7 +332,7 @@ function parseMixDetails(ticket = {}) {
       ticket?.air_content ||
       ticket?.air ||
       ticket?.air_target ||
-      "-",
+      "1.5% ± 1.5%",
   };
 }
 
