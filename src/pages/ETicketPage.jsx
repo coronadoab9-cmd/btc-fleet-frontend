@@ -219,6 +219,18 @@ function formatSlump(value) {
   return `${match[1]} in ± 1 in`;
 }
 
+function formatOrderedSlump(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw || raw === "-") return "-";
+
+  const match = raw.match(/(\d+(?:\.\d+)?)/);
+
+  if (!match) return raw;
+
+  return `${match[1]} in`;
+}
+
 function formatGallons(value) {
   const num = Number(value);
   if (isNaN(num)) return "-";
@@ -1654,7 +1666,12 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     lineHeight: 1,
                   }}
                 >
-                  {mix.slump}
+                  {formatOrderedSlump(
+                    ticket?.ordered_slump ||
+                    ticket?.slump ||
+                    ticket?.slump_target ||
+                    "-"
+                  )}
                 </div>
               </div>
             </div>
