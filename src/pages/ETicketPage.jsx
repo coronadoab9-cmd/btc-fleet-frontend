@@ -209,6 +209,16 @@ function drawSignatureDot(canvas, point) {
   ctx.fill();
 }
 
+function formatSlump(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw === "-") return "-";
+
+  const match = raw.match(/(\d+(?:\.\d+)?)/);
+  if (!match) return raw;
+
+  return `${match[1]} in ± 1 in`;
+}
+
 function formatGallons(value) {
   const num = Number(value);
   if (isNaN(num)) return "-";
@@ -322,11 +332,12 @@ function parseMixDetails(ticket = {}) {
           "-"
         ),
 
-    slump:
+    slump: formatSlump(
       ticket?.ordered_slump ||
       ticket?.slump ||
       ticket?.slump_target ||
-      "-",
+      "-"
+    ),
 
     airContent:
       ticket?.air_content ||
