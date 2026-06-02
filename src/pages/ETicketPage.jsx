@@ -229,7 +229,7 @@ function formatOrderedSlump(value) {
   if (!match) return raw;
 
   return `${match[1]} in`;
-}
+}s
 
 function formatGallons(value) {
   const num = Number(value);
