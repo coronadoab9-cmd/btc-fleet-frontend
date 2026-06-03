@@ -109,6 +109,16 @@ export default function ETicketsPage({ token }) {
     loadTickets();
   }, [token, eticketTab]);
 
+  useEffect(() => {
+    if (eticketTab !== "pending") return;
+
+    const interval = setInterval(() => {
+      loadTickets();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [eticketTab]);
+
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       const acceptanceText = String(t.ticket_acceptance || "").toLowerCase();
