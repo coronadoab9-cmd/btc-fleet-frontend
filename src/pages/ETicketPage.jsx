@@ -617,7 +617,7 @@ export default function ETicketPage() {
         25
     );
 
-    return Number.isFinite(value) && value > 0 ? value : 25;
+    return Number.isFinite(value) ? value : 25;
   }, [ticket?.water_allowed_gallons, ticket?.water_allowed, ticket?.waterAllowed]);
   const [qcWaterAdded, setQcWaterAdded] = useState(0);
   const [customerWaterAdded, setCustomerWaterAdded] = useState(0);
