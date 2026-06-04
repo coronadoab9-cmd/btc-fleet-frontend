@@ -210,15 +210,26 @@ export default function ETicketsPage({ token }) {
 
   const selectedTicket =
     filteredTickets.find((t) => t.token === selectedToken) ||
-    tickets.find((t) => t.token === selectedToken) ||
     filteredTickets[0] ||
     null;
 
   useEffect(() => {
-    if (selectedTicket && selectedTicket.token !== selectedToken) {
-      setSelectedToken(selectedTicket.token);
+    if (!filteredTickets.length) {
+      if (selectedToken) {
+        setSelectedToken("");
+      }
+      return;
     }
-  }, [selectedTicket, selectedToken]);
+
+    const selectedStillVisible = filteredTickets.some(
+      (t) => t.token === selectedToken
+    );
+
+    if (!selectedStillVisible) {
+      setSelectedToken(filteredTickets[0].token);
+    }
+  }, [filteredTickets, selectedToken]);
+
 
   function formatDateOnly(value) {
     if (!value) return "";
