@@ -31,6 +31,25 @@ function formatCentralDateTime(value) {
   }
 }
 
+function getLoadDateKey(value) {
+  if (!value) return "";
+
+  try {
+    const dt = new Date(value);
+
+    // Match displayed Load Time correction
+    dt.setHours(dt.getHours() - 11);
+
+    const year = dt.getFullYear();
+    const month = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
 function formatGallons(val) {
   const num = Number(val);
   if (isNaN(num)) return "-";
@@ -171,24 +190,17 @@ export default function ETicketsPage({ token }) {
         !truckFilter.trim() ||
         (t.truck_number || "").toLowerCase().includes(truckFilter.trim().toLowerCase());
 
-      const filterDateValue =
-        eticketTab === "signed"
-          ? t.signed_at
-          : t.load_time;
-
-      const ticketDate = filterDateValue
-        ? new Date(filterDateValue)
-        : null;
+      const loadDateKey = getLoadDateKey(t.load_time);
 
       const fromOk =
         !dateFrom ||
-        !ticketDate ||
-        ticketDate >= new Date(`${dateFrom}T00:00:00`);
+        !loadDateKey ||
+        loadDateKey >= dateFrom;
 
       const toOk =
         !dateTo ||
-        !ticketDate ||
-        ticketDate <= new Date(`${dateTo}T23:59:59`);
+        !loadDateKey ||
+        loadDateKey <= dateTo;
 
       return statusOk && customerOk && ticketOk && orderOk && truckOk && fromOk && toOk;
     });
