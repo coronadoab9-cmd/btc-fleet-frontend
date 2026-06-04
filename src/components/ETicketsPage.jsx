@@ -558,8 +558,14 @@ export default function ETicketsPage({ token }) {
               onClick={() => {
                 setSelectedToken("");
                 setFilterStatus("all");
-                setEticketTab(key);
+                setCustomerFilter("");
+                setTicketFilter("");
+                setOrderFilter("");
+                setTruckFilter("");
+                setDateFrom("");
+                setDateTo("");
                 setSelectedArchivedIds([]);
+                setEticketTab(key);
               }}
             >
               {label}
@@ -712,8 +718,14 @@ export default function ETicketsPage({ token }) {
             onClick={() => {
               setSelectedToken("");
               setFilterStatus("all");
-              setEticketTab(key);
+              setCustomerFilter("");
+              setTicketFilter("");
+              setOrderFilter("");
+              setTruckFilter("");
+              setDateFrom("");
+              setDateTo("");
               setSelectedArchivedIds([]);
+              setEticketTab(key);
             }}
           >
             {label}
