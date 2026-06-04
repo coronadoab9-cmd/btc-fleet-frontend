@@ -571,7 +571,7 @@ export default function TruckMap() {
         className="fleet-content full-width"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 360px",
+          gridTemplateColumns: "1fr 450px",
           gap: 16,
         }}
       >
