@@ -111,15 +111,17 @@ export default function ETicketsPage({ token }) {
         }),
       ]);
 
-      setTickets(Array.isArray(data) ? data : []);
+      const cleanData = Array.isArray(data) ? data : [];
+
+      setTickets(cleanData);
       setNewTicketCount(0);
+
       setReassignOptions({
         admins: Array.isArray(optionsData?.admins) ? optionsData.admins : [],
         trucks: Array.isArray(optionsData?.trucks) ? optionsData.trucks : [],
       });
-      if (!selectedToken && data?.length) {
-        setSelectedToken(data[0].token);
-      }
+
+      setSelectedToken(cleanData[0]?.token || "");
     } catch (err) {
       setError(err.message || "Could not load eTickets");
     } finally {
@@ -261,7 +263,7 @@ export default function ETicketsPage({ token }) {
         productText;
 
       return [
-        formatDateOnly(t.signed_at || t.load_time),
+        formatDateOnly(t.load_time),
         t.truck_number || "",
         t.job_number || "",
         t.customer_name || "",
@@ -705,9 +707,9 @@ export default function ETicketsPage({ token }) {
         <div style={{ marginBottom: 12 }}>
           <button
             style={styles.primaryButton}
-            onClick={async () => {
+            onClick={() => {
               setNewTicketCount(0);
-              await loadTickets();
+              loadTickets(eticketTab);
             }}
           >
             {newTicketCount} new ticket
