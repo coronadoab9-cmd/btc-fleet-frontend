@@ -152,30 +152,39 @@ export default function TruckMap() {
   }, []);
 
   async function fetchTrucks() {
-    const res = await fetch(`${getApiBase()}/trucks/live`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`${getApiBase()}/trucks/live`);
 
-    const cleaned = data
-      .filter(
-        (t) =>
-          t.latitude !== null &&
-          t.longitude !== null &&
-          !isNaN(Number(t.latitude)) &&
-          !isNaN(Number(t.longitude))
-      )
-      .map((t) => ({
-        ...t,
-        latitude: Number(t.latitude),
-        longitude: Number(t.longitude),
-        speed_mph: Number(t.speed_mph ?? 0),
-      }));
+      if (!res.ok) {
+        throw new Error(`Failed to load trucks (${res.status})`);
+      }
 
-    setTrucks(cleaned);
+      const data = await res.json();
+
+      const cleaned = data
+        .filter(
+          (t) =>
+            t.latitude !== null &&
+            t.longitude !== null &&
+            !isNaN(Number(t.latitude)) &&
+            !isNaN(Number(t.longitude))
+        )
+        .map((t) => ({
+          ...t,
+          latitude: Number(t.latitude),
+          longitude: Number(t.longitude),
+          speed_mph: Number(t.speed_mph ?? 0),
+        }));
+
+      setTrucks(cleaned);
+    } catch (err) {
+      console.error("Truck refresh failed:", err);
+    }
   }
 
   useEffect(() => {
     fetchTrucks();
-    const id = setInterval(fetchTrucks, 5000);
+    const id = setInterval(fetchTrucks, 10000);
     return () => clearInterval(id);
   }, []);
 
@@ -539,7 +548,9 @@ export default function TruckMap() {
         return;
       }
 
-      await navigator.clipboard.writeText(data.link);
+      try {
+        await navigator.clipboard.writeText(data.link);
+      } catch {}
       setMessage(`eTicket created and copied: ${data.link}`);
     } catch {
       setMessage("Could not create eTicket");
@@ -810,7 +821,14 @@ export default function TruckMap() {
                       className="danger-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteTruck(truck.truck_number);
+
+                        if (
+                          window.confirm(
+                            `Delete truck ${truck.truck_number}?`
+                          )
+                        ) {
+                          deleteTruck(truck.truck_number);
+                        }
                       }}
                     >
                       Delete
