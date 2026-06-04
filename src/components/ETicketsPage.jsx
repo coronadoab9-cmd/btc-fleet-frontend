@@ -79,12 +79,12 @@ export default function ETicketsPage({ token }) {
   const [reassigningTicketId, setReassigningTicketId] = useState(null);
   const ticketsRef = useRef([]);
 
-  async function loadTickets() {
+  async function loadTickets(tabOverride = eticketTab) {
     setLoading(true);
     setError("");
     try {
       const [data, optionsData] = await Promise.all([
-        apiFetch(`/admin/etickets?tab=${eticketTab}`, {
+        apiFetch(`/admin/etickets?tab=${tabOverride}`, {
           headers: { "X-Admin-Token": token },
         }),
         apiFetch("/admin/etickets/reassign-options", {
@@ -107,6 +107,13 @@ export default function ETicketsPage({ token }) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    setSelectedToken("");
+    setSelectedArchivedIds([]);
+    setNewTicketCount(0);
+    loadTickets(eticketTab);
+  }, [token, eticketTab]);
 
   useEffect(() => {
     ticketsRef.current = tickets;
@@ -531,7 +538,10 @@ export default function ETicketsPage({ token }) {
 
         <div style={styles.mobileHeader}>
           <div style={styles.pageTitle}>eTickets</div>
-          <button style={styles.secondaryButton} onClick={loadTickets}>
+          <button
+            style={styles.secondaryButton}
+            onClick={() => loadTickets(eticketTab)}
+          >
             Refresh
           </button>
         </div>
@@ -654,7 +664,10 @@ export default function ETicketsPage({ token }) {
       <div style={styles.headerRow}>
         <div style={styles.pageTitle}>eTickets ({filteredTickets.length})</div>
         <div style={styles.headerButtons}>
-          <button style={styles.secondaryButton} onClick={loadTickets}>
+          <button
+            style={styles.secondaryButton}
+            onClick={() => loadTickets(eticketTab)}
+          >
             Refresh
           </button>
           <button style={styles.primaryButton} onClick={exportFiltered}>
