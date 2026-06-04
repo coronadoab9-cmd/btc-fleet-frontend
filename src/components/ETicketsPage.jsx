@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { apiFetch, buildEticketPdfUrl, buildEticketUrl, getApiBase } from "../lib/api";
+import { useEffect, useMemo, useState, useRef } from "react";
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -67,6 +67,7 @@ export default function ETicketsPage({ token }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [newTicketCount, setNewTicketCount] = useState(0);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [selectedArchivedIds, setSelectedArchivedIds] = useState([]);
@@ -76,6 +77,7 @@ export default function ETicketsPage({ token }) {
     trucks: [],
   });
   const [reassigningTicketId, setReassigningTicketId] = useState(null);
+  const ticketsRef = useRef([]);
 
   async function loadTickets() {
     setLoading(true);
@@ -91,6 +93,7 @@ export default function ETicketsPage({ token }) {
       ]);
 
       setTickets(Array.isArray(data) ? data : []);
+      setNewTicketCount(0);
       setReassignOptions({
         admins: Array.isArray(optionsData?.admins) ? optionsData.admins : [],
         trucks: Array.isArray(optionsData?.trucks) ? optionsData.trucks : [],
@@ -106,18 +109,38 @@ export default function ETicketsPage({ token }) {
   }
 
   useEffect(() => {
-    loadTickets();
-  }, [token, eticketTab]);
+    ticketsRef.current = tickets;
+  }, [tickets]);
 
   useEffect(() => {
     if (eticketTab !== "pending") return;
 
-    const interval = setInterval(() => {
-      loadTickets();
-    }, 10000);
+    const interval = setInterval(async () => {
+      try {
+        const data = await apiFetch(`/admin/etickets?tab=${eticketTab}`, {
+          headers: { "X-Admin-Token": token },
+        });
+
+        if (!Array.isArray(data)) return;
+
+        const currentIds = new Set(
+          ticketsRef.current.map((t) => t.id)
+        );
+
+        const newOnes = data.filter(
+          (t) => !currentIds.has(t.id)
+        );
+
+        if (newOnes.length > 0) {
+          setNewTicketCount(newOnes.length);
+        }
+      } catch (err) {
+        console.error("Ticket poll failed:", err);
+      }
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [eticketTab]);
+  }, [eticketTab, token]);
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
@@ -646,6 +669,21 @@ export default function ETicketsPage({ token }) {
           </button>
         </div>
       </div>
+
+      {newTicketCount > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <button
+            style={styles.primaryButton}
+            onClick={async () => {
+              setNewTicketCount(0);
+              await loadTickets();
+            }}
+          >
+            {newTicketCount} new ticket
+            {newTicketCount === 1 ? "" : "s"} available — Refresh
+          </button>
+        </div>
+      )}
 
       <div style={styles.tabRow}>
         {[
