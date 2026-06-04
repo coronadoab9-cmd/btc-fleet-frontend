@@ -12,6 +12,12 @@ export default function LoginPage({ onLogin }) {
     setError("");
     setSubmitting(true);
 
+    if (!username.trim() || !password.trim()) {
+      setError("Username and password are required");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const data = await apiFetch("/admin/login", {
         method: "POST",
@@ -50,6 +56,7 @@ export default function LoginPage({ onLogin }) {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="adam.coronado"
             autoComplete="username"
+            disabled={submitting}
           />
 
           <label>Password</label>
@@ -59,6 +66,7 @@ export default function LoginPage({ onLogin }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password"
             autoComplete="current-password"
+            disabled={submitting}
           />
 
           {error ? (
@@ -85,7 +93,7 @@ export default function LoginPage({ onLogin }) {
         <div className="login-help">
           Use your BTC admin credentials.
           <br />
-          Example username format: <strong>adam.coronado</strong>
+          Example username format: <strong>first.last</strong>
         </div>
       </div>
     </div>
