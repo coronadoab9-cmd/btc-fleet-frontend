@@ -1935,16 +1935,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                         touchAction: "none",
                         userSelect: "none",
                       }}
-                      onPointerDown={(e) => {
+                      onTouchStart={(e) => {
                         e.preventDefault();
                         startWaterPress(-1, "qc");
                       }}
-                      onPointerUp={(e) => {
+                      onTouchEnd={(e) => {
                         e.preventDefault();
                         finishWaterPress();
                       }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
+                      onMouseDown={() => startWaterPress(-1, "qc")}
+                      onMouseUp={finishWaterPress}
+                      onMouseLeave={finishWaterPress}
                     >
                       -
                     </button>
@@ -1971,16 +1972,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                         touchAction: "none",
                         userSelect: "none",
                       }}
-                      onPointerDown={(e) => {
+                      onTouchStart={(e) => {
                         e.preventDefault();
                         startWaterPress(1, "qc");
                       }}
-                      onPointerUp={(e) => {
+                      onTouchEnd={(e) => {
                         e.preventDefault();
                         finishWaterPress();
                       }}
-                      onPointerLeave={finishWaterPress}
-                      onPointerCancel={finishWaterPress}
+                      onMouseDown={() => startWaterPress(1, "qc")}
+                      onMouseUp={finishWaterPress}
+                      onMouseLeave={finishWaterPress}
                     >
                       +
                     </button>
