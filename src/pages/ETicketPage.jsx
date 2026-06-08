@@ -762,7 +762,10 @@ export default function ETicketPage() {
       setTicket(data);
       setSigned(data.status === "signed");
       setFinalSignatureDataUrl(data.signature_data_url || "");
-      setQcWaterAdded(Number(data.qc_water_added || 0));
+      setQcWaterAdded((current) => {
+        const saved = Number(data.qc_water_added || 0);
+        return Number(current || 0) > 0 ? current : saved;
+      });
       setCustomerWaterAdded(Number(data.customer_water_added || data.water_added || 0));
 
       if (data.signature_data_url) {
