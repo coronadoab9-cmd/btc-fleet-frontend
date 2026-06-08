@@ -1861,7 +1861,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1.4fr",
+                  gridTemplateColumns: isPhone ? "1fr" : "0.85fr 1fr",
                   gap: 14,
                 }}
               >
@@ -1892,7 +1892,9 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       color: "#fff",
                     }}
                   >
-                    {Number(waterAllowed || 0).toFixed(1)} gal
+                    <span style={{ whiteSpace: "nowrap" }}>
+                      {Number(waterAllowed || 0).toFixed(1)} gal
+                    </span>
                   </div>
                 </div>
 
@@ -1919,7 +1921,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: isPhone ? "56px 1fr 56px" : "76px 1fr 76px",
+                      gridTemplateColumns: isPhone ? "46px 1fr 46px" : "54px 1fr 54px",
                       alignItems: "center",
                       gap: 14,
                     }}
@@ -1928,9 +1930,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       type="button"
                       className="primary-btn"
                       style={{
-                        height: isPhone ? 48 : 58,
+                        width: isPhone ? 46 : 54,
+                        height: isPhone ? 42 : 46,
                         marginTop: 0,
-                        fontSize: isPhone ? 22 : 28,
+                        fontSize: isPhone ? 20 : 22,
                         fontWeight: 900,
                         touchAction: "none",
                         userSelect: "none",
@@ -1965,9 +1968,10 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                       type="button"
                       className="primary-btn"
                       style={{
-                        height: isPhone ? 48 : 58,
+                        width: isPhone ? 46 : 54,
+                        height: isPhone ? 42 : 46,
                         marginTop: 0,
-                        fontSize: isPhone ? 22 : 28,
+                        fontSize: isPhone ? 20 : 22,
                         fontWeight: 900,
                         touchAction: "none",
                         userSelect: "none",
