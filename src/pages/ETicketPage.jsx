@@ -471,6 +471,7 @@ function CustomerWaterAddedBox({
   isPhone,
   startWaterPress,
   finishWaterPress,
+  t,
 }) {
   return (
     <div
@@ -483,7 +484,7 @@ function CustomerWaterAddedBox({
       }}
     >
       <div style={{ color: "var(--muted)", fontSize: isPhone ? 15 : 18 }}>
-        Customer Water Added
+        {t("customerWaterAdded")}
       </div>
 
       <div
@@ -2253,6 +2254,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   isPhone={isPhone}
                   startWaterPress={startWaterPress}
                   finishWaterPress={finishWaterPress}
+                  t={t}
                 />
               </div>
             ) : (
@@ -2275,6 +2277,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                   isPhone={isPhone}
                   startWaterPress={startWaterPress}
                   finishWaterPress={finishWaterPress}
+                  t={t}
                 />
               </div>
             )}
