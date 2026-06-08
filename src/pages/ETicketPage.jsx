@@ -764,7 +764,13 @@ export default function ETicketPage() {
       setFinalSignatureDataUrl(data.signature_data_url || "");
       setQcWaterAdded((current) => {
         const saved = Number(data.qc_water_added || 0);
-        return Number(current || 0) > 0 ? current : saved;
+
+        // If user has already changed it locally, don't overwrite it.
+        if (current !== 0 && current !== saved) {
+          return current;
+        }
+
+        return saved;
       });
       setCustomerWaterAdded(Number(data.customer_water_added || data.water_added || 0));
 
