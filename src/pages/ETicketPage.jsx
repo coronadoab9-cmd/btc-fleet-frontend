@@ -758,6 +758,11 @@ export default function ETicketPage() {
     setError("");
 
     try {
+      stopWaterPress();
+      holdAmountRef.current = 0;
+      holdStartedRef.current = false;
+      holdStartTimeRef.current = 0;
+      
       const data = await apiFetch(`/api/etickets/${token}`);
       setTicket(data);
       setSigned(data.status === "signed");
@@ -1135,27 +1140,26 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
+
+    holdAmountRef.current = 0;
+    holdStartedRef.current = false;
+    holdStartTimeRef.current = 0;
   }
 
   function finishWaterPress() {
-    if (holdAmountRef.current === 0) return;
-
     const amount = holdAmountRef.current;
     const wasHolding = holdStartedRef.current;
+    const waterType = holdWaterTypeRef.current;
 
     stopWaterPress();
 
-    if (!wasHolding) {
-      if (holdWaterTypeRef.current === "qc") {
+    if (amount !== 0 && !wasHolding) {
+      if (waterType === "qc") {
         changeQcWaterAdded(amount);
       } else {
         changeCustomerWaterAdded(amount);
       }
     }
-
-    holdAmountRef.current = 0;
-    holdStartedRef.current = false;
-    holdStartTimeRef.current = 0;
   }
 
   async function attachStreamToVideo() {
