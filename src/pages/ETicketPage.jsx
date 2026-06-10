@@ -51,6 +51,9 @@ const UI_TEXT = {
     curbLineNotice: "By signing below, the customer/contractor acknowledges responsibility for proper site conditions and accepts delivery as requested. Big Town Concrete is not responsible for property damage resulting from site access limitations, unstable surfaces, underground utilities, customer-directed vehicle movement, or conditions beyond driver control.",
     clearSignature: "Clear Signature",
     finalSignature: "Final Signature",
+    finalSignatureType: "Final Signature Type",
+    customerSignature: "Customer Signature",
+    driverSignatureCustomerNotAvailable: "Driver Signature / Customer Not Available",
     btcTerms: "BTC Terms & Conditions",
     ticketAcceptance: "Ticket Acceptance",
     acceptedDelivery: "Accepted Delivery",
@@ -121,6 +124,9 @@ const UI_TEXT = {
     curbLineNotice: "Al firmar abajo, el cliente/contratista reconoce que es responsable de las condiciones adecuadas del sitio y acepta la entrega solicitada. Big Town Concrete no se hace responsable por daños a la propiedad causados por limitaciones de acceso al sitio, superficies inestables, servicios subterráneos, movimientos del vehículo indicados por el cliente o condiciones fuera del control del chofer.",
     clearSignature: "Borrar firma",
     finalSignature: "Firma final",
+    finalSignatureType: "Tipo de firma final",
+    customerSignature: "Firma del cliente",
+    driverSignatureCustomerNotAvailable: "Firma del chofer / Cliente no disponible",
     btcTerms: "Términos y condiciones de BTC",
     ticketAcceptance: "Aceptación del ticket",
     acceptedDelivery: "Entrega aceptada",
@@ -623,6 +629,7 @@ export default function ETicketPage() {
   const [qcWaterAdded, setQcWaterAdded] = useState(0);
   const [customerWaterAdded, setCustomerWaterAdded] = useState(0);
   const [ticketAcceptance, setTicketAcceptance] = useState("Accepted Delivery");
+  const [finalSignatureType, setFinalSignatureType] = useState("Customer Signature");
   const [rejectionReason, setRejectionReason] = useState("");
   const [locationData, setLocationData] = useState({
     latitude: null,
@@ -742,7 +749,7 @@ export default function ETicketPage() {
 
   useEffect(() => {
     const id = setTimeout(() => {
-      if (step === 4) {
+      if (step === 2) {
         setupCanvas(waterSignatureRef.current, "#0b1a2b", waterSignatureDataUrl);
       }
 
@@ -1373,6 +1380,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         );
       }
 
+      const finalSignerText =
+        finalSignatureType === "Driver Signature / Customer Not Available"
+          ? "Driver Signed"
+          : "Customer Signed";
+
       await apiFetch(`/api/etickets/${token}/sign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1385,10 +1397,11 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
           qc_water_added: Number(qcWaterAdded).toFixed(2),
           customer_water_added: Number(customerWaterAdded).toFixed(2),
           curb_line_status: curbLineSignature,
+          final_signature_type: finalSignatureType,
           ticket_acceptance:
             ticketAcceptance === "Rejected Delivery"
-              ? `${ticketAcceptance} | Reason: ${rejectionReason} | ${curbLineSignature}`
-              : `${ticketAcceptance} | ${curbLineSignature}`,
+              ? `${ticketAcceptance} / ${finalSignerText} | Reason: ${rejectionReason} | ${curbLineSignature}`
+              : `${ticketAcceptance} / ${finalSignerText} | ${curbLineSignature}`,
           signature_data_url: finalSignatureDataUrl,
           curb_line_signature_data_url:
             curbLineSignature === "Customer / Contractor Signature"
@@ -1445,7 +1458,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <SummaryRow
               label={t("signedBy")}
               value={
-                String(ticket.ticket_acceptance || "").includes("Driver signed")
+                String(ticket.ticket_acceptance || "").toLowerCase().includes("driver signed")
                   ? t("driverSignedNoOneAvailable")
                   : t("signedCustomerContractor")
               }
@@ -2018,6 +2031,115 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                 marginTop: 16,
               }}
             >
+              <label>{t("curbLineSignature")}</label>
+
+              <select
+                value={curbLineSignature}
+                onChange={(e) => {
+                  setCurbLineSignature(e.target.value);
+
+                  if (e.target.value !== "Customer / Contractor Signature") {
+                    setWaterSignatureDrawn(false);
+                    setWaterSignatureDataUrl("");
+                    setCurbLineSignedAt("");
+                  }
+                }}
+              >
+                <option value="Not Needed">{t("notNeeded")}</option>
+                <option value="Customer / Contractor Signature">
+                  {t("customerContractorSignature")}
+                </option>
+              </select>
+
+              {curbLineSignature === "Customer / Contractor Signature" ? (
+                <>
+                  <div
+                    style={{
+                      background: "rgba(255,165,0,0.10)",
+                      border: "1px solid rgba(255,165,0,0.35)",
+                      color: "#f3f4f6",
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      marginTop: 12,
+                      marginBottom: 12,
+                      fontSize: isPhone ? 11 : 13,
+                      lineHeight: 1.45,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t("curbLineNotice")}
+                  </div>
+
+                  <canvas
+                    className="signature-canvas"
+                    ref={waterSignatureRef}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onPointerDown={(e) =>
+                      startSignature(e, waterSignatureRef, drawingWaterRef, lastWaterPointRef)
+                    }
+                    onPointerMove={(e) =>
+                      moveSignature(
+                        e,
+                        waterSignatureRef,
+                        drawingWaterRef,
+                        lastWaterPointRef,
+                        setWaterSignatureDrawn
+                      )
+                    }
+                    onPointerUp={(e) =>
+                      endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                    }
+                    onPointerLeave={(e) =>
+                      endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                    }
+                    onPointerCancel={(e) =>
+                      endSignature(e, waterSignatureRef, drawingWaterRef, setWaterSignatureDataUrl)
+                    }
+                    style={{
+                      width: "100%",
+                      height: "180px",
+                      minHeight: "180px",
+                      display: "block",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      touchAction: "none",
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      WebkitTouchCallout: "none",
+                      WebkitTapHighlightColor: "transparent",
+                      marginTop: 10,
+                      background: "#0b1a2b",
+                    }}
+                  />
+
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      className="secondary-btn"
+                      type="button"
+                      onClick={() =>
+                        clearCanvas(
+                          waterSignatureRef,
+                          setWaterSignatureDrawn,
+                          setWaterSignatureDataUrl
+                        )
+                      }
+                    >
+                      {t("clearSignature")}
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <div
+              style={{
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 16,
+              }}
+            >
               <div
                 style={{
                   fontWeight: 900,
@@ -2086,18 +2208,46 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <div style={{ marginTop: 12 }}>
+              {error ? (
+                <div
+                  style={{
+                    color: "#fecaca",
+                    fontWeight: 900,
+                    fontSize: 18,
+                    marginBottom: 10,
+                    textAlign: "left",
+                  }}
+                >
+                  {error}
+                </div>
+              ) : null}
 
-              <button
-                className="primary-btn"
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setStep(3);
-                }}
-              >
-                {t("next")}
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={() => {
+                    if (
+                      curbLineSignature === "Customer / Contractor Signature" &&
+                      !waterSignatureDrawn
+                    ) {
+                      setError("Curb line signature is required before continuing.");
+                      return;
+                    }
+
+                    setError("");
+
+                    if (curbLineSignature === "Customer / Contractor Signature") {
+                      setCurbLineSignedAt((current) => current || new Date().toISOString());
+                    }
+
+                    setStep(3);
+                  }}
+                >
+                  {t("next")}
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -2210,16 +2360,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         {step === 4 && (
           <>
 
-            <label>{t("curbLineSignature")}</label>
-            
-            <select
-              value={curbLineSignature}
-              onChange={(e) => setCurbLineSignature(e.target.value)}
-            >
-              <option value="Not Needed">{t("notNeeded")}</option>
-              <option value="Customer / Contractor Signature">{t("customerContractorSignature")}</option>
-            </select>
-
             {Number(qcWaterAdded || 0) > 0 ? (
               <div
                 style={{
@@ -2282,7 +2422,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               </div>
             )}
 
-            {curbLineSignature === "Customer / Contractor Signature" ? (
+            {false && curbLineSignature === "Customer / Contractor Signature" ? (
               <>
                 <div style={{ marginTop: 18, color: "#fff", fontWeight: 800 }}>
                   {t("curbLineSignature")}
@@ -2403,7 +2543,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
                     }
 
                     setError("");
-                    setCurbLineSignedAt(new Date().toISOString());
                     setStep(5);
                   }}
                 >
@@ -2483,6 +2622,17 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
             <div style={{ marginTop: 14 }}>
               <QrCard title={t("btcTerms")} url={API_QR_TERMS} />
             </div>
+
+            <label style={{ marginTop: 14 }}>{t("finalSignatureType")}</label>
+            <select
+              value={finalSignatureType}
+              onChange={(e) => setFinalSignatureType(e.target.value)}
+            >
+              <option value="Customer Signature">{t("customerSignature")}</option>
+              <option value="Driver Signature / Customer Not Available">
+                {t("driverSignatureCustomerNotAvailable")}
+              </option>
+            </select>
 
             <label style={{ marginTop: 14 }}>{t("ticketAcceptance")}</label>
             <select
