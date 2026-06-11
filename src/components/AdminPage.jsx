@@ -238,7 +238,7 @@ export default function AdminPage({ token }) {
 Login: ${loginUrl}
 Email: ${user.email}
 
-Please log in and click Change Password to set your company password. This is your company?s shared portal login, so only share it with employees who need access to your delivery tickets.
+Please log in and click Change Password to set your company password. This is your company shared portal login, so only share it with employees who need access to your delivery tickets.
 
 This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
 
@@ -281,7 +281,7 @@ Login: ${loginUrl}
 Email: ${email}
 Temporary Password: ${password}
 
-Please log in and click Change Password to set your company password. This is your company?s shared portal login, so only share it with employees who need access to your delivery tickets.
+Please log in and click Change Password to set your company password. This is your company shared portal login, so only share it with employees who need access to your delivery tickets.
 
 This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
 
