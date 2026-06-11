@@ -30,7 +30,7 @@ function formatLoadTime(value) {
   try {
     const dt = new Date(value);
 
-    // Match the eTicket / PDF Sysdyne correction.
+    // Match the eTicket / PDF Sysdyne load-time correction.
     dt.setHours(dt.getHours() - 11);
 
     return new Intl.DateTimeFormat("en-US", {
@@ -48,6 +48,7 @@ function formatLoadTime(value) {
 
 function buildDirectionsUrl(latitude, longitude, address) {
   if (!latitude || !longitude || !address) return "";
+
   return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
     `${latitude},${longitude}`
   )}&destination=${encodeURIComponent(address)}`;
@@ -55,14 +56,39 @@ function buildDirectionsUrl(latitude, longitude, address) {
 
 function buildDirectionsEmbedUrl(latitude, longitude, address) {
   if (!latitude || !longitude || !address) return "";
+
   return `https://maps.google.com/maps?saddr=${encodeURIComponent(
     `${latitude},${longitude}`
   )}&daddr=${encodeURIComponent(address)}&output=embed`;
 }
 
-function statusLabel(value) {
-  const raw = String(value || "").trim();
-  return raw || "Pending";
+function ticketLoadMs(ticket) {
+  if (!ticket?.load_time) return 0;
+  const ms = new Date(ticket.load_time).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function getCurrentPortalTicket(tickets) {
+  const pending = tickets
+    .filter((ticket) => String(ticket.status || "pending").toLowerCase() !== "signed")
+    .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+
+  if (pending.length > 0) return pending[0];
+
+  const sorted = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+  return sorted[0] || null;
+}
+
+function findTruckForTicket(activeTrucks, ticket) {
+  if (!ticket) return null;
+
+  const ticketTruck = String(ticket.truck_number || "").trim();
+
+  return (
+    activeTrucks.find(
+      (truck) => String(truck.truck_number || "").trim() === ticketTruck
+    ) || null
+  );
 }
 
 function StatCard({ label, value }) {
@@ -159,7 +185,6 @@ export default function CustomerJobPortal() {
     }
   }, [jobToken]);
 
-
   if (loading) {
     return <div className="full-screen-center">Loading customer portal...</div>;
   }
@@ -171,6 +196,9 @@ export default function CustomerJobPortal() {
   const job = data?.job || {};
   const tickets = data?.tickets || [];
   const activeTrucks = data?.active_trucks || [];
+  const currentTicket = getCurrentPortalTicket(tickets);
+  const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
+  const isPhone = window.innerWidth <= 700;
 
   return (
     <div className="app-shell" style={{ padding: 14 }}>
@@ -206,7 +234,7 @@ export default function CustomerJobPortal() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "repeat(3, 1fr)",
+            gridTemplateColumns: isPhone ? "1fr" : "repeat(3, 1fr)",
             gap: 14,
             marginTop: 16,
           }}
@@ -216,103 +244,90 @@ export default function CustomerJobPortal() {
           <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
         </div>
 
-        <SectionCard title="Live Truck Status">
-          {activeTrucks.length === 0 ? (
+        <SectionCard title="Next Delivery">
+          {!currentTicket ? (
             <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              No active truck location yet.
+              No active delivery ticket found yet.
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {activeTrucks.map((truck) => (
-                <div
-                  key={truck.truck_number}
-                  style={{
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    padding: 14,
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <Row label="Truck" value={truck.truck_number} />
-                  <Row label="Last Update" value={formatDateTime(truck.last_updated)} />
-                  {truck.latitude && truck.longitude && job.address ? (
-                    <>
-                      <div
-                        style={{
-                          marginTop: 12,
-                          border: "1px solid var(--border)",
-                          borderRadius: 14,
-                          overflow: "hidden",
-                          background: "#0b1a2b",
-                        }}
-                      >
-                        <iframe
-                          title={`Route for truck ${truck.truck_number}`}
-                          src={buildDirectionsEmbedUrl(
-                            truck.latitude,
-                            truck.longitude,
-                            job.address
-                          )}
-                          width="100%"
-                          height="260"
-                          style={{
-                            border: 0,
-                            display: "block",
-                          }}
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                        />
-                      </div>
+            <div
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: 14,
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              <Row label="Ticket" value={currentTicket.ticket_number} />
+              <Row label="Truck" value={currentTicket.truck_number} />
+              <Row label="Load Time" value={formatLoadTime(currentTicket.load_time)} />
+              <Row label="Load Size" value={formatCys(currentTicket.quantity)} />
 
-                      <a
-                        href={buildDirectionsUrl(
-                          truck.latitude,
-                          truck.longitude,
-                          job.address
-                        )}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="primary-btn"
-                        style={{
-                          display: "block",
-                          textAlign: "center",
-                          textDecoration: "none",
-                          marginTop: 12,
-                        }}
-                      >
-                        Open Route / ETA
-                      </a>
-
-                      <div
-                        style={{
-                          color: "var(--muted)",
-                          fontWeight: 800,
-                          fontSize: 12,
-                          marginTop: 8,
-                          textAlign: "center",
-                        }}
-                      >
-                        ETA is shown in the route map and full Google Maps view.
-                      </div>
-                    </>
-                  ) : truck.latitude && truck.longitude ? (
-                    <a
-                      href={`https://www.google.com/maps?q=${truck.latitude},${truck.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="primary-btn"
+              {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
+                <>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      background: "#0b1a2b",
+                    }}
+                  >
+                    <iframe
+                      title={`Route for truck ${currentTruck.truck_number}`}
+                      src={buildDirectionsEmbedUrl(
+                        currentTruck.latitude,
+                        currentTruck.longitude,
+                        job.address
+                      )}
+                      width="100%"
+                      height={isPhone ? "230" : "300"}
                       style={{
+                        border: 0,
                         display: "block",
-                        textAlign: "center",
-                        textDecoration: "none",
-                        marginTop: 12,
                       }}
-                    >
-                      Open Truck Location
-                    </a>
-                  ) : null}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+
+                  <a
+                    href={buildDirectionsUrl(
+                      currentTruck.latitude,
+                      currentTruck.longitude,
+                      job.address
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="primary-btn"
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      textDecoration: "none",
+                      marginTop: 12,
+                    }}
+                  >
+                    Open Route / ETA
+                  </a>
+
+                  <div
+                    style={{
+                      color: "var(--muted)",
+                      fontWeight: 800,
+                      fontSize: 12,
+                      marginTop: 8,
+                      textAlign: "center",
+                    }}
+                  >
+                    ETA is shown in the route map and full Google Maps view.
+                  </div>
+                </>
+              ) : (
+                <div style={{ color: "var(--muted)", fontWeight: 800, marginTop: 12 }}>
+                  Truck location is not available yet.
                 </div>
-              ))}
+              )}
             </div>
           )}
         </SectionCard>
@@ -323,31 +338,43 @@ export default function CustomerJobPortal() {
               No tickets found for this job.
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {tickets.map((ticket) => {
-                const isSigned = String(ticket.status || "").toLowerCase() === "signed";
+            <div style={{ display: "grid", gap: 8 }}>
+              {[...tickets]
+                .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a))
+                .map((ticket) => {
+                  const isSigned = String(ticket.status || "").toLowerCase() === "signed";
 
-                return (
-                  <div
-                    key={ticket.id || ticket.ticket_number}
-                    style={{
-                      border: "1px solid var(--border)",
-                      borderRadius: 14,
-                      padding: 14,
-                      background: "rgba(255,255,255,0.03)",
-                    }}
-                  >
+                  return (
                     <div
+                      key={ticket.id || ticket.ticket_number}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        flexWrap: "wrap",
-                        marginBottom: 8,
+                        display: "grid",
+                        gridTemplateColumns: isPhone
+                          ? "1fr"
+                          : "1.2fr 0.8fr 1fr 0.8fr 1.2fr",
+                        gap: 10,
+                        alignItems: "center",
+                        border: "1px solid var(--border)",
+                        borderRadius: 12,
+                        padding: 10,
+                        background: "rgba(255,255,255,0.03)",
                       }}
                     >
-                      <div style={{ color: "#fff", fontWeight: 950, fontSize: 18 }}>
-                        Ticket {ticket.ticket_number}
+                      <div>
+                        <div style={{ color: "#fff", fontWeight: 950 }}>
+                          Ticket {ticket.ticket_number}
+                        </div>
+                        <div style={{ color: "var(--muted)", fontWeight: 800, fontSize: 12 }}>
+                          {formatLoadTime(ticket.load_time)}
+                        </div>
+                      </div>
+
+                      <div style={{ color: "#fff", fontWeight: 900 }}>
+                        Truck {ticket.truck_number || "-"}
+                      </div>
+
+                      <div style={{ color: "#fff", fontWeight: 900 }}>
+                        {formatCys(ticket.quantity)}
                       </div>
 
                       <div
@@ -358,63 +385,65 @@ export default function CustomerJobPortal() {
                       >
                         {isSigned ? "Signed" : "Pending"}
                       </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 8,
+                        }}
+                      >
+                        {ticket.qc_pdf_url ? (
+                          <a
+                            href={ticket.qc_pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="secondary-btn"
+                            style={{
+                              textAlign: "center",
+                              textDecoration: "none",
+                              padding: "10px 8px",
+                              fontSize: 12,
+                            }}
+                          >
+                            QC PDF
+                          </a>
+                        ) : (
+                          <span />
+                        )}
+
+                        {ticket.final_pdf_url ? (
+                          <a
+                            href={ticket.final_pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="primary-btn"
+                            style={{
+                              textAlign: "center",
+                              textDecoration: "none",
+                              padding: "10px 8px",
+                              fontSize: 12,
+                            }}
+                          >
+                            Final PDF
+                          </a>
+                        ) : (
+                          <div
+                            style={{
+                              color: "var(--muted)",
+                              fontWeight: 800,
+                              fontSize: 12,
+                              display: "grid",
+                              placeItems: "center",
+                            }}
+                          >
+                            Not signed
+                          </div>
+                        )}
+                      </div>
                     </div>
-
-                    <Row label="Truck" value={ticket.truck_number} />
-                    <Row label="Load Time" value={formatLoadTime(ticket.load_time)} />
-                    <Row label="Load Size" value={formatCys(ticket.quantity)} />
-                    <Row label="Acceptance" value={ticket.ticket_acceptance || "-"} />
-                    <Row label="Signed At" value={formatDateTime(ticket.signed_at)} />
-                    <Row label="QC Water" value={`${Number(ticket.qc_water_added || 0).toFixed(1)} gal`} />
-                    <Row label="Customer Water" value={`${Number(ticket.customer_water_added || 0).toFixed(1)} gal`} />
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "1fr 1fr",
-                        gap: 10,
-                        marginTop: 12,
-                      }}
-                    >
-                      {ticket.qc_pdf_url ? (
-                        <a
-                          href={ticket.qc_pdf_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="secondary-btn"
-                          style={{ textAlign: "center", textDecoration: "none" }}
-                        >
-                          Open QC PDF
-                        </a>
-                      ) : null}
-
-                      {ticket.final_pdf_url ? (
-                        <a
-                          href={ticket.final_pdf_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="primary-btn"
-                          style={{ textAlign: "center", textDecoration: "none" }}
-                        >
-                          Open Final PDF
-                        </a>
-                      ) : (
-                        <div
-                          style={{
-                            color: "var(--muted)",
-                            fontWeight: 800,
-                            display: "grid",
-                            placeItems: "center",
-                            minHeight: 44,
-                          }}
-                        >
-                          Final PDF available after signing
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           )}
         </SectionCard>
