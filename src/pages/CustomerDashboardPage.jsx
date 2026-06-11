@@ -188,6 +188,8 @@ export default function CustomerDashboardPage() {
   const [auth, setAuth] = useState(() => getCustomerAuth());
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [message, setMessage] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -284,6 +286,24 @@ export default function CustomerDashboardPage() {
   const customer = data?.customer || auth?.customer || {};
   const jobs = data?.jobs || [];
 
+  const filteredJobs = jobs.filter((job) => {
+    const search = orderSearch.trim().toLowerCase();
+    const isComplete = String(job.status || "").toLowerCase() === "complete";
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "complete" && isComplete) ||
+      (statusFilter === "in_progress" && !isComplete);
+
+    const matchesSearch =
+      !search ||
+      String(job.order_number || "").toLowerCase().includes(search) ||
+      String(job.address || "").toLowerCase().includes(search) ||
+      String(job.customer_name || "").toLowerCase().includes(search);
+
+    return matchesStatus && matchesSearch;
+  });
+
   return (
     <div className="app-shell" style={{ padding: 14 }}>
       <div className="panel-card" style={{ maxWidth: 1050, margin: "0 auto" }}>
@@ -346,6 +366,94 @@ export default function CustomerDashboardPage() {
             {message}
           </div>
         ) : null}
+
+        <div
+          style={{
+            background: "var(--panel-2)",
+            border: "1px solid var(--border)",
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "1.4fr 0.8fr auto",
+              gap: 10,
+              alignItems: "end",
+            }}
+          >
+            <div>
+              <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
+                Search Orders
+              </div>
+              <input
+                type="text"
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                placeholder="Search by order # or address"
+                style={{
+                  width: "100%",
+                  height: 48,
+                  borderRadius: 12,
+                  border: "1px solid var(--border)",
+                  background: "var(--panel)",
+                  color: "#fff",
+                  padding: "0 12px",
+                  fontWeight: 800,
+                }}
+              />
+            </div>
+
+            <div>
+              <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
+                Status
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: 48,
+                  borderRadius: 12,
+                  border: "1px solid var(--border)",
+                  background: "var(--panel)",
+                  color: "#fff",
+                  padding: "0 12px",
+                  fontWeight: 800,
+                }}
+              >
+                <option value="all">All Orders</option>
+                <option value="in_progress">In Progress</option>
+                <option value="complete">Complete</option>
+              </select>
+            </div>
+
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={() => {
+                setOrderSearch("");
+                setStatusFilter("all");
+              }}
+              style={{ height: 48 }}
+            >
+              Clear
+            </button>
+          </div>
+
+          <div
+            style={{
+              color: "var(--muted)",
+              fontWeight: 800,
+              fontSize: 13,
+              marginTop: 10,
+            }}
+          >
+            Showing {filteredJobs.length} of {jobs.length} order(s)
+          </div>
+        </div>
 
         {showPasswordForm ? (
           <div
@@ -459,7 +567,7 @@ export default function CustomerDashboardPage() {
           </div>
         ) : null}
 
-        {jobs.length === 0 ? (
+        {filteredJobs.length === 0 ? (
           <div
             style={{
               color: "var(--muted)",
@@ -470,11 +578,11 @@ export default function CustomerDashboardPage() {
               background: "var(--panel-2)",
             }}
           >
-            No jobs are available yet.
+            No matching orders found.
           </div>
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
-            {jobs.map((job) => (
+            {filteredJobs.map((job) => (
               <JobCard key={job.job_portal_token || job.portal_job_key} job={job} />
             ))}
           </div>
