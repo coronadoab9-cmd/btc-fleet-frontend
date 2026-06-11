@@ -225,6 +225,29 @@ export default function AdminPage({ token }) {
     }
   }
 
+  async function copyCustomerWelcomeMessage(user) {
+    setError("");
+    setMessage("");
+
+    const loginUrl = "https://app.btcfleet.app/customer/login";
+
+    const welcomeMessage = `BTC Customer Portal
+
+Login: ${loginUrl}
+Email: ${user.email}
+
+Please log in and click Change Password to set your company password.
+
+This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
+
+    try {
+      await navigator.clipboard.writeText(welcomeMessage);
+      setMessage(`Welcome message copied for ${user.email}`);
+    } catch {
+      setError("Could not copy welcome message. Your browser may have blocked clipboard access.");
+    }
+  }
+
   async function saveCustomerUser() {
     setSavingCustomerUser(true);
     setError("");
@@ -580,6 +603,14 @@ export default function AdminPage({ token }) {
                       <td style={styles.td}>{formatDateTime(user.created_at)}</td>
                       <td style={styles.td}>
                         <div style={styles.inlineButtons}>
+                          <button
+                            style={styles.smallButton}
+                            type="button"
+                            onClick={() => copyCustomerWelcomeMessage(user)}
+                          >
+                            Copy Welcome Message
+                          </button>
+
                           <button
                             style={styles.smallButton}
                             type="button"
