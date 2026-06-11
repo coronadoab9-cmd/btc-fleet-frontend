@@ -26,11 +26,13 @@ export default function AdminPage({ token }) {
   const [drivers, setDrivers] = useState([]);
   const [devices, setDevices] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [customerUsers, setCustomerUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingDriver, setSavingDriver] = useState(false);
   const [assigningDevice, setAssigningDevice] = useState(false);
+  const [savingCustomerUser, setSavingCustomerUser] = useState(false);
 
   const [driverForm, setDriverForm] = useState({
     name: "",
@@ -42,6 +44,13 @@ export default function AdminPage({ token }) {
     device_uuid: "",
     device_name: "",
     truck_number: "",
+  });
+
+  const [customerUserForm, setCustomerUserForm] = useState({
+    customer_name: "",
+    email: "",
+    password: "",
+    active: true,
   });
 
   const [editingDriverId, setEditingDriverId] = useState(null);
@@ -62,15 +71,17 @@ export default function AdminPage({ token }) {
     setError("");
 
     try {
-      const [driversData, devicesData, sessionsData] = await Promise.all([
+      const [driversData, devicesData, sessionsData, customerUsersData] = await Promise.all([
         adminFetch("/admin/drivers"),
         adminFetch("/admin/devices"),
         adminFetch("/admin/sessions"),
+        adminFetch("/admin/customer-users"),
       ]);
 
       setDrivers(Array.isArray(driversData) ? driversData : []);
       setDevices(Array.isArray(devicesData) ? devicesData : []);
       setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setCustomerUsers(customerUsersData.customer_users || []);
     } catch (err) {
       setError(err.message || "Could not load admin data");
     } finally {
@@ -161,6 +172,46 @@ export default function AdminPage({ token }) {
       setError(err.message || "Could not assign tablet");
     } finally {
       setAssigningDevice(false);
+    }
+  }
+
+  async function saveCustomerUser() {
+    setSavingCustomerUser(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const customerName = customerUserForm.customer_name.trim();
+      const email = customerUserForm.email.trim().toLowerCase();
+      const password = customerUserForm.password.trim();
+
+      if (!customerName) throw new Error("Customer name is required");
+      if (!email || !email.includes("@")) throw new Error("Valid email is required");
+      if (password.length < 8) throw new Error("Password must be at least 8 characters");
+
+      await adminFetch("/admin/customer-users", {
+        method: "POST",
+        body: JSON.stringify({
+          customer_name: customerName,
+          email,
+          password,
+          active: !!customerUserForm.active,
+        }),
+      });
+
+      setMessage("Customer portal login created successfully");
+      setCustomerUserForm({
+        customer_name: "",
+        email: "",
+        password: "",
+        active: true,
+      });
+
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Could not create customer portal login");
+    } finally {
+      setSavingCustomerUser(false);
     }
   }
 
@@ -380,6 +431,117 @@ export default function AdminPage({ token }) {
         </div>
 
         <div style={styles.rightColumn}>
+          <Section title="Create Customer Portal Login">
+            <div style={styles.stackGap}>
+              <div>
+                <div style={styles.label}>Customer Name</div>
+                <input
+                  style={styles.input}
+                  value={customerUserForm.customer_name}
+                  onChange={(e) =>
+                    setCustomerUserForm((p) => ({
+                      ...p,
+                      customer_name: e.target.value,
+                    }))
+                  }
+                  placeholder="AH Beck"
+                />
+              </div>
+
+              <div>
+                <div style={styles.label}>Customer Email</div>
+                <input
+                  style={styles.input}
+                  type="email"
+                  value={customerUserForm.email}
+                  onChange={(e) =>
+                    setCustomerUserForm((p) => ({
+                      ...p,
+                      email: e.target.value,
+                    }))
+                  }
+                  placeholder="customer@email.com"
+                />
+              </div>
+
+              <div>
+                <div style={styles.label}>Temporary Password</div>
+                <input
+                  style={styles.input}
+                  type="text"
+                  value={customerUserForm.password}
+                  onChange={(e) =>
+                    setCustomerUserForm((p) => ({
+                      ...p,
+                      password: e.target.value,
+                    }))
+                  }
+                  placeholder="Temp password"
+                />
+              </div>
+
+              <div style={styles.checkboxRow}>
+                <input
+                  id="customer-user-active"
+                  type="checkbox"
+                  checked={customerUserForm.active}
+                  onChange={(e) =>
+                    setCustomerUserForm((p) => ({
+                      ...p,
+                      active: e.target.checked,
+                    }))
+                  }
+                  style={styles.checkbox}
+                />
+                <label htmlFor="customer-user-active" style={styles.checkboxLabel}>
+                  Customer login active
+                </label>
+              </div>
+
+              <button
+                style={styles.primaryButtonFull}
+                onClick={saveCustomerUser}
+                disabled={savingCustomerUser}
+              >
+                {savingCustomerUser ? "Creating..." : "Create Customer Login"}
+              </button>
+            </div>
+          </Section>
+
+          <Section title={`Customer Portal Users (${customerUsers.length})`}>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Customer</th>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Active</th>
+                    <th style={styles.th}>Created</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {customerUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td style={styles.td}>{user.customer_name}</td>
+                      <td style={styles.td}>{user.email}</td>
+                      <td style={styles.td}>{user.active ? "Yes" : "No"}</td>
+                      <td style={styles.td}>{formatDateTime(user.created_at)}</td>
+                    </tr>
+                  ))}
+
+                  {!customerUsers.length && (
+                    <tr>
+                      <td style={styles.emptyCell} colSpan={4}>
+                        No customer portal users yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
           <Section title="Assign Tablet / Device">
             <div style={styles.stackGap}>
               <div>
