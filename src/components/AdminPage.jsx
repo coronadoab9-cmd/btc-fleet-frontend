@@ -175,6 +175,56 @@ export default function AdminPage({ token }) {
     }
   }
 
+  async function toggleCustomerUserActive(user) {
+    setError("");
+    setMessage("");
+
+    try {
+      await adminFetch(`/admin/customer-users/${user.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          active: !user.active,
+        }),
+      });
+
+      setMessage(
+        user.active
+          ? "Customer portal login deactivated"
+          : "Customer portal login reactivated"
+      );
+
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Could not update customer portal user");
+    }
+  }
+
+  async function resetCustomerUserPassword(user) {
+    setError("");
+    setMessage("");
+
+    const nextPassword = window.prompt(
+      `Enter a new temporary password for ${user.email}:`,
+      "Temp12345!"
+    );
+
+    if (!nextPassword) return;
+
+    try {
+      await adminFetch(`/admin/customer-users/${user.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          password: nextPassword,
+        }),
+      });
+
+      setMessage(`Password reset for ${user.email}`);
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Could not reset customer password");
+    }
+  }
+
   async function saveCustomerUser() {
     setSavingCustomerUser(true);
     setError("");
@@ -517,6 +567,7 @@ export default function AdminPage({ token }) {
                     <th style={styles.th}>Email</th>
                     <th style={styles.th}>Active</th>
                     <th style={styles.th}>Created</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
 
@@ -527,12 +578,31 @@ export default function AdminPage({ token }) {
                       <td style={styles.td}>{user.email}</td>
                       <td style={styles.td}>{user.active ? "Yes" : "No"}</td>
                       <td style={styles.td}>{formatDateTime(user.created_at)}</td>
+                      <td style={styles.td}>
+                        <div style={styles.inlineButtons}>
+                          <button
+                            style={styles.smallButton}
+                            type="button"
+                            onClick={() => resetCustomerUserPassword(user)}
+                          >
+                            Reset Password
+                          </button>
+
+                          <button
+                            style={user.active ? styles.smallDangerButton : styles.smallButton}
+                            type="button"
+                            onClick={() => toggleCustomerUserActive(user)}
+                          >
+                            {user.active ? "Deactivate" : "Reactivate"}
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
 
                   {!customerUsers.length && (
                     <tr>
-                      <td style={styles.emptyCell} colSpan={4}>
+                      <td style={styles.emptyCell} colSpan={5}>
                         No customer portal users yet.
                       </td>
                     </tr>
