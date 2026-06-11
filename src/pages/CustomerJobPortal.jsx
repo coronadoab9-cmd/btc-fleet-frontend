@@ -183,16 +183,6 @@ export default function CustomerJobPortal() {
     return parts[parts.length - 1] || "";
   }, []);
 
-  const hasCustomerLogin = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("btc_customer_auth");
-      const parsed = raw ? JSON.parse(raw) : null;
-      return Boolean(parsed?.token);
-    } catch {
-      return false;
-    }
-  }, []);
-
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -269,23 +259,9 @@ export default function CustomerJobPortal() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {hasCustomerLogin ? (
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() => {
-                  window.location.href = "/customer/dashboard";
-                }}
-              >
-                Back to All Orders
-              </button>
-            ) : null}
-
-            <button className="secondary-btn" type="button" onClick={loadPortal}>
-              Refresh
-            </button>
-          </div>
+          <button className="secondary-btn" type="button" onClick={loadPortal}>
+            Refresh
+          </button>
         </div>
 
         <div
