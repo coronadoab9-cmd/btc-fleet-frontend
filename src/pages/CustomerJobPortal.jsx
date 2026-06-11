@@ -226,6 +226,11 @@ export default function CustomerJobPortal() {
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
   const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 5);
 
+  const orderTotal = Number(job.order_total || 0);
+  const deliveredTotal = Number(job.delivered_total || 0);
+  const progressPercent =
+    orderTotal > 0 ? Math.max(0, Math.min(100, (deliveredTotal / orderTotal) * 100)) : 0;
+
   const isComplete = Number(job.remaining_total || 0) <= 0;
 
   const showNextDelivery =
@@ -276,6 +281,67 @@ export default function CustomerJobPortal() {
           <StatCard label="Order Total" value={formatCys(job.order_total)} />
           <StatCard label="Delivered So Far" value={formatCys(job.delivered_total)} />
           <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            background: "var(--panel-2)",
+            border: "1px solid var(--border)",
+            borderRadius: 16,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <div style={{ color: "#fff", fontWeight: 950 }}>
+              Delivery Progress
+            </div>
+            <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+              {formatCys(job.delivered_total)} / {formatCys(job.order_total)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              height: 16,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.08)",
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${progressPercent}%`,
+                borderRadius: 999,
+                background: isComplete
+                  ? "linear-gradient(90deg, #22c55e, #86efac)"
+                  : "linear-gradient(90deg, #38bdf8, #2563eb)",
+                transition: "width 0.35s ease",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              color: isComplete ? "#bbf7d0" : "var(--muted)",
+              fontWeight: 900,
+              fontSize: 13,
+              marginTop: 8,
+              textAlign: "right",
+            }}
+          >
+            {progressPercent.toFixed(0)}% delivered
+          </div>
         </div>
 
         {isComplete ? (
