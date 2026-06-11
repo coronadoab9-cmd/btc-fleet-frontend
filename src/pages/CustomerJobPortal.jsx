@@ -200,8 +200,10 @@ export default function CustomerJobPortal() {
   const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
   const isPhone = window.innerWidth <= 700;
 
+  const isComplete = Number(job.remaining_total || 0) <= 0;
+
   const showNextDelivery =
-    Number(job.remaining_total || 0) > 0 &&
+    !isComplete &&
     currentTicket &&
     String(currentTicket.status || "pending").toLowerCase() !== "signed";
 
@@ -249,6 +251,24 @@ export default function CustomerJobPortal() {
           <StatCard label="Delivered So Far" value={formatCys(job.delivered_total)} />
           <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
         </div>
+
+        {isComplete ? (
+          <div
+            style={{
+              marginTop: 16,
+              border: "1px solid rgba(34,197,94,0.45)",
+              background: "rgba(34,197,94,0.12)",
+              borderRadius: 16,
+              padding: 16,
+              color: "#bbf7d0",
+              fontWeight: 950,
+              textAlign: "center",
+              fontSize: 18,
+            }}
+          >
+            Delivery Complete — Final Delivered: {formatCys(job.delivered_total)}
+          </div>
+        ) : null}
 
         {showNextDelivery ? (
         <SectionCard title="Next Delivery">
