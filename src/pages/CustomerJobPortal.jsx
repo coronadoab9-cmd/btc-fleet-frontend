@@ -159,15 +159,6 @@ export default function CustomerJobPortal() {
     }
   }, [jobToken]);
 
-  useEffect(() => {
-    if (!jobToken) return;
-
-    const id = setInterval(() => {
-      loadPortal();
-    }, 30000);
-
-    return () => clearInterval(id);
-  }, [jobToken]);
 
   if (loading) {
     return <div className="full-screen-center">Loading customer portal...</div>;
@@ -210,8 +201,6 @@ export default function CustomerJobPortal() {
         <SectionCard title="Job Information">
           <Row label="Customer" value={job.customer_name} />
           <Row label="Address" value={job.address} />
-          <Row label="Job #" value={job.job_number} />
-          <Row label="Order #" value={job.order_number} />
         </SectionCard>
 
         <div
@@ -245,8 +234,6 @@ export default function CustomerJobPortal() {
                   }}
                 >
                   <Row label="Truck" value={truck.truck_number} />
-                  <Row label="Status" value={statusLabel(truck.status)} />
-                  <Row label="Speed" value={`${Number(truck.speed_mph || 0).toFixed(1)} mph`} />
                   <Row label="Last Update" value={formatDateTime(truck.last_updated)} />
                   <Row
                     label="Location"
