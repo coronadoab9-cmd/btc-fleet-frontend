@@ -439,32 +439,7 @@ export default function CustomerJobPortal() {
                         {customerStatus}
                       </div>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 8,
-                        }}
-                      >
-                        {ticket.qc_pdf_url ? (
-                          <a
-                            href={ticket.qc_pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="secondary-btn"
-                            style={{
-                              textAlign: "center",
-                              textDecoration: "none",
-                              padding: "10px 8px",
-                              fontSize: 12,
-                            }}
-                          >
-                            QC PDF
-                          </a>
-                        ) : (
-                          <span />
-                        )}
-
+                      <div>
                         {ticket.final_pdf_url ? (
                           <a
                             href={ticket.final_pdf_url}
@@ -472,13 +447,14 @@ export default function CustomerJobPortal() {
                             rel="noreferrer"
                             className="primary-btn"
                             style={{
+                              display: "block",
                               textAlign: "center",
                               textDecoration: "none",
                               padding: "10px 8px",
                               fontSize: 12,
                             }}
                           >
-                            Final PDF
+                            Final Ticket
                           </a>
                         ) : (
                           <div
@@ -488,9 +464,12 @@ export default function CustomerJobPortal() {
                               fontSize: 12,
                               display: "grid",
                               placeItems: "center",
+                              border: "1px solid var(--border)",
+                              borderRadius: 10,
+                              padding: "10px 8px",
                             }}
                           >
-                            Not Ready
+                            Final Not Ready
                           </div>
                         )}
                       </div>
