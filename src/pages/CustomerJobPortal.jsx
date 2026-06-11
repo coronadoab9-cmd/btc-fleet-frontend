@@ -234,6 +234,7 @@ export default function CustomerJobPortal() {
         <SectionCard title="Job Information">
           <Row label="Customer" value={job.customer_name} />
           <Row label="Address" value={job.address} />
+          <Row label="Order #" value={job.order_number} />
         </SectionCard>
 
         <div
