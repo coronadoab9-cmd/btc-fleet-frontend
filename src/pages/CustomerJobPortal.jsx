@@ -164,6 +164,7 @@ export default function CustomerJobPortal() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAllTickets, setShowAllTickets] = useState(false);
 
   async function loadPortal() {
     setLoading(true);
@@ -199,6 +200,9 @@ export default function CustomerJobPortal() {
   const currentTicket = getCurrentPortalTicket(tickets);
   const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
   const isPhone = window.innerWidth <= 700;
+
+  const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+  const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 5);
 
   const isComplete = Number(job.remaining_total || 0) <= 0;
 
@@ -368,9 +372,7 @@ export default function CustomerJobPortal() {
             </div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
-              {[...tickets]
-                .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a))
-                .map((ticket) => {
+              {visibleTickets.map((ticket) => {
                   const isSigned = String(ticket.status || "").toLowerCase() === "signed";
 
                   return (
@@ -475,6 +477,20 @@ export default function CustomerJobPortal() {
                 })}
             </div>
           )}
+
+          {tickets.length > 5 ? (
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={() => setShowAllTickets((value) => !value)}
+              style={{
+                width: "100%",
+                marginTop: 12,
+              }}
+            >
+              {showAllTickets ? "Show Less" : `Show All Tickets (${tickets.length})`}
+            </button>
+          ) : null}
         </SectionCard>
       </div>
     </div>
