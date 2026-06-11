@@ -24,6 +24,42 @@ function formatDateTime(value) {
   }
 }
 
+function formatLoadTime(value) {
+  if (!value) return "-";
+
+  try {
+    const dt = new Date(value);
+
+    // Match the eTicket / PDF Sysdyne correction.
+    dt.setHours(dt.getHours() - 11);
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(dt);
+  } catch {
+    return value;
+  }
+}
+
+function buildDirectionsUrl(latitude, longitude, address) {
+  if (!latitude || !longitude || !address) return "";
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    `${latitude},${longitude}`
+  )}&destination=${encodeURIComponent(address)}`;
+}
+
+function buildDirectionsEmbedUrl(latitude, longitude, address) {
+  if (!latitude || !longitude || !address) return "";
+  return `https://maps.google.com/maps?saddr=${encodeURIComponent(
+    `${latitude},${longitude}`
+  )}&daddr=${encodeURIComponent(address)}&output=embed`;
+}
+
 function statusLabel(value) {
   const raw = String(value || "").trim();
   return raw || "Pending";
@@ -123,6 +159,16 @@ export default function CustomerJobPortal() {
     }
   }, [jobToken]);
 
+  useEffect(() => {
+    if (!jobToken) return;
+
+    const id = setInterval(() => {
+      loadPortal();
+    }, 30000);
+
+    return () => clearInterval(id);
+  }, [jobToken]);
+
   if (loading) {
     return <div className="full-screen-center">Loading customer portal...</div>;
   }
@@ -211,7 +257,67 @@ export default function CustomerJobPortal() {
                     }
                   />
 
-                  {truck.latitude && truck.longitude ? (
+                  {truck.latitude && truck.longitude && job.address ? (
+                    <>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          border: "1px solid var(--border)",
+                          borderRadius: 14,
+                          overflow: "hidden",
+                          background: "#0b1a2b",
+                        }}
+                      >
+                        <iframe
+                          title={`Route for truck ${truck.truck_number}`}
+                          src={buildDirectionsEmbedUrl(
+                            truck.latitude,
+                            truck.longitude,
+                            job.address
+                          )}
+                          width="100%"
+                          height="260"
+                          style={{
+                            border: 0,
+                            display: "block",
+                          }}
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                      </div>
+
+                      <a
+                        href={buildDirectionsUrl(
+                          truck.latitude,
+                          truck.longitude,
+                          job.address
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="primary-btn"
+                        style={{
+                          display: "block",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          marginTop: 12,
+                        }}
+                      >
+                        Open Route / ETA
+                      </a>
+
+                      <div
+                        style={{
+                          color: "var(--muted)",
+                          fontWeight: 800,
+                          fontSize: 12,
+                          marginTop: 8,
+                          textAlign: "center",
+                        }}
+                      >
+                        ETA is shown in the route map and full Google Maps view.
+                      </div>
+                    </>
+                  ) : truck.latitude && truck.longitude ? (
                     <a
                       href={`https://www.google.com/maps?q=${truck.latitude},${truck.longitude}`}
                       target="_blank"
@@ -277,7 +383,7 @@ export default function CustomerJobPortal() {
                     </div>
 
                     <Row label="Truck" value={ticket.truck_number} />
-                    <Row label="Load Time" value={formatDateTime(ticket.load_time)} />
+                    <Row label="Load Time" value={formatLoadTime(ticket.load_time)} />
                     <Row label="Load Size" value={formatCys(ticket.quantity)} />
                     <Row label="Acceptance" value={ticket.ticket_acceptance || "-"} />
                     <Row label="Signed At" value={formatDateTime(ticket.signed_at)} />
