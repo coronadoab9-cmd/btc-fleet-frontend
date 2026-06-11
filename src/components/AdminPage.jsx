@@ -619,49 +619,6 @@ This portal gives your company access to current orders, delivery status, ticket
                 {savingCustomerUser ? "Creating..." : "Create Customer Login"}
               </button>
 
-              {lastCustomerLoginMessage ? (
-                <div
-                  style={{
-                    border: "1px solid var(--border)",
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: 14,
-                    padding: 14,
-                    marginTop: 8,
-                  }}
-                >
-                  <div style={{ color: "#fff", fontWeight: 900, marginBottom: 8 }}>
-                    New Customer Login Message
-                  </div>
-
-                  <pre
-                    style={{
-                      whiteSpace: "pre-wrap",
-                      color: "#d9ecff",
-                      fontFamily: "inherit",
-                      fontWeight: 700,
-                      lineHeight: 1.45,
-                      margin: 0,
-                    }}
-                  >
-                    {lastCustomerLoginMessage}
-                  </pre>
-
-                  <button
-                    style={{ ...styles.secondaryButton, marginTop: 12 }}
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(lastCustomerLoginMessage);
-                        setMessage("New login message copied");
-                      } catch {
-                        setError("Could not copy new login message.");
-                      }
-                    }}
-                  >
-                    Copy New Login Message
-                  </button>
-                </div>
-              ) : null}
             </div>
           </Section>
 
@@ -692,7 +649,7 @@ This portal gives your company access to current orders, delivery status, ticket
                             type="button"
                             onClick={() => copyCustomerWelcomeMessage(user)}
                           >
-                            Copy Welcome Message
+                            Copy Login Info
                           </button>
 
                           <button
