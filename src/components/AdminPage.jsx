@@ -220,7 +220,26 @@ export default function AdminPage({ token }) {
         }),
       });
 
-      setMessage(`Password reset for ${user.email}`);
+      const loginUrl = "https://app.btcfleet.app/customer/login";
+      const resetMessage = `BTC Customer Portal
+
+Login: ${loginUrl}
+Email: ${user.email}
+Temporary Password: ${nextPassword}
+
+Please log in and click Change Password to set your company password. This is your company shared portal login, so only share it with employees who need access to your delivery tickets.
+
+This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
+
+      setLastCustomerLoginMessage(resetMessage);
+
+      try {
+        await navigator.clipboard.writeText(resetMessage);
+        setMessage(`Password reset and login message copied for ${user.email}`);
+      } catch {
+        setMessage(`Password reset for ${user.email}. Copy the reset login message above.`);
+      }
+
       await loadAll();
     } catch (err) {
       setError(err.message || "Could not reset customer password");
