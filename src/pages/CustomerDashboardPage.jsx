@@ -188,6 +188,14 @@ export default function CustomerDashboardPage() {
   const [auth, setAuth] = useState(() => getCustomerAuth());
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function loadDashboard() {
@@ -220,6 +228,49 @@ export default function CustomerDashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  async function changePassword() {
+    setChangingPassword(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const currentPassword = passwordForm.current_password.trim();
+      const newPassword = passwordForm.new_password.trim();
+      const confirmPassword = passwordForm.confirm_password.trim();
+
+      if (!currentPassword) throw new Error("Current password is required");
+      if (newPassword.length < 8) throw new Error("New password must be at least 8 characters");
+      if (newPassword !== confirmPassword) throw new Error("New passwords do not match");
+
+      const savedAuth = getCustomerAuth();
+      if (!savedAuth?.token) throw new Error("Please log in again.");
+
+      await apiFetch("/api/customer/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Customer-Token": savedAuth.token,
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      setMessage("Password changed successfully.");
+      setPasswordForm({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      });
+      setShowPasswordForm(false);
+    } catch (err) {
+      setError(err.message || "Could not change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
 
   function logout() {
     localStorage.removeItem("btc_customer_auth");
@@ -259,6 +310,13 @@ export default function CustomerDashboardPage() {
             <button className="secondary-btn" type="button" onClick={loadDashboard}>
               Refresh
             </button>
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={() => setShowPasswordForm((v) => !v)}
+            >
+              Change Password
+            </button>
             <button className="logout-btn" type="button" onClick={logout}>
               Log Out
             </button>
@@ -274,6 +332,130 @@ export default function CustomerDashboardPage() {
             }}
           >
             {error}
+          </div>
+        ) : null}
+
+        {message ? (
+          <div
+            style={{
+              color: "#d1fae5",
+              fontWeight: 800,
+              marginBottom: 12,
+            }}
+          >
+            {message}
+          </div>
+        ) : null}
+
+        {showPasswordForm ? (
+          <div
+            style={{
+              background: "var(--panel-2)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ color: "#fff", fontWeight: 950, fontSize: 20, marginBottom: 12 }}>
+              Change Password
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "repeat(3, 1fr)",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
+                  Current Password
+                </div>
+                <input
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, current_password: e.target.value }))
+                  }
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--panel)",
+                    color: "#fff",
+                    padding: "0 12px",
+                    fontWeight: 800,
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
+                  New Password
+                </div>
+                <input
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, new_password: e.target.value }))
+                  }
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--panel)",
+                    color: "#fff",
+                    padding: "0 12px",
+                    fontWeight: 800,
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
+                  Confirm New Password
+                </div>
+                <input
+                  type="password"
+                  value={passwordForm.confirm_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, confirm_password: e.target.value }))
+                  }
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--panel)",
+                    color: "#fff",
+                    padding: "0 12px",
+                    fontWeight: 800,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={changePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? "Saving..." : "Save New Password"}
+              </button>
+
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => setShowPasswordForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         ) : null}
 
