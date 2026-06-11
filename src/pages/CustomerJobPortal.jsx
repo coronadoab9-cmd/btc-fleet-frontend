@@ -235,15 +235,6 @@ export default function CustomerJobPortal() {
                 >
                   <Row label="Truck" value={truck.truck_number} />
                   <Row label="Last Update" value={formatDateTime(truck.last_updated)} />
-                  <Row
-                    label="Location"
-                    value={
-                      truck.latitude && truck.longitude
-                        ? `${truck.latitude}, ${truck.longitude}`
-                        : "-"
-                    }
-                  />
-
                   {truck.latitude && truck.longitude && job.address ? (
                     <>
                       <div
