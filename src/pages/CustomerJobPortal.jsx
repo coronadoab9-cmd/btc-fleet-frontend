@@ -264,6 +264,48 @@ export default function CustomerJobPortal() {
           </button>
         </div>
 
+        <div
+          style={{
+            marginTop: 16,
+            border: isComplete
+              ? "1px solid rgba(34,197,94,0.45)"
+              : "1px solid rgba(56,189,248,0.45)",
+            background: isComplete
+              ? "rgba(34,197,94,0.12)"
+              : "rgba(56,189,248,0.12)",
+            borderRadius: 16,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              color: isComplete ? "#bbf7d0" : "#bae6fd",
+              fontWeight: 950,
+              fontSize: 20,
+              marginBottom: 6,
+            }}
+          >
+            {isComplete ? "Delivery Complete" : "Delivery In Progress"}
+          </div>
+
+          <div
+            style={{
+              color: "#fff",
+              fontWeight: 850,
+              lineHeight: 1.5,
+            }}
+          >
+            {isComplete ? (
+              <>Final delivered: {formatCys(job.delivered_total)}</>
+            ) : (
+              <>
+                Next truck: {currentTicket?.truck_number || "-"} · Remaining:{" "}
+                {formatCys(job.remaining_total)}
+              </>
+            )}
+          </div>
+        </div>
+
         <SectionCard title="Job Information">
           <Row label="Customer" value={job.customer_name} />
           <Row label="Address" value={job.address} />
