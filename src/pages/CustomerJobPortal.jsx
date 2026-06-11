@@ -259,9 +259,23 @@ export default function CustomerJobPortal() {
             </div>
           </div>
 
-          <button className="secondary-btn" type="button" onClick={loadPortal}>
-            Refresh
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {localStorage.getItem("btc_customer_auth") ? (
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => {
+                  window.location.href = "/customer/dashboard";
+                }}
+              >
+                Back to All Orders
+              </button>
+            ) : null}
+
+            <button className="secondary-btn" type="button" onClick={loadPortal}>
+              Refresh
+            </button>
+          </div>
         </div>
 
         <div
