@@ -155,6 +155,28 @@ function Row({ label, value }) {
   );
 }
 
+
+function getCustomerTicketStatus(ticket) {
+  const status = String(ticket?.status || "pending").toLowerCase();
+  const acceptance = String(ticket?.ticket_acceptance || "").toLowerCase();
+
+  if (status === "signed") {
+    if (acceptance.includes("rejected")) return "Rejected";
+    return "Delivered";
+  }
+
+  return "In Transit";
+}
+
+function getCustomerTicketStatusColor(ticket) {
+  const customerStatus = getCustomerTicketStatus(ticket);
+
+  if (customerStatus === "Delivered") return "#bbf7d0";
+  if (customerStatus === "Rejected") return "#fecaca";
+  return "#fed7aa";
+}
+
+
 export default function CustomerJobPortal() {
   const jobToken = useMemo(() => {
     const parts = window.location.pathname.split("/");
@@ -373,7 +395,7 @@ export default function CustomerJobPortal() {
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
               {visibleTickets.map((ticket) => {
-                  const isSigned = String(ticket.status || "").toLowerCase() === "signed";
+                  const customerStatus = getCustomerTicketStatus(ticket);
 
                   return (
                     <div
@@ -410,11 +432,11 @@ export default function CustomerJobPortal() {
 
                       <div
                         style={{
-                          color: isSigned ? "#bbf7d0" : "#fed7aa",
+                          color: getCustomerTicketStatusColor(ticket),
                           fontWeight: 950,
                         }}
                       >
-                        {isSigned ? "Signed" : "Pending"}
+                        {customerStatus}
                       </div>
 
                       <div
@@ -468,7 +490,7 @@ export default function CustomerJobPortal() {
                               placeItems: "center",
                             }}
                           >
-                            Not signed
+                            Not Ready
                           </div>
                         )}
                       </div>
