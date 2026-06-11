@@ -1024,6 +1024,36 @@ export default function ETicketsPage({ token }) {
                   <button style={styles.secondaryButton} onClick={() => copyLink(buildEticketUrl(selectedTicket.token), "eTicket link")}>
                     Copy Link
                   </button>
+
+                  {selectedTicket.job_portal_token ? (
+                    <>
+                      <button
+                        style={styles.primaryButton}
+                        type="button"
+                        onClick={() =>
+                          window.open(
+                            `https://app.btcfleet.app/customer/jobs/${selectedTicket.job_portal_token}`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        Open Portal
+                      </button>
+
+                      <button
+                        style={styles.secondaryButton}
+                        type="button"
+                        onClick={() =>
+                          copyLink(
+                            `https://app.btcfleet.app/customer/jobs/${selectedTicket.job_portal_token}`,
+                            "customer portal link"
+                          )
+                        }
+                      >
+                        Copy Portal
+                      </button>
+                    </>
+                  ) : null}
                   {selectedTicket.status === "signed" ? (
                     <button style={styles.secondaryButton} onClick={() => window.open(buildEticketPdfUrl(selectedTicket.token), "_blank")}>
                       Open Signed PDF
