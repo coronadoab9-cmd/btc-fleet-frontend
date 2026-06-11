@@ -6,6 +6,7 @@ import LoginPage from "./components/LoginPage";
 import AdminPage from "./components/AdminPage";
 import ETicketsPage from "./components/ETicketsPage";
 import ETicketPage from "./pages/ETicketPage";
+import CustomerJobPortal from "./pages/CustomerJobPortal";
 import { apiFetch } from "./lib/api";
 import "./index.css";
 
@@ -14,6 +15,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/eticket/:token" element={<ETicketPage />} />
+        <Route path="/customer/jobs/:jobToken" element={<CustomerJobPortal />} />
         <Route path="/*" element={<ProtectedApp />} />
       </Routes>
     </BrowserRouter>
