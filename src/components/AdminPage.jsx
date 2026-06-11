@@ -53,6 +53,8 @@ export default function AdminPage({ token }) {
     active: true,
   });
 
+  const [lastCustomerLoginMessage, setLastCustomerLoginMessage] = useState("");
+
   const [editingDriverId, setEditingDriverId] = useState(null);
 
   async function adminFetch(path, options = {}) {
@@ -236,7 +238,7 @@ export default function AdminPage({ token }) {
 Login: ${loginUrl}
 Email: ${user.email}
 
-Please log in and click Change Password to set your company password.
+Please log in and click Change Password to set your company password. This is your company?s shared portal login, so only share it with employees who need access to your delivery tickets.
 
 This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
 
@@ -272,7 +274,26 @@ This portal gives your company access to current orders, delivery status, ticket
         }),
       });
 
-      setMessage("Customer portal login created successfully");
+      const loginUrl = "https://app.btcfleet.app/customer/login";
+      const newLoginMessage = `BTC Customer Portal
+
+Login: ${loginUrl}
+Email: ${email}
+Temporary Password: ${password}
+
+Please log in and click Change Password to set your company password. This is your company?s shared portal login, so only share it with employees who need access to your delivery tickets.
+
+This portal gives your company access to current orders, delivery status, tickets, and final delivery documents.`;
+
+      setLastCustomerLoginMessage(newLoginMessage);
+
+      try {
+        await navigator.clipboard.writeText(newLoginMessage);
+        setMessage("Customer portal login created and welcome message copied");
+      } catch {
+        setMessage("Customer portal login created. Copy the welcome message below.");
+      }
+
       setCustomerUserForm({
         customer_name: "",
         email: "",
@@ -578,6 +599,50 @@ This portal gives your company access to current orders, delivery status, ticket
               >
                 {savingCustomerUser ? "Creating..." : "Create Customer Login"}
               </button>
+
+              {lastCustomerLoginMessage ? (
+                <div
+                  style={{
+                    border: "1px solid var(--border)",
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: 14,
+                    padding: 14,
+                    marginTop: 8,
+                  }}
+                >
+                  <div style={{ color: "#fff", fontWeight: 900, marginBottom: 8 }}>
+                    New Customer Login Message
+                  </div>
+
+                  <pre
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      color: "#d9ecff",
+                      fontFamily: "inherit",
+                      fontWeight: 700,
+                      lineHeight: 1.45,
+                      margin: 0,
+                    }}
+                  >
+                    {lastCustomerLoginMessage}
+                  </pre>
+
+                  <button
+                    style={{ ...styles.secondaryButton, marginTop: 12 }}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(lastCustomerLoginMessage);
+                        setMessage("New login message copied");
+                      } catch {
+                        setError("Could not copy new login message.");
+                      }
+                    }}
+                  >
+                    Copy New Login Message
+                  </button>
+                </div>
+              ) : null}
             </div>
           </Section>
 
