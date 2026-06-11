@@ -223,6 +223,29 @@ export default function CustomerJobPortal() {
   const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
   const isPhone = window.innerWidth <= 700;
 
+  let customerAuth = null;
+  try {
+    customerAuth = JSON.parse(localStorage.getItem("btc_customer_auth") || "null");
+  } catch {
+    customerAuth = null;
+  }
+
+  const loggedInCustomerName = String(
+    customerAuth?.customer?.customer_name || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const portalCustomerName = String(job.customer_name || "")
+    .trim()
+    .toLowerCase();
+
+  const canBackToDashboard =
+    Boolean(customerAuth?.token) &&
+    loggedInCustomerName &&
+    portalCustomerName &&
+    loggedInCustomerName === portalCustomerName;
+
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
   const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 5);
 
@@ -260,7 +283,7 @@ export default function CustomerJobPortal() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {localStorage.getItem("btc_customer_auth") ? (
+            {canBackToDashboard ? (
               <button
                 className="secondary-btn"
                 type="button"
