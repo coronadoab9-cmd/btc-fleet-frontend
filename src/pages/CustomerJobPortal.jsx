@@ -400,24 +400,6 @@ export default function CustomerJobPortal() {
           </div>
         </div>
 
-        {isComplete ? (
-          <div
-            style={{
-              marginTop: 16,
-              border: "1px solid rgba(34,197,94,0.45)",
-              background: "rgba(34,197,94,0.12)",
-              borderRadius: 16,
-              padding: 16,
-              color: "#bbf7d0",
-              fontWeight: 950,
-              textAlign: "center",
-              fontSize: 18,
-            }}
-          >
-            Delivery Complete — Final Delivered: {formatCys(job.delivered_total)}
-          </div>
-        ) : null}
-
         {showNextDelivery ? (
         <SectionCard title="Next Delivery">
           {!currentTicket ? (
