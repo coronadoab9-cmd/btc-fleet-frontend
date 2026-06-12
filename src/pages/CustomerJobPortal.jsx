@@ -248,6 +248,7 @@ export default function CustomerJobPortal() {
 
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
   const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 5);
+  const finalTicketCount = tickets.filter((ticket) => ticket.final_pdf_url).length;
 
   const orderTotal = Number(job.order_total || 0);
   const deliveredTotal = Number(job.delivered_total || 0);
@@ -516,6 +517,25 @@ export default function CustomerJobPortal() {
         ) : null}
 
         <SectionCard title="Tickets">
+          {finalTicketCount > 0 ? (
+            <a
+              href={`/api/customer/jobs/${jobToken}/final-ticket-package`}
+              target="_blank"
+              rel="noreferrer"
+              className="primary-btn"
+              style={{
+                display: "block",
+                textAlign: "center",
+                textDecoration: "none",
+                marginBottom: 14,
+                padding: "12px 10px",
+                fontWeight: 950,
+              }}
+            >
+              Download All Final Tickets ({finalTicketCount})
+            </a>
+          ) : null}
+
           {tickets.length === 0 ? (
             <div style={{ color: "var(--muted)", fontWeight: 800 }}>
               No tickets found for this job.
