@@ -423,47 +423,6 @@ export default function CustomerJobPortal() {
           </div>
         </div>
 
-        <SectionCard title="Live Truck Location">
-          {!currentTicket ? (
-            <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              No active truck assigned yet.
-            </div>
-          ) : currentTruck?.latitude && currentTruck?.longitude ? (
-            <div
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                padding: 14,
-                background: "rgba(255,255,255,0.03)",
-              }}
-            >
-              <Row label="Truck" value={currentTruck.truck_number || currentTicket.truck_number} />
-              <Row label="Latitude" value={currentTruck.latitude} />
-              <Row label="Longitude" value={currentTruck.longitude} />
-              <Row label="Last Updated" value={formatLoadTime(currentTruck.last_updated)} />
-
-              <a
-                href={`https://www.google.com/maps?q=${currentTruck.latitude},${currentTruck.longitude}`}
-                target="_blank"
-                rel="noreferrer"
-                className="primary-btn"
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  textDecoration: "none",
-                  marginTop: 12,
-                }}
-              >
-                Open Truck Location
-              </a>
-            </div>
-          ) : (
-            <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              Truck location is not available yet.
-            </div>
-          )}
-        </SectionCard>
-
 
         {showNextDelivery ? (
         <SectionCard title="Next Delivery">
