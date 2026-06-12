@@ -519,7 +519,7 @@ export default function CustomerJobPortal() {
         <SectionCard title="Tickets">
           {finalTicketCount > 0 ? (
             <a
-              href={`/api/customer/jobs/${jobToken}/final-ticket-package`}
+              href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${jobToken}/final-ticket-package`}
               target="_blank"
               rel="noreferrer"
               className="primary-btn"
