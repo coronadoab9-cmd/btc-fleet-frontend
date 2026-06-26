@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
+import "./customer-portal.css";
 
 function formatCys(value) {
   const num = Number(value || 0);
@@ -35,152 +36,26 @@ function getCustomerAuth() {
   }
 }
 
-function JobCard({ job }) {
-  const isComplete = String(job.status || "").toLowerCase() === "complete";
-  const progress =
-    Number(job.order_total || 0) > 0
-      ? Math.max(
-          0,
-          Math.min(100, (Number(job.delivered_total || 0) / Number(job.order_total || 0)) * 100)
-        )
-      : 0;
-
+function DashboardStat({ label, value }) {
   return (
-    <div
-      style={{
-        background: "var(--panel-2)",
-        border: "1px solid var(--border)",
-        borderRadius: 16,
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          marginBottom: 10,
-        }}
-      >
-        <div>
-          <div style={{ color: "#fff", fontWeight: 950, fontSize: 20 }}>
-            Order #{job.order_number || "-"}
-          </div>
-          <div style={{ color: "var(--muted)", fontWeight: 800, marginTop: 4 }}>
-            {job.address || "-"}
-          </div>
-        </div>
-
-        <div
-          style={{
-            color: isComplete ? "#bbf7d0" : "#fed7aa",
-            fontWeight: 950,
-            border: isComplete
-              ? "1px solid rgba(34,197,94,0.4)"
-              : "1px solid rgba(251,146,60,0.4)",
-            background: isComplete
-              ? "rgba(34,197,94,0.12)"
-              : "rgba(251,146,60,0.12)",
-            borderRadius: 999,
-            padding: "8px 12px",
-            height: "fit-content",
-          }}
-        >
-          {isComplete ? "Complete" : "In Progress"}
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "repeat(3, 1fr)",
-          gap: 10,
-          marginTop: 12,
-        }}
-      >
-        <MiniStat label="Order Total" value={formatCys(job.order_total)} />
-        <MiniStat label="Delivered" value={formatCys(job.delivered_total)} />
-        <MiniStat label="Remaining" value={formatCys(job.remaining_total)} />
-      </div>
-
-      <div style={{ marginTop: 14 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            color: "var(--muted)",
-            fontWeight: 850,
-            fontSize: 13,
-            marginBottom: 7,
-          }}
-        >
-          <span>{job.ticket_count || 0} ticket(s)</span>
-          <span>{progress.toFixed(0)}%</span>
-        </div>
-
-        <div
-          style={{
-            height: 12,
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.08)",
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              width: `${progress}%`,
-              borderRadius: 999,
-              background: isComplete
-                ? "linear-gradient(90deg, #22c55e, #86efac)"
-                : "linear-gradient(90deg, #38bdf8, #2563eb)",
-            }}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          color: "var(--muted)",
-          fontWeight: 800,
-          fontSize: 13,
-          marginTop: 12,
-        }}
-      >
-        Latest Load: {formatDate(job.latest_load_time)}
-      </div>
-
-      <button
-        className="primary-btn"
-        type="button"
-        style={{ width: "100%", marginTop: 14 }}
-        onClick={() => {
-          window.location.href = `/customer/jobs/${job.job_portal_token}`;
-        }}
-      >
-        Open Job Portal
-      </button>
+    <div className="portal-stat">
+      <div className="portal-label">{label}</div>
+      <div className="portal-stat-value">{value}</div>
     </div>
   );
 }
 
-function MiniStat({ label, value }) {
+function JobStatusBadge({ complete }) {
   return (
-    <div
-      style={{
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: 12,
-        background: "rgba(255,255,255,0.03)",
-      }}
+    <span
+      className={
+        complete
+          ? "portal-status-pill portal-status-delivered"
+          : "portal-status-pill portal-status-active"
+      }
     >
-      <div style={{ color: "var(--muted)", fontWeight: 800, fontSize: 12 }}>
-        {label}
-      </div>
-      <div style={{ color: "#fff", fontWeight: 950, marginTop: 4 }}>{value}</div>
-    </div>
+      {complete ? "Complete" : "In Progress"}
+    </span>
   );
 }
 
@@ -279,10 +154,6 @@ export default function CustomerDashboardPage() {
     window.location.href = "/customer/login";
   }
 
-  if (loading) {
-    return <div className="full-screen-center">Loading customer dashboard...</div>;
-  }
-
   const customer = data?.customer || auth?.customer || {};
   const jobs = data?.jobs || [];
 
@@ -304,251 +175,144 @@ export default function CustomerDashboardPage() {
     return matchesStatus && matchesSearch;
   });
 
+  const dashboardStats = useMemo(() => {
+    const activeJobs = jobs.filter(
+      (job) => String(job.status || "").toLowerCase() !== "complete"
+    ).length;
+
+    const ticketCount = jobs.reduce((sum, job) => sum + Number(job.ticket_count || 0), 0);
+    const deliveredTotal = jobs.reduce(
+      (sum, job) => sum + Number(job.delivered_total || 0),
+      0
+    );
+    const remainingTotal = jobs.reduce(
+      (sum, job) => sum + Number(job.remaining_total || 0),
+      0
+    );
+
+    return {
+      activeJobs,
+      ticketCount,
+      deliveredTotal,
+      remainingTotal,
+    };
+  }, [jobs]);
+
+  if (loading) {
+    return <div className="full-screen-center">Loading customer dashboard...</div>;
+  }
+
   return (
-    <div className="app-shell" style={{ padding: 14 }}>
-      <div className="panel-card" style={{ maxWidth: 1050, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            marginBottom: 18,
-          }}
-        >
+    <div className="customer-portal-page">
+      <header className="customer-portal-topbar">
+        <div>
+          <div className="customer-portal-brand">BTC Customer Portal</div>
+          <div className="customer-portal-subtitle">
+            {customer.customer_name || "Customer"} dashboard
+          </div>
+        </div>
+
+        <div className="customer-portal-actions">
+          <button className="portal-btn portal-btn-light" type="button" onClick={loadDashboard}>
+            Refresh
+          </button>
+
+          <button
+            className="portal-btn portal-btn-light"
+            type="button"
+            onClick={() => setShowPasswordForm((v) => !v)}
+          >
+            Change Password
+          </button>
+
+          <button className="portal-btn portal-btn-light" type="button" onClick={logout}>
+            Log Out
+          </button>
+        </div>
+      </header>
+
+      <main className="customer-portal-main">
+        <section className="portal-hero">
           <div>
-            <div className="panel-title" style={{ marginBottom: 4 }}>
-              Customer Dashboard
+            <div className="portal-kicker">Customer Dashboard</div>
+            <h1 className="portal-title">
+              Welcome, {customer.customer_name || "Customer"}
+            </h1>
+            <div className="portal-meta">
+              View active jobs, delivery progress, final tickets, and job documents.
             </div>
-            <div style={{ color: "var(--muted)", fontWeight: 850 }}>
-              {customer.customer_name || "Customer"}
-            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="secondary-btn" type="button" onClick={loadDashboard}>
-              Refresh
-            </button>
-            <button
-              className="secondary-btn"
-              type="button"
-              onClick={() => setShowPasswordForm((v) => !v)}
-            >
-              Change Password
-            </button>
-            <button className="logout-btn" type="button" onClick={logout}>
-              Log Out
-            </button>
-          </div>
-        </div>
-
-        {error ? (
-          <div
-            style={{
-              color: "#fecaca",
-              fontWeight: 800,
-              marginBottom: 12,
-            }}
-          >
-            {error}
-          </div>
-        ) : null}
-
-        {message ? (
-          <div
-            style={{
-              color: "#d1fae5",
-              fontWeight: 800,
-              marginBottom: 12,
-            }}
-          >
-            {message}
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            background: "var(--panel-2)",
-            border: "1px solid var(--border)",
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "1.4fr 0.8fr auto",
-              gap: 10,
-              alignItems: "end",
-            }}
-          >
+          <div className="portal-live-card">
+            <div className="portal-live-label">Active Jobs</div>
+            <div className="portal-live-value">{dashboardStats.activeJobs}</div>
             <div>
-              <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
-                Search Orders
-              </div>
-              <input
-                type="text"
-                value={orderSearch}
-                onChange={(e) => setOrderSearch(e.target.value)}
-                placeholder="Search by order # or address"
-                style={{
-                  width: "100%",
-                  height: 48,
-                  borderRadius: 12,
-                  border: "1px solid var(--border)",
-                  background: "var(--panel)",
-                  color: "#fff",
-                  padding: "0 12px",
-                  fontWeight: 800,
-                }}
-              />
+              {dashboardStats.ticketCount} total ticket(s)
             </div>
+          </div>
+        </section>
 
-            <div>
-              <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
-                Status
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{
-                  width: "100%",
-                  height: 48,
-                  borderRadius: 12,
-                  border: "1px solid var(--border)",
-                  background: "var(--panel)",
-                  color: "#fff",
-                  padding: "0 12px",
-                  fontWeight: 800,
-                }}
-              >
-                <option value="all">All Orders</option>
-                <option value="in_progress">In Progress</option>
-                <option value="complete">Complete</option>
-              </select>
-            </div>
+        {error ? <div className="portal-alert portal-alert-error">{error}</div> : null}
+        {message ? <div className="portal-alert portal-alert-success">{message}</div> : null}
 
-            <button
-              className="secondary-btn"
-              type="button"
-              onClick={() => {
-                setOrderSearch("");
-                setStatusFilter("all");
-              }}
-              style={{ height: 48 }}
-            >
-              Clear
-            </button>
+        <section className="portal-card">
+          <div className="portal-section-header">
+            <div className="portal-section-title">Account Summary</div>
           </div>
 
-          <div
-            style={{
-              color: "var(--muted)",
-              fontWeight: 800,
-              fontSize: 13,
-              marginTop: 10,
-            }}
-          >
-            Showing {filteredJobs.length} of {jobs.length} order(s)
+          <div className="portal-stats">
+            <DashboardStat label="Active Jobs" value={dashboardStats.activeJobs} />
+            <DashboardStat label="Tickets" value={dashboardStats.ticketCount} />
+            <DashboardStat label="Delivered" value={formatCys(dashboardStats.deliveredTotal)} />
+            <DashboardStat label="Remaining" value={formatCys(dashboardStats.remainingTotal)} />
           </div>
-        </div>
+        </section>
 
         {showPasswordForm ? (
-          <div
-            style={{
-              background: "var(--panel-2)",
-              border: "1px solid var(--border)",
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ color: "#fff", fontWeight: 950, fontSize: 20, marginBottom: 12 }}>
-              Change Password
-            </div>
+          <section className="portal-card">
+            <div className="portal-section-title">Change Password</div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: window.innerWidth <= 700 ? "1fr" : "repeat(3, 1fr)",
-                gap: 12,
-              }}
-            >
+            <div className="portal-form-grid" style={{ marginTop: 16 }}>
               <div>
-                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
-                  Current Password
-                </div>
+                <div className="portal-label">Current Password</div>
                 <input
+                  className="portal-input"
                   type="password"
                   value={passwordForm.current_password}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({ ...prev, current_password: e.target.value }))
                   }
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--panel)",
-                    color: "#fff",
-                    padding: "0 12px",
-                    fontWeight: 800,
-                  }}
                 />
               </div>
 
               <div>
-                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
-                  New Password
-                </div>
+                <div className="portal-label">New Password</div>
                 <input
+                  className="portal-input"
                   type="password"
                   value={passwordForm.new_password}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({ ...prev, new_password: e.target.value }))
                   }
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--panel)",
-                    color: "#fff",
-                    padding: "0 12px",
-                    fontWeight: 800,
-                  }}
                 />
               </div>
 
               <div>
-                <div style={{ color: "var(--muted)", fontWeight: 800, marginBottom: 6 }}>
-                  Confirm New Password
-                </div>
+                <div className="portal-label">Confirm New Password</div>
                 <input
+                  className="portal-input"
                   type="password"
                   value={passwordForm.confirm_password}
                   onChange={(e) =>
                     setPasswordForm((prev) => ({ ...prev, confirm_password: e.target.value }))
                   }
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--panel)",
-                    color: "#fff",
-                    padding: "0 12px",
-                    fontWeight: 800,
-                  }}
                 />
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+            <div className="customer-portal-actions" style={{ marginTop: 16 }}>
               <button
-                className="primary-btn"
+                className="portal-btn portal-btn-navy"
                 type="button"
                 onClick={changePassword}
                 disabled={changingPassword}
@@ -557,37 +321,135 @@ export default function CustomerDashboardPage() {
               </button>
 
               <button
-                className="secondary-btn"
+                className="portal-btn portal-btn-light"
                 type="button"
                 onClick={() => setShowPasswordForm(false)}
               >
                 Cancel
               </button>
             </div>
-          </div>
+          </section>
         ) : null}
 
-        {filteredJobs.length === 0 ? (
-          <div
-            style={{
-              color: "var(--muted)",
-              fontWeight: 850,
-              border: "1px solid var(--border)",
-              borderRadius: 16,
-              padding: 18,
-              background: "var(--panel-2)",
-            }}
-          >
-            No matching orders found.
+        <section className="portal-card">
+          <div className="portal-section-header">
+            <div>
+              <div className="portal-section-title">Jobs</div>
+              <div className="portal-meta">
+                Showing {filteredJobs.length} of {jobs.length} order(s)
+              </div>
+            </div>
           </div>
-        ) : (
-          <div style={{ display: "grid", gap: 14 }}>
-            {filteredJobs.map((job) => (
-              <JobCard key={job.job_portal_token || job.portal_job_key} job={job} />
-            ))}
+
+          <div className="portal-filter-bar">
+            <input
+              className="portal-input"
+              type="text"
+              value={orderSearch}
+              onChange={(e) => setOrderSearch(e.target.value)}
+              placeholder="Search by order #, address, or customer"
+            />
+
+            <select
+              className="portal-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Orders</option>
+              <option value="in_progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+
+            <button
+              className="portal-btn portal-btn-navy"
+              type="button"
+              onClick={() => {
+                setOrderSearch("");
+                setStatusFilter("all");
+              }}
+            >
+              Clear
+            </button>
           </div>
-        )}
-      </div>
+
+          {filteredJobs.length === 0 ? (
+            <div className="portal-empty" style={{ marginTop: 16 }}>
+              No matching orders found.
+            </div>
+          ) : (
+            <div className="portal-table-wrap" style={{ marginTop: 18 }}>
+              <table className="portal-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Address</th>
+                    <th>Tickets</th>
+                    <th>Delivered</th>
+                    <th>Remaining</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                    <th>Latest Load</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredJobs.map((job) => {
+                    const isComplete = String(job.status || "").toLowerCase() === "complete";
+                    const progress =
+                      Number(job.order_total || 0) > 0
+                        ? Math.max(
+                            0,
+                            Math.min(
+                              100,
+                              (Number(job.delivered_total || 0) /
+                                Number(job.order_total || 0)) *
+                                100
+                            )
+                          )
+                        : 0;
+
+                    return (
+                      <tr key={job.job_portal_token || job.portal_job_key}>
+                        <td>#{job.order_number || "-"}</td>
+                        <td>{job.address || "-"}</td>
+                        <td>{job.ticket_count || 0}</td>
+                        <td>{formatCys(job.delivered_total)}</td>
+                        <td>{formatCys(job.remaining_total)}</td>
+                        <td>
+                          <div className="portal-progress-track portal-progress-small">
+                            <div
+                              className={`portal-progress-fill ${
+                                isComplete ? "complete" : ""
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <div className="portal-small-muted">{progress.toFixed(0)}%</div>
+                        </td>
+                        <td>
+                          <JobStatusBadge complete={isComplete} />
+                        </td>
+                        <td>{formatDate(job.latest_load_time)}</td>
+                        <td>
+                          <button
+                            className="portal-btn portal-btn-navy"
+                            type="button"
+                            onClick={() => {
+                              window.location.href = `/customer/jobs/${job.job_portal_token}`;
+                            }}
+                          >
+                            Open
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

@@ -331,3 +331,72 @@
     overflow-x: auto;
   }
 }
+
+.portal-alert {
+  margin-top: 18px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-weight: 900;
+}
+
+.portal-alert-error {
+  background: #fef2f2;
+  color: #b42318;
+  border: 1px solid #fecaca;
+}
+
+.portal-alert-success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #bbf7d0;
+}
+
+.portal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.portal-filter-bar {
+  display: grid;
+  grid-template-columns: 1fr 260px auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.portal-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--portal-border);
+  background: #ffffff;
+  color: var(--portal-text);
+  padding: 0 14px;
+  font-weight: 800;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.portal-input:focus {
+  border-color: var(--portal-navy);
+  box-shadow: 0 0 0 4px rgba(15, 39, 66, 0.10);
+}
+
+.portal-progress-small {
+  height: 10px;
+  min-width: 110px;
+}
+
+.portal-small-muted {
+  color: var(--portal-muted);
+  font-size: 12px;
+  font-weight: 900;
+  margin-top: 5px;
+}
+
+@media (max-width: 950px) {
+  .portal-form-grid,
+  .portal-filter-bar {
+    grid-template-columns: 1fr;
+  }
+}
