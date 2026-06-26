@@ -177,16 +177,11 @@ function getCustomerTicketStatusColor(ticket) {
 }
 
 
-export default function CustomerJobPortal({ accessType = "job" }) {
-  const portalToken = useMemo(() => {
+export default function CustomerJobPortal() {
+  const jobToken = useMemo(() => {
     const parts = window.location.pathname.split("/");
     return parts[parts.length - 1] || "";
   }, []);
-
-  const isFieldAccess =
-    accessType === "field" || window.location.pathname.includes("/customer/live/");
-
-  const jobToken = portalToken;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -198,11 +193,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     setError("");
 
     try {
-      const endpoint = isFieldAccess
-        ? `/api/customer/live/${portalToken}`
-        : `/api/customer/jobs/${portalToken}`;
-
-      const result = await apiFetch(endpoint);
+      const result = await apiFetch(`/api/customer/jobs/${jobToken}`);
       setData(result);
     } catch (err) {
       setError(err.message || "Could not load customer portal.");
@@ -215,7 +206,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     if (jobToken) {
       loadPortal();
     }
-  }, [portalToken, isFieldAccess]);
+  }, [jobToken]);
 
   if (loading) {
     return <div className="full-screen-center">Loading customer portal...</div>;
@@ -528,7 +519,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
         <SectionCard title="Tickets">
           {finalTicketCount > 0 ? (
             <a
-              href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${data?.job?.job_portal_token || portalToken}/final-ticket-package`}
+              href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${jobToken}/final-ticket-package`}
               target="_blank"
               rel="noreferrer"
               className="primary-btn"

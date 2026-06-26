@@ -18,7 +18,6 @@ export default function App() {
       <Routes>
         <Route path="/eticket/:token" element={<ETicketPage />} />
         <Route path="/customer/jobs/:jobToken" element={<CustomerJobPortal />} />
-        <Route path="/customer/live/:fieldToken" element={<CustomerJobPortal accessType="field" />} />
         <Route path="/customer/login" element={<CustomerLoginPage />} />
         <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
         <Route path="/*" element={<ProtectedApp />} />
