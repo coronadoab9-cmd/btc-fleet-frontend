@@ -1,27 +1,10 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
+import "./customer-portal.css";
 
 function formatCys(value) {
   const num = Number(value || 0);
   return `${num.toFixed(1)} cys`;
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-
-  try {
-    const dt = new Date(value);
-    return new Intl.DateTimeFormat("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).format(dt);
-  } catch {
-    return value;
-  }
 }
 
 function formatLoadTime(value) {
@@ -29,8 +12,6 @@ function formatLoadTime(value) {
 
   try {
     const dt = new Date(value);
-
-    // Match the eTicket / PDF Sysdyne load-time correction.
     dt.setHours(dt.getHours() - 11);
 
     return new Intl.DateTimeFormat("en-US", {
@@ -91,91 +72,40 @@ function findTruckForTicket(activeTrucks, ticket) {
   );
 }
 
-function StatCard({ label, value }) {
-  return (
-    <div
-      style={{
-        background: "var(--panel-2)",
-        border: "1px solid var(--border)",
-        borderRadius: 16,
-        padding: 16,
-        textAlign: "center",
-      }}
-    >
-      <div style={{ color: "var(--muted)", fontWeight: 800, fontSize: 14 }}>
-        {label}
-      </div>
-      <div style={{ color: "#fff", fontWeight: 950, fontSize: 30, marginTop: 8 }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function SectionCard({ title, children }) {
-  return (
-    <div
-      style={{
-        background: "var(--panel-2)",
-        border: "1px solid var(--border)",
-        borderRadius: 16,
-        padding: 16,
-        marginTop: 16,
-      }}
-    >
-      <div
-        style={{
-          color: "#fff",
-          fontWeight: 950,
-          fontSize: 20,
-          marginBottom: 12,
-        }}
-      >
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Row({ label, value }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "130px 1fr",
-        gap: 10,
-        padding: "8px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-      }}
-    >
-      <div style={{ color: "var(--muted)", fontWeight: 800 }}>{label}</div>
-      <div style={{ color: "#fff", fontWeight: 800 }}>{value || "-"}</div>
-    </div>
-  );
-}
-
-
 function getCustomerTicketStatus(ticket) {
   const status = String(ticket?.status || "pending").toLowerCase();
   const acceptance = String(ticket?.ticket_acceptance || "").toLowerCase();
 
-  if (status === "signed") {
-    if (acceptance.includes("rejected")) return "Rejected";
-    return "Delivered";
-  }
-
+  if (acceptance.includes("rejected")) return "Rejected";
+  if (status === "signed") return "Delivered";
   return "In Transit";
 }
 
-function getCustomerTicketStatusColor(ticket) {
-  const customerStatus = getCustomerTicketStatus(ticket);
+function statusClass(ticket) {
+  const status = getCustomerTicketStatus(ticket);
 
-  if (customerStatus === "Delivered") return "#bbf7d0";
-  if (customerStatus === "Rejected") return "#fecaca";
-  return "#fed7aa";
+  if (status === "Delivered") return "portal-status-pill portal-status-delivered";
+  if (status === "Rejected") return "portal-status-pill portal-status-rejected";
+  return "portal-status-pill portal-status-active";
 }
 
+function InfoItem({ label, value }) {
+  return (
+    <div className="portal-info-item">
+      <div className="portal-label">{label}</div>
+      <div className="portal-value">{value || "-"}</div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="portal-stat">
+      <div className="portal-label">{label}</div>
+      <div className="portal-stat-value">{value}</div>
+    </div>
+  );
+}
 
 export default function CustomerJobPortal({ accessType = "job" }) {
   const portalToken = useMemo(() => {
@@ -185,8 +115,6 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
   const isFieldAccess =
     accessType === "field" || window.location.pathname.includes("/customer/live/");
-
-  const jobToken = portalToken;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -212,7 +140,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
   }
 
   useEffect(() => {
-    if (jobToken) {
+    if (portalToken) {
       loadPortal();
     }
   }, [portalToken, isFieldAccess]);
@@ -227,10 +155,10 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
   const job = data?.job || {};
   const tickets = data?.tickets || [];
+  const documents = data?.documents || [];
   const activeTrucks = data?.active_trucks || [];
   const currentTicket = getCurrentPortalTicket(tickets);
   const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
-  const isPhone = window.innerWidth <= 700;
 
   let customerAuth = null;
   try {
@@ -239,9 +167,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     customerAuth = null;
   }
 
-  const loggedInCustomerName = String(
-    customerAuth?.customer?.customer_name || ""
-  )
+  const loggedInCustomerName = String(customerAuth?.customer?.customer_name || "")
     .trim()
     .toLowerCase();
 
@@ -256,401 +182,281 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     loggedInCustomerName === portalCustomerName;
 
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
-  const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 5);
+  const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 8);
   const finalTicketCount = tickets.filter((ticket) => ticket.final_pdf_url).length;
 
   const orderTotal = Number(job.order_total || 0);
   const deliveredTotal = Number(job.delivered_total || 0);
+  const remainingTotal = Number(job.remaining_total || 0);
   const progressPercent =
     orderTotal > 0 ? Math.max(0, Math.min(100, (deliveredTotal / orderTotal) * 100)) : 0;
 
-  const isComplete = Number(job.remaining_total || 0) <= 0;
-
+  const isComplete = remainingTotal <= 0;
   const showNextDelivery =
     !isComplete &&
     currentTicket &&
     String(currentTicket.status || "pending").toLowerCase() !== "signed";
 
+  const packageToken = data?.job?.job_portal_token || portalToken;
+  const accessExpiration = data?.access?.expires_at;
+
   return (
-    <div className="app-shell" style={{ padding: 14 }}>
-      <div className="panel-card" style={{ maxWidth: 980, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div className="panel-title" style={{ marginBottom: 4 }}>
-              BTC Customer Portal
-            </div>
-            <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              Live job ticket tracking
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {canBackToDashboard ? (
-              <button
-                className="secondary-btn"
-                type="button"
-                onClick={() => {
-                  window.location.href = "/customer/dashboard";
-                }}
-              >
-                Back to All Orders
-              </button>
-            ) : null}
-
-            <button className="secondary-btn" type="button" onClick={loadPortal}>
-              Refresh
-            </button>
+    <div className="customer-portal-page">
+      <header className="customer-portal-topbar">
+        <div>
+          <div className="customer-portal-brand">BTC Customer Portal</div>
+          <div className="customer-portal-subtitle">
+            {isFieldAccess ? "Field operations live access" : "Customer admin job view"}
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 16,
-            border: isComplete
-              ? "1px solid rgba(34,197,94,0.45)"
-              : "1px solid rgba(56,189,248,0.45)",
-            background: isComplete
-              ? "rgba(34,197,94,0.12)"
-              : "rgba(56,189,248,0.12)",
-            borderRadius: 16,
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              color: isComplete ? "#bbf7d0" : "#bae6fd",
-              fontWeight: 950,
-              fontSize: 20,
-              marginBottom: 6,
-            }}
-          >
-            {isComplete ? "Delivery Complete" : "Delivery In Progress"}
-          </div>
-
-          <div
-            style={{
-              color: "#fff",
-              fontWeight: 850,
-              lineHeight: 1.5,
-            }}
-          >
-            {isComplete ? (
-              <>Final delivered: {formatCys(job.delivered_total)}</>
-            ) : (
-              <>
-                Next truck: {currentTicket?.truck_number || "-"} · Remaining:{" "}
-                {formatCys(job.remaining_total)}
-              </>
-            )}
-          </div>
-        </div>
-
-        <SectionCard title="Job Information">
-          <Row label="Customer" value={job.customer_name} />
-          <Row label="Address" value={job.address} />
-          <Row label="Order #" value={job.order_number} />
-        </SectionCard>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isPhone ? "1fr" : "repeat(3, 1fr)",
-            gap: 14,
-            marginTop: 16,
-          }}
-        >
-          <StatCard label="Order Total" value={formatCys(job.order_total)} />
-          <StatCard label="Delivered So Far" value={formatCys(job.delivered_total)} />
-          <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            background: "var(--panel-2)",
-            border: "1px solid var(--border)",
-            borderRadius: 16,
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              marginBottom: 10,
-            }}
-          >
-            <div style={{ color: "#fff", fontWeight: 950 }}>
-              Delivery Progress
-            </div>
-            <div style={{ color: "var(--muted)", fontWeight: 900 }}>
-              {formatCys(job.delivered_total)} / {formatCys(job.order_total)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              height: 16,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.08)",
-              overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progressPercent}%`,
-                borderRadius: 999,
-                background: isComplete
-                  ? "linear-gradient(90deg, #22c55e, #86efac)"
-                  : "linear-gradient(90deg, #38bdf8, #2563eb)",
-                transition: "width 0.35s ease",
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              color: isComplete ? "#bbf7d0" : "var(--muted)",
-              fontWeight: 900,
-              fontSize: 13,
-              marginTop: 8,
-              textAlign: "right",
-            }}
-          >
-            {progressPercent.toFixed(0)}% delivered
-          </div>
-        </div>
-
-
-        {showNextDelivery ? (
-        <SectionCard title="Next Delivery">
-          {!currentTicket ? (
-            <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              No active delivery ticket found yet.
-            </div>
-          ) : (
-            <div
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: 14,
-                padding: 14,
-                background: "rgba(255,255,255,0.03)",
+        <div className="customer-portal-actions">
+          {canBackToDashboard ? (
+            <button
+              className="portal-btn portal-btn-light"
+              type="button"
+              onClick={() => {
+                window.location.href = "/customer/dashboard";
               }}
             >
-              <Row label="Ticket" value={currentTicket.ticket_number} />
-              <Row label="Truck" value={currentTicket.truck_number} />
-              <Row label="Load Time" value={formatLoadTime(currentTicket.load_time)} />
-              <Row label="Load Size" value={formatCys(currentTicket.quantity)} />
+              Back to All Orders
+            </button>
+          ) : null}
 
-              {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
-                <>
-                  <div
-                    style={{
-                      marginTop: 12,
-                      border: "1px solid var(--border)",
-                      borderRadius: 14,
-                      overflow: "hidden",
-                      background: "#0b1a2b",
-                    }}
-                  >
-                    <iframe
-                      title={`Route for truck ${currentTruck.truck_number}`}
-                      src={buildDirectionsEmbedUrl(
-                        currentTruck.latitude,
-                        currentTruck.longitude,
-                        job.address
-                      )}
-                      width="100%"
-                      height={isPhone ? "230" : "300"}
-                      style={{
-                        border: 0,
-                        display: "block",
-                      }}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
+          <button className="portal-btn portal-btn-light" type="button" onClick={loadPortal}>
+            Refresh
+          </button>
+        </div>
+      </header>
 
-                  <a
-                    href={buildDirectionsUrl(
-                      currentTruck.latitude,
-                      currentTruck.longitude,
-                      job.address
-                    )}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="primary-btn"
-                    style={{
-                      display: "block",
-                      textAlign: "center",
-                      textDecoration: "none",
-                      marginTop: 12,
-                    }}
-                  >
-                    Open Route / ETA
-                  </a>
-
-                  <div
-                    style={{
-                      color: "var(--muted)",
-                      fontWeight: 800,
-                      fontSize: 12,
-                      marginTop: 8,
-                      textAlign: "center",
-                    }}
-                  >
-                    ETA is shown in the route map and full Google Maps view.
-                  </div>
-                </>
-              ) : (
-                <div style={{ color: "var(--muted)", fontWeight: 800, marginTop: 12 }}>
-                  Truck location is not available yet.
+      <main className="customer-portal-main">
+        <section className="portal-hero">
+          <div>
+            <div className="portal-kicker">
+              {isComplete ? "Delivery Complete" : "Live Delivery"}
+            </div>
+            <h1 className="portal-title">
+              {job.address || `Order #${job.order_number || "-"}`}
+            </h1>
+            <div className="portal-meta">
+              {job.customer_name || "-"} � Order #{job.order_number || "-"}
+              {accessExpiration ? (
+                <div className="portal-expire-note">
+                  This field link expires {new Date(accessExpiration).toLocaleString()}.
                 </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="portal-live-card">
+            <div className="portal-live-label">
+              {isComplete ? "Final Delivered" : "Next Truck"}
+            </div>
+            <div className="portal-live-value">
+              {isComplete ? formatCys(job.delivered_total) : currentTicket?.truck_number || "-"}
+            </div>
+            <div>
+              Remaining: <strong>{formatCys(job.remaining_total)}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="portal-grid">
+          <div>
+            <div className="portal-card">
+              <div className="portal-section-header">
+                <div className="portal-section-title">Delivery Summary</div>
+                <strong>{progressPercent.toFixed(0)}% delivered</strong>
+              </div>
+
+              <div className="portal-stats">
+                <StatCard label="Order Total" value={formatCys(job.order_total)} />
+                <StatCard label="Delivered" value={formatCys(job.delivered_total)} />
+                <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
+              </div>
+
+              <div style={{ marginTop: 18 }}>
+                <div className="portal-progress-track">
+                  <div
+                    className={`portal-progress-fill ${isComplete ? "complete" : ""}`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="portal-card">
+              <div className="portal-section-title">Ticket Activity</div>
+
+              {tickets.length === 0 ? (
+                <div className="portal-empty">No tickets found for this job.</div>
+              ) : (
+                <>
+                  <div className="portal-table-wrap">
+                    <table className="portal-table">
+                      <thead>
+                        <tr>
+                          <th>Ticket</th>
+                          <th>Truck</th>
+                          <th>Load Time</th>
+                          <th>Qty</th>
+                          <th>Status</th>
+                          <th>Final Ticket</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleTickets.map((ticket) => (
+                          <tr key={ticket.id || ticket.ticket_number}>
+                            <td>#{ticket.ticket_number || "-"}</td>
+                            <td>{ticket.truck_number || "-"}</td>
+                            <td>{formatLoadTime(ticket.load_time)}</td>
+                            <td>{formatCys(ticket.quantity)}</td>
+                            <td>
+                              <span className={statusClass(ticket)}>
+                                {getCustomerTicketStatus(ticket)}
+                              </span>
+                            </td>
+                            <td>
+                              {ticket.final_pdf_url ? (
+                                <a
+                                  className="portal-btn portal-btn-navy"
+                                  href={ticket.final_pdf_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Download
+                                </a>
+                              ) : (
+                                <span className="portal-empty">Pending</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {tickets.length > 8 ? (
+                    <button
+                      className="portal-btn portal-btn-navy"
+                      type="button"
+                      onClick={() => setShowAllTickets((v) => !v)}
+                      style={{ marginTop: 14 }}
+                    >
+                      {showAllTickets ? "Show Less" : `Show All Tickets (${tickets.length})`}
+                    </button>
+                  ) : null}
+                </>
               )}
             </div>
-          )}
-        </SectionCard>
+          </div>
 
-        ) : null}
-
-        <SectionCard title="Tickets">
-          {finalTicketCount > 0 ? (
-            <a
-              href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${data?.job?.job_portal_token || portalToken}/final-ticket-package`}
-              target="_blank"
-              rel="noreferrer"
-              className="primary-btn"
-              style={{
-                display: "block",
-                textAlign: "center",
-                textDecoration: "none",
-                marginBottom: 14,
-                padding: "12px 10px",
-                fontWeight: 950,
-              }}
-            >
-              Download All Final Tickets ({finalTicketCount})
-            </a>
-          ) : null}
-
-          {tickets.length === 0 ? (
-            <div style={{ color: "var(--muted)", fontWeight: 800 }}>
-              No tickets found for this job.
+          <aside>
+            <div className="portal-card">
+              <div className="portal-section-title">Project Overview</div>
+              <div className="portal-info-grid" style={{ marginTop: 16 }}>
+                <InfoItem label="Customer" value={job.customer_name} />
+                <InfoItem label="Order #" value={job.order_number} />
+                <InfoItem label="Address" value={job.address} />
+                <InfoItem label="Tickets" value={job.ticket_count} />
+              </div>
             </div>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {visibleTickets.map((ticket) => {
-                  const customerStatus = getCustomerTicketStatus(ticket);
 
-                  return (
-                    <div
-                      key={ticket.id || ticket.ticket_number}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: isPhone
-                          ? "1fr"
-                          : "1.2fr 0.8fr 1fr 0.8fr 1.2fr",
-                        gap: 10,
-                        alignItems: "center",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: 10,
-                        background: "rgba(255,255,255,0.03)",
-                      }}
-                    >
-                      <div>
-                        <div style={{ color: "#fff", fontWeight: 950 }}>
-                          Ticket {ticket.ticket_number}
-                        </div>
-                        <div style={{ color: "var(--muted)", fontWeight: 800, fontSize: 12 }}>
-                          {formatLoadTime(ticket.load_time)}
-                        </div>
-                      </div>
+            {showNextDelivery ? (
+              <div className="portal-card">
+                <div className="portal-section-title">Next Delivery</div>
 
-                      <div style={{ color: "#fff", fontWeight: 900 }}>
-                        Truck {ticket.truck_number || "-"}
-                      </div>
-
-                      <div style={{ color: "#fff", fontWeight: 900 }}>
-                        {formatCys(ticket.quantity)}
-                      </div>
-
-                      <div
-                        style={{
-                          color: getCustomerTicketStatusColor(ticket),
-                          fontWeight: 950,
-                        }}
-                      >
-                        {customerStatus}
-                      </div>
-
-                      <div>
-                        {ticket.final_pdf_url ? (
-                          <a
-                            href={ticket.final_pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="primary-btn"
-                            style={{
-                              display: "block",
-                              textAlign: "center",
-                              textDecoration: "none",
-                              padding: "10px 8px",
-                              fontSize: 12,
-                            }}
-                          >
-                            Final Ticket
-                          </a>
-                        ) : (
-                          <div
-                            style={{
-                              color: "var(--muted)",
-                              fontWeight: 800,
-                              fontSize: 12,
-                              display: "grid",
-                              placeItems: "center",
-                              border: "1px solid var(--border)",
-                              borderRadius: 10,
-                              padding: "10px 8px",
-                            }}
-                          >
-                            Final Not Ready
-                          </div>
-                        )}
-                      </div>
+                {currentTicket ? (
+                  <>
+                    <div className="portal-info-grid" style={{ marginTop: 16 }}>
+                      <InfoItem label="Ticket" value={currentTicket.ticket_number} />
+                      <InfoItem label="Truck" value={currentTicket.truck_number} />
+                      <InfoItem label="Load Time" value={formatLoadTime(currentTicket.load_time)} />
+                      <InfoItem label="Load Size" value={formatCys(currentTicket.quantity)} />
                     </div>
-                  );
-                })}
-            </div>
-          )}
 
-          {tickets.length > 5 ? (
-            <button
-              className="secondary-btn"
-              type="button"
-              onClick={() => setShowAllTickets((value) => !value)}
-              style={{
-                width: "100%",
-                marginTop: 12,
-              }}
-            >
-              {showAllTickets ? "Show Less" : `Show All Tickets (${tickets.length})`}
-            </button>
-          ) : null}
-        </SectionCard>
-      </div>
+                    {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
+                      <>
+                        <div className="portal-map">
+                          <iframe
+                            title={`Route for truck ${currentTruck.truck_number}`}
+                            src={buildDirectionsEmbedUrl(
+                              currentTruck.latitude,
+                              currentTruck.longitude,
+                              job.address
+                            )}
+                            width="100%"
+                            height="290"
+                            style={{ border: 0, display: "block" }}
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+
+                        <a
+                          href={buildDirectionsUrl(
+                            currentTruck.latitude,
+                            currentTruck.longitude,
+                            job.address
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="portal-btn portal-btn-orange"
+                          style={{ width: "100%", marginTop: 12 }}
+                        >
+                          Open Route / ETA
+                        </a>
+                      </>
+                    ) : (
+                      <div className="portal-empty" style={{ marginTop: 14 }}>
+                        Truck location is not available yet.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="portal-empty">No active delivery ticket found yet.</div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="portal-card">
+              <div className="portal-section-title">Documents</div>
+
+              {finalTicketCount > 0 ? (
+                <a
+                  href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${packageToken}/final-ticket-package`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="portal-btn portal-btn-navy"
+                  style={{ width: "100%", marginTop: 16 }}
+                >
+                  Download Final Ticket Package ({finalTicketCount})
+                </a>
+              ) : (
+                <div className="portal-empty" style={{ marginTop: 16 }}>
+                  Final ticket package will be available after tickets are signed.
+                </div>
+              )}
+
+              {documents.length > 0 ? (
+                <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                  {documents.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={`https://btc-fleet-backend.onrender.com${doc.download_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="portal-btn portal-btn-light"
+                    >
+                      {doc.file_name}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </aside>
+        </section>
+      </main>
     </div>
   );
 }
