@@ -89,6 +89,7 @@ export default function ETicketsPage({ token }) {
   const [newTicketCount, setNewTicketCount] = useState(0);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [generatingFieldLink, setGeneratingFieldLink] = useState(false);
   const [selectedArchivedIds, setSelectedArchivedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [reassignOptions, setReassignOptions] = useState({
@@ -361,6 +362,41 @@ export default function ETicketsPage({ token }) {
       setMessage(`${label} copied`);
     } catch {
       setError("Could not copy link");
+    }
+  }
+
+
+  async function generateFieldLink(ticket) {
+    setError("");
+    setMessage("");
+
+    if (!ticket?.job_portal_token) {
+      setError("This ticket does not have a customer job portal token yet.");
+      return;
+    }
+
+    setGeneratingFieldLink(true);
+
+    try {
+      const data = await apiFetch(`/admin/customer/jobs/${ticket.job_portal_token}/field-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": token,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!data?.field_url) {
+        throw new Error("Field link was created but no URL was returned.");
+      }
+
+      await navigator.clipboard.writeText(data.field_url);
+      setMessage(`Field operations link copied. Expires: ${new Date(data.expires_at).toLocaleString()}`);
+    } catch (err) {
+      setError(err.message || "Could not generate field operations link");
+    } finally {
+      setGeneratingFieldLink(false);
     }
   }
 
@@ -1030,6 +1066,15 @@ export default function ETicketsPage({ token }) {
                       <button
                         style={styles.primaryButton}
                         type="button"
+                        disabled={generatingFieldLink}
+                        onClick={() => generateFieldLink(selectedTicket)}
+                      >
+                        {generatingFieldLink ? "Generating..." : "Generate Field Link"}
+                      </button>
+
+                      <button
+                        style={styles.secondaryButton}
+                        type="button"
                         onClick={() =>
                           window.open(
                             `https://app.btcfleet.app/customer/jobs/${selectedTicket.job_portal_token}`,
@@ -1037,20 +1082,7 @@ export default function ETicketsPage({ token }) {
                           )
                         }
                       >
-                        Open Portal
-                      </button>
-
-                      <button
-                        style={styles.secondaryButton}
-                        type="button"
-                        onClick={() =>
-                          copyLink(
-                            `https://app.btcfleet.app/customer/jobs/${selectedTicket.job_portal_token}`,
-                            "customer portal link"
-                          )
-                        }
-                      >
-                        Copy Portal
+                        Open Admin View
                       </button>
                     </>
                   ) : null}
