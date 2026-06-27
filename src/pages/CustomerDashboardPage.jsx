@@ -521,13 +521,16 @@ export default function CustomerDashboardPage() {
                         : 0;
 
                     return (
-                      <tr key={job.job_portal_token || job.portal_job_key}>
-                        <td>#{job.order_number || "-"}</td>
-                        <td>{job.address || "-"}</td>
-                        <td>{job.ticket_count || 0}</td>
-                        <td>{formatCys(job.delivered_total)}</td>
-                        <td>{formatCys(job.remaining_total)}</td>
-                        <td>
+                      <tr
+                        key={job.job_portal_token || job.portal_job_key}
+                        className="portal-project-row"
+                      >
+                        <td data-label="Order">#{job.order_number || "-"}</td>
+                        <td data-label="Address">{job.address || "-"}</td>
+                        <td data-label="Tickets">{job.ticket_count || 0}</td>
+                        <td data-label="Delivered">{formatCys(job.delivered_total)}</td>
+                        <td data-label="Remaining">{formatCys(job.remaining_total)}</td>
+                        <td data-label="Progress">
                           <div className="portal-progress-track portal-progress-small">
                             <div
                               className={`portal-progress-fill ${
@@ -538,13 +541,13 @@ export default function CustomerDashboardPage() {
                           </div>
                           <div className="portal-small-muted">{progress.toFixed(0)}%</div>
                         </td>
-                        <td>
+                        <td data-label="Status">
                           <JobStatusBadge complete={isComplete} />
                         </td>
-                        <td>{formatDate(job.latest_load_time)}</td>
-                        <td>
+                        <td data-label="Latest Load">{formatDate(job.latest_load_time)}</td>
+                        <td data-label="">
                           <button
-                            className="portal-btn portal-btn-navy"
+                            className="portal-btn portal-btn-navy portal-open-full"
                             type="button"
                             onClick={() => {
                               window.location.href = `/customer/jobs/${job.job_portal_token}`;
