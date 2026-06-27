@@ -190,13 +190,68 @@ export default function CustomerDashboardPage() {
       0
     );
 
+    const latestLoadMs = jobs.reduce((latest, job) => {
+      const ms = job.latest_load_time ? new Date(job.latest_load_time).getTime() : 0;
+      return Number.isFinite(ms) && ms > latest ? ms : latest;
+    }, 0);
+
     return {
       activeJobs,
       ticketCount,
       deliveredTotal,
       remainingTotal,
+      latestLoadMs,
     };
   }, [jobs]);
+
+  const attentionItems = useMemo(() => {
+    const inProgressJobs = jobs.filter(
+      (job) => String(job.status || "").toLowerCase() !== "complete"
+    );
+
+    const jobsWithRemaining = jobs.filter(
+      (job) => Number(job.remaining_total || 0) > 0
+    );
+
+    const items = [];
+
+    if (inProgressJobs.length > 0) {
+      items.push({
+        label: `${inProgressJobs.length} active project${inProgressJobs.length === 1 ? "" : "s"} currently in progress`,
+        tone: "warning",
+      });
+    }
+
+    if (jobsWithRemaining.length > 0) {
+      items.push({
+        label: `${jobsWithRemaining.length} project${jobsWithRemaining.length === 1 ? "" : "s"} still have remaining yardage`,
+        tone: "warning",
+      });
+    }
+
+    if (dashboardStats.remainingTotal > 0) {
+      items.push({
+        label: `${formatCys(dashboardStats.remainingTotal)} remaining across active projects`,
+        tone: "info",
+      });
+    }
+
+    if (dashboardStats.latestLoadMs > 0) {
+      items.push({
+        label: `Most recent load activity: ${formatDate(new Date(dashboardStats.latestLoadMs).toISOString())}`,
+        tone: "info",
+      });
+    }
+
+    if (!items.length) {
+      items.push({
+        label: "No active project alerts right now",
+        tone: "success",
+      });
+    }
+
+    return items;
+  }, [jobs, dashboardStats]);
 
   if (loading) {
     return <div className="full-screen-center">Loading customer dashboard...</div>;
@@ -254,6 +309,29 @@ export default function CustomerDashboardPage() {
 
         {error ? <div className="portal-alert portal-alert-error">{error}</div> : null}
         {message ? <div className="portal-alert portal-alert-success">{message}</div> : null}
+
+        <section className="portal-card portal-attention-card">
+          <div className="portal-section-header">
+            <div>
+              <div className="portal-section-title">Needs Attention</div>
+              <div className="portal-meta">
+                Quick view of active delivery items and recent activity.
+              </div>
+            </div>
+          </div>
+
+          <div className="portal-attention-list">
+            {attentionItems.map((item, index) => (
+              <div
+                key={`${item.label}-${index}`}
+                className={`portal-attention-item portal-attention-${item.tone}`}
+              >
+                <span className="portal-attention-dot" />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="portal-card">
           <div className="portal-section-header">
