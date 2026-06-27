@@ -74,6 +74,7 @@ export default function CustomerDashboardPage() {
   });
   const [changingPassword, setChangingPassword] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function loadDashboard() {
     setError("");
@@ -157,24 +158,6 @@ export default function CustomerDashboardPage() {
   const customer = data?.customer || auth?.customer || {};
   const jobs = data?.jobs || [];
 
-  const filteredJobs = jobs.filter((job) => {
-    const search = orderSearch.trim().toLowerCase();
-    const isComplete = String(job.status || "").toLowerCase() === "complete";
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "complete" && isComplete) ||
-      (statusFilter === "in_progress" && !isComplete);
-
-    const matchesSearch =
-      !search ||
-      String(job.order_number || "").toLowerCase().includes(search) ||
-      String(job.address || "").toLowerCase().includes(search) ||
-      String(job.customer_name || "").toLowerCase().includes(search);
-
-    return matchesStatus && matchesSearch;
-  });
-
   const dashboardStats = useMemo(() => {
     const activeJobs = jobs.filter(
       (job) => String(job.status || "").toLowerCase() !== "complete"
@@ -253,6 +236,24 @@ export default function CustomerDashboardPage() {
     return items;
   }, [jobs, dashboardStats]);
 
+  const filteredJobs = jobs.filter((job) => {
+    const search = orderSearch.trim().toLowerCase();
+    const isComplete = String(job.status || "").toLowerCase() === "complete";
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "complete" && isComplete) ||
+      (statusFilter === "in_progress" && !isComplete);
+
+    const matchesSearch =
+      !search ||
+      String(job.order_number || "").toLowerCase().includes(search) ||
+      String(job.address || "").toLowerCase().includes(search) ||
+      String(job.customer_name || "").toLowerCase().includes(search);
+
+    return matchesStatus && matchesSearch;
+  });
+
   if (loading) {
     return <div className="full-screen-center">Loading customer dashboard...</div>;
   }
@@ -267,22 +268,48 @@ export default function CustomerDashboardPage() {
           </div>
         </div>
 
-        <div className="customer-portal-actions">
-          <button className="portal-btn portal-btn-light" type="button" onClick={loadDashboard}>
-            Refresh
-          </button>
-
+        <div className="portal-menu-wrap">
           <button
             className="portal-btn portal-btn-light"
             type="button"
-            onClick={() => setShowPasswordForm((v) => !v)}
+            onClick={() => setMenuOpen((v) => !v)}
           >
-            Change Password
+            Menu ?
           </button>
 
-          <button className="portal-btn portal-btn-light" type="button" onClick={logout}>
-            Log Out
-          </button>
+          {menuOpen ? (
+            <div className="portal-menu">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  loadDashboard();
+                }}
+              >
+                Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowPasswordForm((v) => !v);
+                }}
+              >
+                Change Password
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  logout();
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -291,18 +318,22 @@ export default function CustomerDashboardPage() {
           <div>
             <div className="portal-kicker">Customer Dashboard</div>
             <h1 className="portal-title">
-              Welcome, {customer.customer_name || "Customer"}
+              {customer.customer_name || "Customer"}
             </h1>
             <div className="portal-meta">
-              View active jobs, delivery progress, final tickets, and job documents.
+              Active projects, delivery progress, final tickets, and job documents.
             </div>
           </div>
 
           <div className="portal-live-card">
-            <div className="portal-live-label">Active Jobs</div>
-            <div className="portal-live-value">{dashboardStats.activeJobs}</div>
+            <div className="portal-live-label">Last Activity</div>
+            <div className="portal-live-value portal-live-value-sm">
+              {dashboardStats.latestLoadMs > 0
+                ? formatDate(new Date(dashboardStats.latestLoadMs).toISOString())
+                : "-"}
+            </div>
             <div>
-              {dashboardStats.ticketCount} total ticket(s)
+              {dashboardStats.activeJobs} active project(s)
             </div>
           </div>
         </section>
@@ -335,10 +366,10 @@ export default function CustomerDashboardPage() {
 
         <section className="portal-card">
           <div className="portal-section-header">
-            <div className="portal-section-title">Account Summary</div>
+            <div className="portal-section-title">Today's Overview</div>
           </div>
 
-          <div className="portal-stats">
+          <div className="portal-stats portal-stats-four">
             <DashboardStat label="Active Jobs" value={dashboardStats.activeJobs} />
             <DashboardStat label="Tickets" value={dashboardStats.ticketCount} />
             <DashboardStat label="Delivered" value={formatCys(dashboardStats.deliveredTotal)} />
@@ -412,7 +443,7 @@ export default function CustomerDashboardPage() {
         <section className="portal-card">
           <div className="portal-section-header">
             <div>
-              <div className="portal-section-title">Jobs</div>
+              <div className="portal-section-title">Project Center</div>
               <div className="portal-meta">
                 Showing {filteredJobs.length} of {jobs.length} order(s)
               </div>
