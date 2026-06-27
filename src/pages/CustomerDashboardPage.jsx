@@ -270,11 +270,14 @@ export default function CustomerDashboardPage() {
 
         <div className="portal-menu-wrap">
           <button
-            className="portal-btn portal-btn-light"
+            className="portal-menu-button"
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Open menu"
           >
-            Menu ?
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
 
           {menuOpen ? (

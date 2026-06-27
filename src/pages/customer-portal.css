@@ -502,3 +502,34 @@
     grid-template-columns: 1fr;
   }
 }
+
+.portal-menu-button {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--portal-border);
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.portal-menu-button:hover {
+  background: #f8fafc;
+  border-color: var(--portal-navy);
+}
+
+.portal-menu-button span {
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--portal-navy);
+}
+
+.portal-menu-button:active {
+  transform: scale(.97);
+}
