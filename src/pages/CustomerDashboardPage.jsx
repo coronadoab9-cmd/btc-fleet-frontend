@@ -317,26 +317,42 @@ export default function CustomerDashboardPage() {
       </header>
 
       <main className="customer-portal-main">
-        <section className="portal-hero">
-          <div>
-            <div className="portal-kicker">Customer Dashboard</div>
+        <section className="portal-hero portal-hero-premium">
+          <div className="portal-hero-left">
+            <div className="portal-kicker">
+              {new Date().getHours() < 12
+                ? "Good Morning"
+                : new Date().getHours() < 18
+                ? "Good Afternoon"
+                : "Good Evening"}
+            </div>
+
             <h1 className="portal-title">
+              Welcome back,
+              <br />
               {customer.customer_name || "Customer"}
             </h1>
-            <div className="portal-meta">
-              Active projects, delivery progress, final tickets, and job documents.
+
+            <div className="portal-meta portal-hero-copy">
+              Track deliveries, download signed tickets, and monitor every active concrete project.
             </div>
           </div>
 
-          <div className="portal-live-card">
-            <div className="portal-live-label">Last Activity</div>
-            <div className="portal-live-value portal-live-value-sm">
-              {dashboardStats.latestLoadMs > 0
-                ? formatDate(new Date(dashboardStats.latestLoadMs).toISOString())
-                : "-"}
+          <div className="portal-live-card portal-live-card-premium">
+            <div className="portal-live-label">Live Status</div>
+            <div className="portal-live-value">{dashboardStats.activeJobs}</div>
+            <div className="portal-live-subtext">Active Projects</div>
+
+            <div className="portal-live-divider" />
+
+            <div className="portal-live-row">
+              <span>{dashboardStats.ticketCount}</span>
+              <small>Tickets</small>
             </div>
-            <div>
-              {dashboardStats.activeJobs} active project(s)
+
+            <div className="portal-live-row">
+              <span>{formatCys(dashboardStats.remainingTotal)}</span>
+              <small>Remaining</small>
             </div>
           </div>
         </section>
