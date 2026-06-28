@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import "./customer-portal.css";
+import ProjectCard from "./ProjectCard";
 
 function formatCys(value) {
   const num = Number(value || 0);
@@ -505,78 +506,13 @@ export default function CustomerDashboardPage() {
               No matching orders found.
             </div>
           ) : (
-            <div className="portal-table-wrap" style={{ marginTop: 18 }}>
-              <table className="portal-table">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Address</th>
-                    <th>Tickets</th>
-                    <th>Delivered</th>
-                    <th>Remaining</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                    <th>Latest Load</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredJobs.map((job) => {
-                    const isComplete = String(job.status || "").toLowerCase() === "complete";
-                    const progress =
-                      Number(job.order_total || 0) > 0
-                        ? Math.max(
-                            0,
-                            Math.min(
-                              100,
-                              (Number(job.delivered_total || 0) /
-                                Number(job.order_total || 0)) *
-                                100
-                            )
-                          )
-                        : 0;
-
-                    return (
-                      <tr
-                        key={job.job_portal_token || job.portal_job_key}
-                        className="portal-project-row"
-                      >
-                        <td data-label="Order">#{job.order_number || "-"}</td>
-                        <td data-label="Address">{job.address || "-"}</td>
-                        <td data-label="Tickets">{job.ticket_count || 0}</td>
-                        <td data-label="Delivered">{formatCys(job.delivered_total)}</td>
-                        <td data-label="Remaining">{formatCys(job.remaining_total)}</td>
-                        <td data-label="Progress">
-                          <div className="portal-progress-track portal-progress-small">
-                            <div
-                              className={`portal-progress-fill ${
-                                isComplete ? "complete" : ""
-                              }`}
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                          <div className="portal-small-muted">{progress.toFixed(0)}%</div>
-                        </td>
-                        <td data-label="Status">
-                          <JobStatusBadge complete={isComplete} />
-                        </td>
-                        <td data-label="Latest Load">{formatDate(job.latest_load_time)}</td>
-                        <td data-label="">
-                          <button
-                            className="portal-btn portal-btn-navy portal-open-full"
-                            type="button"
-                            onClick={() => {
-                              window.location.href = `/customer/jobs/${job.job_portal_token}`;
-                            }}
-                          >
-                            Open
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="project-card-grid">
+              {filteredJobs.map((job) => (
+                <ProjectCard
+                  key={job.job_portal_token || job.portal_job_key}
+                  job={job}
+                />
+              ))}
             </div>
           )}
         </section>
