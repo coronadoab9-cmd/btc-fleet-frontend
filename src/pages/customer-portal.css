@@ -894,3 +894,332 @@
     border-radius: 18px;
   }
 }
+
+/* =========================================================
+   ENTERPRISE COMPACT CUSTOMER PORTAL OVERRIDES
+   ========================================================= */
+
+.customer-portal-page,
+.portal-page {
+  background: #f4f7fb !important;
+}
+
+.portal-topbar,
+.customer-portal-header {
+  min-height: 64px !important;
+  padding: 12px 26px !important;
+  box-shadow: 0 1px 4px rgba(15, 39, 66, 0.16) !important;
+}
+
+.portal-topbar h1,
+.customer-portal-header h1 {
+  font-size: 22px !important;
+  line-height: 1.1 !important;
+}
+
+.portal-topbar p,
+.customer-portal-header p {
+  font-size: 14px !important;
+  margin-top: 3px !important;
+}
+
+.portal-main,
+.customer-dashboard-main {
+  max-width: 1560px !important;
+  padding: 28px 24px !important;
+  gap: 16px !important;
+}
+
+.portal-hero,
+.customer-hero,
+.portal-dashboard-hero {
+  min-height: 170px !important;
+  padding: 26px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(15, 39, 66, 0.08) !important;
+}
+
+.portal-hero h1,
+.customer-hero h1,
+.portal-dashboard-hero h1 {
+  font-size: 36px !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.portal-hero p,
+.customer-hero p,
+.portal-dashboard-hero p {
+  font-size: 15px !important;
+  margin-top: 8px !important;
+}
+
+.portal-kicker,
+.hero-kicker {
+  font-size: 12px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.portal-live-card,
+.hero-status-card,
+.live-status-card {
+  padding: 22px !important;
+  border-radius: 10px !important;
+  min-height: 140px !important;
+}
+
+.portal-live-card h2,
+.hero-status-card h2,
+.live-status-card h2 {
+  font-size: 13px !important;
+}
+
+.portal-live-card strong,
+.hero-status-card strong,
+.live-status-card strong {
+  font-size: 28px !important;
+}
+
+.portal-section,
+.portal-card,
+.dashboard-card,
+.needs-attention-card {
+  border-radius: 8px !important;
+  padding: 18px 22px !important;
+  box-shadow: 0 2px 10px rgba(15, 39, 66, 0.06) !important;
+}
+
+.portal-section-title,
+.portal-card h2,
+.dashboard-card h2,
+.needs-attention-card h2 {
+  font-size: 22px !important;
+  margin-bottom: 4px !important;
+}
+
+.portal-section-subtitle,
+.portal-muted,
+.dashboard-card p {
+  font-size: 14px !important;
+}
+
+.portal-alert-grid,
+.needs-attention-grid {
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.portal-alert-item,
+.needs-attention-item {
+  min-height: 42px !important;
+  padding: 10px 14px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+}
+
+.portal-stat-grid,
+.summary-grid,
+.today-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.portal-stat-card,
+.summary-card,
+.today-stat-card {
+  min-height: 86px !important;
+  padding: 14px !important;
+  border-radius: 8px !important;
+}
+
+.portal-stat-label,
+.summary-card span,
+.today-stat-card span {
+  font-size: 12px !important;
+}
+
+.portal-stat-value,
+.summary-card strong,
+.today-stat-card strong {
+  font-size: 30px !important;
+  line-height: 1.1 !important;
+}
+
+/* Project Center should feel like business software, not marketing cards */
+.project-card-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.project-card {
+  display: grid !important;
+  grid-template-columns: 180px minmax(260px, 1.5fr) 120px 130px 130px 170px 120px;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 78px !important;
+  padding: 12px 16px !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  border: 1px solid #d9e3ef !important;
+}
+
+.project-card:hover {
+  transform: none !important;
+  border-color: #9db4cc !important;
+  background: #f8fbff !important;
+  box-shadow: 0 2px 8px rgba(15, 39, 66, 0.08) !important;
+}
+
+.project-card-top {
+  display: block !important;
+}
+
+.project-order {
+  font-size: 17px !important;
+  font-weight: 900 !important;
+}
+
+.project-address {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+  margin-top: 3px !important;
+}
+
+.project-progress-block {
+  min-width: 120px !important;
+}
+
+.project-progress-header {
+  font-size: 12px !important;
+  margin-bottom: 5px !important;
+}
+
+.portal-progress-track {
+  height: 8px !important;
+  border-radius: 999px !important;
+}
+
+.project-metrics {
+  display: contents !important;
+}
+
+.project-metrics div {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.project-metrics span {
+  font-size: 11px !important;
+  margin-bottom: 3px !important;
+  color: #64748b !important;
+}
+
+.project-metrics strong {
+  font-size: 14px !important;
+}
+
+.project-card-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+.project-open-btn {
+  min-height: 38px !important;
+  width: auto !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+}
+
+/* Remove giant rounded/pill feel */
+.portal-btn,
+button,
+input,
+select {
+  border-radius: 6px !important;
+}
+
+.portal-status-pill {
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+}
+
+/* Compact filters */
+.portal-filter-row,
+.project-filter-row {
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.portal-filter-row input,
+.portal-filter-row select,
+.project-filter-row input,
+.project-filter-row select {
+  min-height: 40px !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+}
+
+@media (max-width: 900px) {
+  .portal-main,
+  .customer-dashboard-main {
+    padding: 18px 14px !important;
+  }
+
+  .portal-hero,
+  .customer-hero,
+  .portal-dashboard-hero {
+    padding: 22px !important;
+  }
+
+  .portal-hero h1,
+  .customer-hero h1,
+  .portal-dashboard-hero h1 {
+    font-size: 30px !important;
+  }
+
+  .portal-stat-grid,
+  .summary-grid,
+  .today-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .project-card {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 16px !important;
+  }
+
+  .project-metrics {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .project-metrics div {
+    background: #f8fafc !important;
+    border: 1px solid #d9e3ef !important;
+    padding: 10px !important;
+    border-radius: 6px !important;
+  }
+
+  .project-card-actions {
+    justify-content: stretch !important;
+  }
+
+  .project-open-btn {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .portal-stat-grid,
+  .summary-grid,
+  .today-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
