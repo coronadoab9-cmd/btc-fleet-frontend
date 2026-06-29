@@ -39,6 +39,7 @@ function ProtectedApp() {
   const isMobile = window.innerWidth <= 768;
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
     new_password: "",
@@ -156,16 +157,43 @@ function ProtectedApp() {
 
         <div className="top-nav-right">
           <span className="logged-in-as">{auth.admin?.name}</span>
-          <button
-            className="logout-btn"
-            type="button"
-            onClick={() => setShowPasswordForm((v) => !v)}
-          >
-            Change Password
-          </button>
-          <button className="logout-btn" onClick={handleLogout}>
-            Log out
-          </button>
+
+          <div className="admin-menu-wrap">
+            <button
+              className="admin-menu-button"
+              type="button"
+              onClick={() => setAdminMenuOpen((v) => !v)}
+              aria-label="Open admin menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+
+            {adminMenuOpen ? (
+              <div className="admin-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminMenuOpen(false);
+                    setShowPasswordForm((v) => !v);
+                  }}
+                >
+                  Change Password
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Log Out
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
