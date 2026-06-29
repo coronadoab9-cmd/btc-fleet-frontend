@@ -1223,3 +1223,94 @@ select {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* HARD COMPACT DASHBOARD FIX */
+
+.customer-dashboard-main {
+  max-width: 100% !important;
+  padding: 18px 28px !important;
+}
+
+.portal-dashboard-hero {
+  min-height: 0 !important;
+  padding: 22px 26px !important;
+  display: grid !important;
+  grid-template-columns: 1.5fr 420px !important;
+  gap: 24px !important;
+  align-items: center !important;
+}
+
+.portal-dashboard-hero h1 {
+  font-size: 30px !important;
+  line-height: 1.05 !important;
+  margin: 6px 0 6px !important;
+}
+
+.portal-dashboard-hero p {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+.portal-dashboard-hero .portal-kicker {
+  font-size: 11px !important;
+  margin: 0 !important;
+}
+
+.portal-live-card {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 18px 22px !important;
+  border-radius: 6px !important;
+}
+
+.portal-live-card strong {
+  font-size: 24px !important;
+}
+
+.portal-section {
+  padding: 16px 20px !important;
+  border-radius: 6px !important;
+  margin-top: 14px !important;
+}
+
+.portal-section-title {
+  font-size: 20px !important;
+  margin: 0 !important;
+}
+
+.portal-section-subtitle {
+  font-size: 13px !important;
+  margin-top: 2px !important;
+}
+
+.portal-alert-grid {
+  margin-top: 12px !important;
+  gap: 8px !important;
+}
+
+.portal-alert-item {
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  border-radius: 4px !important;
+}
+
+.portal-stat-card {
+  min-height: 68px !important;
+  padding: 10px 12px !important;
+  border-radius: 4px !important;
+}
+
+.portal-stat-value {
+  font-size: 24px !important;
+}
+
+.portal-stat-label {
+  font-size: 11px !important;
+}
+
+@media (max-width: 900px) {
+  .portal-dashboard-hero {
+    grid-template-columns: 1fr !important;
+  }
+}
