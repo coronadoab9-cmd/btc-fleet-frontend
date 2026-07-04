@@ -78,6 +78,7 @@ function getCustomerTicketStatus(ticket) {
 
   if (acceptance.includes("rejected")) return "Rejected";
   if (status === "signed") return "Delivered";
+  if (!ticket?.load_time) return "Waiting on Load";
   return "In Transit";
 }
 
@@ -86,6 +87,7 @@ function statusClass(ticket) {
 
   if (status === "Delivered") return "portal-status-pill portal-status-delivered";
   if (status === "Rejected") return "portal-status-pill portal-status-rejected";
+  if (status === "Waiting on Load") return "portal-status-pill portal-status-waiting";
   return "portal-status-pill portal-status-active";
 }
 
@@ -105,6 +107,17 @@ function StatCard({ label, value }) {
       <div className="portal-stat-value">{value}</div>
     </div>
   );
+}
+
+function buildActivityItems(tickets) {
+  return [...tickets]
+    .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a))
+    .slice(0, 8)
+    .map((ticket) => ({
+      id: ticket.id || ticket.ticket_number,
+      title: `${getCustomerTicketStatus(ticket)} ? Truck ${ticket.truck_number || "-"}`,
+      meta: `Ticket #${ticket.ticket_number || "-"} ? ${formatCys(ticket.quantity)} ? ${formatLoadTime(ticket.load_time)}`,
+    }));
 }
 
 export default function CustomerJobPortal({ accessType = "job" }) {
@@ -143,6 +156,16 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     if (portalToken) {
       loadPortal();
     }
+  }, [portalToken, isFieldAccess]);
+
+  useEffect(() => {
+    if (!portalToken) return;
+
+    const timer = setInterval(() => {
+      loadPortal();
+    }, 60000);
+
+    return () => clearInterval(timer);
   }, [portalToken, isFieldAccess]);
 
   if (loading) {
@@ -197,6 +220,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     currentTicket &&
     String(currentTicket.status || "pending").toLowerCase() !== "signed";
 
+  const activityItems = buildActivityItems(tickets);
   const packageToken = data?.job?.job_portal_token || portalToken;
   const accessExpiration = data?.access?.expires_at;
 
@@ -239,7 +263,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               {job.address || `Order #${job.order_number || "-"}`}
             </h1>
             <div className="portal-meta">
-              {job.customer_name || "-"} · Order #{job.order_number || "-"}
+              {job.customer_name || "-"} ï¿½ Order #{job.order_number || "-"}
               {accessExpiration ? (
                 <div className="portal-expire-note">
                   This field link expires {new Date(accessExpiration).toLocaleString()}.
@@ -250,11 +274,18 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
           <div className="portal-live-card">
             <div className="portal-live-label">
-              {isComplete ? "Final Delivered" : "Next Truck"}
+              {isComplete ? "Final Delivered" : "Next Delivery"}
             </div>
             <div className="portal-live-value">
               {isComplete ? formatCys(job.delivered_total) : currentTicket?.truck_number || "-"}
             </div>
+            {!isComplete ? (
+              <div className="portal-live-details">
+                <span>Ticket #{currentTicket?.ticket_number || "-"}</span>
+                <span>{formatCys(currentTicket?.quantity)}</span>
+                <span>{getCustomerTicketStatus(currentTicket)}</span>
+              </div>
+            ) : null}
             <div>
               Remaining: <strong>{formatCys(job.remaining_total)}</strong>
             </div>
@@ -368,11 +399,27 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
                 {currentTicket ? (
                   <>
-                    <div className="portal-info-grid" style={{ marginTop: 16 }}>
-                      <InfoItem label="Ticket" value={currentTicket.ticket_number} />
-                      <InfoItem label="Truck" value={currentTicket.truck_number} />
-                      <InfoItem label="Load Time" value={formatLoadTime(currentTicket.load_time)} />
-                      <InfoItem label="Load Size" value={formatCys(currentTicket.quantity)} />
+                    <div className="next-delivery-card">
+                      <div>
+                        <span>Truck</span>
+                        <strong>{currentTicket.truck_number || "-"}</strong>
+                      </div>
+                      <div>
+                        <span>Ticket</span>
+                        <strong>#{currentTicket.ticket_number || "-"}</strong>
+                      </div>
+                      <div>
+                        <span>Load</span>
+                        <strong>{formatCys(currentTicket.quantity)}</strong>
+                      </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{getCustomerTicketStatus(currentTicket)}</strong>
+                      </div>
+                      <div>
+                        <span>Load Time</span>
+                        <strong>{formatLoadTime(currentTicket.load_time)}</strong>
+                      </div>
                     </div>
 
                     {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
@@ -418,6 +465,28 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                 )}
               </div>
             ) : null}
+
+            <div className="portal-card">
+              <div className="portal-section-title">Activity Feed</div>
+
+              {activityItems.length > 0 ? (
+                <div className="portal-activity-feed">
+                  {activityItems.map((item) => (
+                    <div className="portal-activity-item" key={item.id}>
+                      <div className="portal-activity-dot"></div>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.meta}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="portal-empty" style={{ marginTop: 16 }}>
+                  No activity yet.
+                </div>
+              )}
+            </div>
 
             <div className="portal-card">
               <div className="portal-section-title">Documents</div>

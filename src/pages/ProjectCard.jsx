@@ -33,8 +33,18 @@ function getProgress(job) {
 }
 
 export default function ProjectCard({ job }) {
-  const isComplete = String(job.status || "").toLowerCase() === "complete";
   const progress = getProgress(job);
+  const isComplete =
+    String(job.status || "").toLowerCase() === "complete" ||
+    progress >= 99.5 ||
+    Number(job.remaining_total || 0) <= 0;
+
+  const delivered = Number(job.delivered_total || 0);
+  const statusLabel = isComplete
+    ? "Complete"
+    : delivered > 0
+    ? "Pouring"
+    : "Waiting";
 
   return (
     <article className="project-card">
@@ -51,7 +61,7 @@ export default function ProjectCard({ job }) {
               : "portal-status-pill portal-status-active"
           }
         >
-          {isComplete ? "Complete" : "In Progress"}
+          {statusLabel}
         </span>
       </div>
 
@@ -99,7 +109,7 @@ export default function ProjectCard({ job }) {
             window.location.href = `/customer/jobs/${job.job_portal_token}`;
           }}
         >
-          Open Project ?
+          Open Project
         </button>
       </div>
     </article>
