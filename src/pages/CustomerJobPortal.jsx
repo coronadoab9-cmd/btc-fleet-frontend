@@ -73,11 +73,45 @@ function findTruckForTicket(activeTrucks, ticket) {
 }
 
 function getCustomerTicketStatus(ticket) {
-  const status = String(ticket?.status || "pending").toLowerCase();
+  const eTicketStatus = String(ticket?.status || "pending").toLowerCase();
   const acceptance = String(ticket?.ticket_acceptance || "").toLowerCase();
 
   if (acceptance.includes("rejected")) return "Rejected";
-  if (status === "signed") return "Delivered";
+  if (eTicketStatus === "signed") return "Delivered";
+
+  const sysdyneStatus = String(
+    ticket?.sysdyne_truck_status ||
+      ticket?.order_current_status ||
+      ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const statusLabels = {
+    TICKETED: "Ticket Printed",
+    PRINTED: "Ticket Printed",
+    LOADING: "Loading",
+    LOADED: "Loaded",
+    TOJOB: "En Route",
+    "TO JOB": "En Route",
+    ONJOB: "On Job",
+    "ON JOB": "On Job",
+    POURING: "Pouring",
+    DELIVERED: "Delivered",
+    WASHING: "Washing Out",
+    TOPLANT: "Returning to Plant",
+    "TO PLANT": "Returning to Plant",
+    ATPLANT: "At Plant",
+    "AT PLANT": "At Plant",
+    INSERVICE: "In Service",
+    OUTOFSERVICE: "Out of Service",
+    DEADHEAD: "Deadhead",
+  };
+
+  if (statusLabels[sysdyneStatus]) {
+    return statusLabels[sysdyneStatus];
+  }
+
   if (!ticket?.load_time) return "Waiting on Load";
   return "In Transit";
 }
@@ -87,7 +121,14 @@ function statusClass(ticket) {
 
   if (status === "Delivered") return "portal-status-pill portal-status-delivered";
   if (status === "Rejected") return "portal-status-pill portal-status-rejected";
-  if (status === "Waiting on Load") return "portal-status-pill portal-status-waiting";
+  if (
+    status === "Waiting on Load" ||
+    status === "Ticket Printed" ||
+    status === "Loading"
+  ) {
+    return "portal-status-pill portal-status-waiting";
+  }
+
   return "portal-status-pill portal-status-active";
 }
 
@@ -427,6 +468,10 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                         <strong>#{currentTicket.ticket_number || "-"}</strong>
                       </div>
                       <div>
+                        <span>Driver</span>
+                        <strong>{currentTicket.driver || "-"}</strong>
+                      </div>
+                      <div>
                         <span>Load</span>
                         <strong>{formatCys(currentTicket.quantity)}</strong>
                       </div>
@@ -435,8 +480,21 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                         <strong>{getCustomerTicketStatus(currentTicket)}</strong>
                       </div>
                       <div>
-                        <span>Load Time</span>
-                        <strong>{formatLoadTime(currentTicket.load_time)}</strong>
+                        <span>Status Updated</span>
+                        <strong>
+                          {formatLoadTime(
+                            currentTicket.sysdyne_status_time ||
+                              currentTicket.portal_tracking_updated_at
+                          )}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Loaded</span>
+                        <strong>
+                          {formatLoadTime(
+                            currentTicket.loaded_time || currentTicket.load_time
+                          )}
+                        </strong>
                       </div>
                     </div>
 
