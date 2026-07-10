@@ -134,9 +134,11 @@ export default function CustomerJobPortal({ accessType = "job" }) {
   const [error, setError] = useState("");
   const [showAllTickets, setShowAllTickets] = useState(false);
 
-  async function loadPortal() {
-    setLoading(true);
-    setError("");
+  async function loadPortal({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
 
     try {
       const endpoint = isFieldAccess
@@ -145,10 +147,20 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
       const result = await apiFetch(endpoint);
       setData(result);
+
+      if (!silent) {
+        setError("");
+      }
     } catch (err) {
-      setError(err.message || "Could not load customer portal.");
+      if (!silent) {
+        setError(err.message || "Could not load customer portal.");
+      } else {
+        console.error("Customer portal background refresh failed:", err);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }
 
@@ -161,12 +173,18 @@ export default function CustomerJobPortal({ accessType = "job" }) {
   useEffect(() => {
     if (!portalToken) return;
 
+    const remaining = Number(data?.job?.remaining_total || 0);
+    const hasLoadedPortal = Boolean(data?.job);
+
+    // Keep active jobs current without refreshing completed orders forever.
+    if (hasLoadedPortal && remaining <= 0) return;
+
     const timer = setInterval(() => {
-      loadPortal();
-    }, 60000);
+      loadPortal({ silent: true });
+    }, 10000);
 
     return () => clearInterval(timer);
-  }, [portalToken, isFieldAccess]);
+  }, [portalToken, isFieldAccess, data?.job?.remaining_total]);
 
   if (loading) {
     return <div className="full-screen-center">Loading customer portal...</div>;
