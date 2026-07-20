@@ -1669,21 +1669,24 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               {String(ticket?.driver_instructions || "").trim() && (
                 <div
                   style={{
-                    marginTop: 12,
-                    padding: 16,
-                    background: "rgba(255, 122, 24, 0.10)",
-                    border: "2px solid var(--orange)",
+                    marginTop: 16,
+                    padding: isPhone ? "18px 16px" : "20px 24px",
+                    background: "#163B5C",
+                    border: "1px solid #4380AA",
                     borderRadius: 14,
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.20)",
+                    textAlign: "center",
                   }}
                 >
                   <div
                     style={{
-                      color: "var(--orange)",
+                      color: "#B8D9F0",
                       fontSize: isPhone ? 16 : 18,
-                      fontWeight: 950,
-                      marginBottom: 8,
+                      fontWeight: 900,
+                      marginBottom: 10,
                       textTransform: "uppercase",
-                      letterSpacing: 0.4,
+                      letterSpacing: 0.6,
+                      textAlign: "center",
                     }}
                   >
                     {t("jobInstructions")}
@@ -1691,12 +1694,15 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
 
                   <div
                     style={{
-                      color: "#fff",
+                      color: "#F1F6FA",
                       fontSize: isPhone ? 17 : 19,
                       fontWeight: 750,
-                      lineHeight: 1.5,
+                      lineHeight: 1.55,
+                      textAlign: "center",
                       whiteSpace: "pre-line",
                       overflowWrap: "anywhere",
+                      maxWidth: 760,
+                      margin: "0 auto",
                     }}
                   >
                     {ticket.driver_instructions}
