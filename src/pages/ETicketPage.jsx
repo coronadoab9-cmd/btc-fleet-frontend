@@ -24,6 +24,7 @@ const UI_TEXT = {
     ticketNumber: "Ticket #",
     customer: "Customer",
     address: "Address",
+    jobInstructions: "Job Instructions",
     truck: "Truck",
     signedBy: "Signed By",
     acceptance: "Acceptance",
@@ -97,6 +98,7 @@ const UI_TEXT = {
     ticketNumber: "Ticket #",
     customer: "Cliente",
     address: "Dirección",
+    jobInstructions: "Instrucciones del trabajo",
     truck: "Camión",
     signedBy: "Firmado por",
     acceptance: "Aceptación",
@@ -1663,6 +1665,44 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
               <SummaryRow label={t("customer")} value={ticket.customer_name} />
               <SummaryRow label={t("address")} value={ticket.address} />
+
+              {String(ticket?.driver_instructions || "").trim() && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 16,
+                    background: "rgba(255, 122, 24, 0.10)",
+                    border: "2px solid var(--orange)",
+                    borderRadius: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "var(--orange)",
+                      fontSize: isPhone ? 16 : 18,
+                      fontWeight: 950,
+                      marginBottom: 8,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.4,
+                    }}
+                  >
+                    {t("jobInstructions")}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontSize: isPhone ? 17 : 19,
+                      fontWeight: 750,
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-line",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {ticket.driver_instructions}
+                  </div>
+                </div>
+              )}
 
               <div
                 style={{
