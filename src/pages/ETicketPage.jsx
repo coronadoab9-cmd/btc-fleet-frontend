@@ -242,8 +242,6 @@ function formatCentralDateTime(value) {
   try {
     const dt = new Date(value);
 
-    // Sysdyne load times are currently arriving 11 hours ahead
-    dt.setHours(dt.getHours() - 11);
 
     return new Intl.DateTimeFormat("en-US", {
       month: "2-digit",

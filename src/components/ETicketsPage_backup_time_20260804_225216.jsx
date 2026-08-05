@@ -15,6 +15,8 @@ function formatCentralDateTime(value) {
   try {
     const dt = new Date(value);
 
+    // Match the working eTicket page correction
+    dt.setHours(dt.getHours() - 11);
 
     return new Intl.DateTimeFormat("en-US", {
       month: "2-digit",
@@ -35,6 +37,8 @@ function getLoadDateKey(value) {
   try {
     const dt = new Date(value);
 
+    // Match displayed Load Time correction
+    dt.setHours(dt.getHours() - 11);
 
     const year = dt.getFullYear();
     const month = String(dt.getMonth() + 1).padStart(2, "0");

@@ -12,6 +12,7 @@ function formatLoadTime(value) {
 
   try {
     const dt = new Date(value);
+    dt.setHours(dt.getHours() - 11);
 
     return new Intl.DateTimeFormat("en-US", {
       month: "2-digit",
