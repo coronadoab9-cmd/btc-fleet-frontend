@@ -1,0 +1,248 @@
+    btcEticket: "BTC eTicket",
+    signedEticket: "Signed eTicket",
+    driver: "Driver",
+    qc: "QC",
+    ticket: "Ticket",
+    water: "Water",
+    submit: "Submit",
+    submitting: "Submitting...",
+    next: "Next",
+    back: "Back",
+    edit: "Edit",
+    exitReturn: "Exit / Return",
+    loadingTicket: "Loading ticket...",
+    loadingQc: "Loading QC...",
+    ticketNumber: "Ticket #",
+    customer: "Customer",
+    address: "Address",
+    truck: "Truck",
+    signedBy: "Signed By",
+    acceptance: "Acceptance",
+    signedAtCdt: "Signed At (CDT)",
+    scanSignedPdf: "Scan to Open Signed PDF",
+    orderedSlump: "Ordered Slump",
+    batchWeights: "Batch Weights",
+    description: "Description",
+    design: "Design",
+    target: "Target",
+    actual: "Actual",
+    uom: "UOM",
+    variance: "% Var",
+    moisture: "Moisture (%)",
+    waterGallons: "Water (gal)",
+    scanQcEticket: "Scan for QC eTicket",
+    waterAllowed: "Water Allowed",
+    qcWaterAdded: "QC Water Added",
+    customerWaterAdded: "Customer Water Added",
+    totalWaterAllowed: "Total Water Allowed",
+    customerWaterAllowed: "Customer Water Allowed",
+    curbLineSignature: "Curb Line Signature",
+    notNeeded: "Not Needed",
+    customerContractorSignature: "Customer / Contractor Signature",
+    curbLineNotice: "By signing below, the customer/contractor acknowledges responsibility for proper site conditions and accepts delivery as requested. Big Town Concrete is not responsible for property damage resulting from site access limitations, unstable surfaces, underground utilities, customer-directed vehicle movement, or conditions beyond driver control.",
+    clearSignature: "Clear Signature",
+    finalSignature: "Final Signature",
+    finalSignatureType: "Final Signature Type",
+    customerSignature: "Customer Signature",
+    driverSignatureCustomerNotAvailable: "Driver Signature / Customer Not Available",
+    btcTerms: "BTC Terms & Conditions",
+    ticketAcceptance: "Ticket Acceptance",
+    acceptedDelivery: "Accepted Delivery",
+    rejectedDelivery: "Rejected Delivery",
+    rejectionReason: "Rejection Reason",
+    selectReason: "Select reason",
+    slump: "Slump",
+    air: "Air",
+    mechanical: "Mechanical",
+    dispatch: "Dispatch",
+    batch: "Batch",
+    time: "Time",
+    mixNumber: "Mix #",
+    strength: "Strength",
+------------------------------------------------------------------------------------------
+    btcEticket: "BTC eTicket",
+    signedEticket: "eTicket firmado",
+    driver: "Chofer",
+    qc: "QC",
+    ticket: "Ticket",
+    water: "Agua",
+    submit: "Enviar",
+    submitting: "Enviando...",
+    next: "Siguiente",
+    back: "Atrás",
+    edit: "Editar",
+    exitReturn: "Salir / Regresar",
+    loadingTicket: "Cargando ticket...",
+    loadingQc: "Cargando QC...",
+    ticketNumber: "Ticket #",
+    customer: "Cliente",
+    address: "Dirección",
+    truck: "Camión",
+    signedBy: "Firmado por",
+    acceptance: "Aceptación",
+    signedAtCdt: "Firmado a las (CDT)",
+    scanSignedPdf: "Escanee para abrir el PDF firmado",
+    orderedSlump: "Revenimiento ordenado",
+    batchWeights: "Pesos de la mezcla",
+    description: "Descripción",
+    design: "Diseño",
+    target: "Meta",
+    actual: "Actual",
+    uom: "Unidad",
+    variance: "% Var",
+    moisture: "Humedad (%)",
+    waterGallons: "Agua (gal)",
+    scanQcEticket: "Escanear eTicket de QC",
+    waterAllowed: "Agua permitida",
+    qcWaterAdded: "Agua agregada por QC",
+    customerWaterAdded: "Agua agregada por el cliente",
+    totalWaterAllowed: "Total de agua permitida",
+    customerWaterAllowed: "Agua permitida al cliente",
+    curbLineSignature: "Firma para banqueta",
+    notNeeded: "No se necesita",
+    customerContractorSignature: "Firma del cliente / contratista",
+    curbLineNotice: "Al firmar abajo, el cliente/contratista reconoce que es responsable de las condiciones adecuadas del sitio y acepta la entrega solicitada. Big Town Concrete no se hace responsable por daños a la propiedad causados por limitaciones de acceso al sitio, superficies inestables, servicios subterráneos, movimientos del vehículo indicados por el cliente o condiciones fuera del control del chofer.",
+    clearSignature: "Borrar firma",
+    finalSignature: "Firma final",
+    finalSignatureType: "Tipo de firma final",
+    customerSignature: "Firma del cliente",
+    driverSignatureCustomerNotAvailable: "Firma del chofer / Cliente no disponible",
+    btcTerms: "Términos y condiciones de BTC",
+    ticketAcceptance: "Aceptación del ticket",
+    acceptedDelivery: "Entrega aceptada",
+    rejectedDelivery: "Entrega rechazada",
+    rejectionReason: "Motivo del rechazo",
+    selectReason: "Seleccione motivo",
+    slump: "Revenimiento",
+    air: "Aire",
+    mechanical: "Mecánico",
+    dispatch: "Despacho",
+    batch: "Carga",
+    time: "Tiempo",
+    mixNumber: "Mezcla #",
+    strength: "Resistencia",
+------------------------------------------------------------------------------------------
+            {t("ticket")}
+          </span>
+          <span style={{ color: step === 4 ? "#fff" : "var(--muted)" }}>
+            {t("water")}
+          </span>
+          <span style={{ color: step === 5 ? "#fff" : "var(--muted)" }}>
+            {t("submit")}
+          </span>
+        </div>
+
+        {step === 1 && (
+          <>
+            <div className="asset-details">
+              <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
+              <SummaryRow label={t("customer")} value={ticket.customer_name} />
+              <SummaryRow label={t("address")} value={ticket.address} />
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: 18,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--muted)",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    marginBottom: 8,
+                  }}
+                >
+                  {t("orderedSlump")}
+                </div>
+
+                <div
+                  style={{
+                    color: "#fff",
+                    fontSize: isPhone ? 42 : 56,
+                    fontWeight: 950,
+                    lineHeight: 1,
+                  }}
+                >
+                  {formatOrderedSlump(
+                    ticket?.ordered_slump ||
+                    ticket?.slump ||
+                    ticket?.slump_target ||
+                    "-"
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                background: "var(--panel-2)",
+                border: "1px solid var(--border)",
+------------------------------------------------------------------------------------------
+        )}
+
+        {step === 3 && (
+          <>
+            <div style={{ display: "grid", gap: 16 }}>
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
+                <SummaryRow label={t("customer")} value={ticket.customer_name} />
+                <SummaryRow label={t("address")} value={ticket.address} />
+                <SummaryRow label={t("truck")} value={ticket.truck_number} />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <SummaryRow
+                  label={t("mixNumber")}
+                  value={
+                    ticket?.mix_number ||
+                    String(ticket?.product || "").trim().split(/\s+/)[0] ||
+                    "-"
+                  }
+                />
+
+                <SummaryRow
+                  label={t("description")}
+                  value={
+                    ticket?.mix_description ||
+                    String(ticket?.product || "")
+                      .trim()
+                      .split(/\s+/)
+                      .slice(1)
+                      .join(" ") ||
+                    "-"
+                  }
+                />
+
+                <SummaryRow label={t("strength")} value={mix.strength} />
+                <SummaryRow label={t("slump")} value={mix.slump} />
+                <SummaryRow label={t("air")} value={mix.airContent} />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+------------------------------------------------------------------------------------------

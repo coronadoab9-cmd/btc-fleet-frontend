@@ -1,0 +1,1339 @@
+
+============================================================
+FILE: .\src\pages\CustomerJobPortal.jsx
+============================================================
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
+import "./customer-portal.css";
+
+function formatCys(value) {
+  const num = Number(value || 0);
+  return `${num.toFixed(1)} cys`;
+}
+
+function formatLoadTime(value) {
+  if (!value) return "-";
+
+  try {
+    const dt = new Date(value);
+    dt.setHours(dt.getHours() - 11);
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(dt);
+  } catch {
+    return value;
+  }
+}
+
+function buildDirectionsUrl(latitude, longitude, address) {
+  if (!latitude || !longitude || !address) return "";
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    `${latitude},${longitude}`
+  )}&destination=${encodeURIComponent(address)}`;
+}
+
+function buildDirectionsEmbedUrl(latitude, longitude, address) {
+  if (!latitude || !longitude || !address) return "";
+
+  return `https://maps.google.com/maps?saddr=${encodeURIComponent(
+    `${latitude},${longitude}`
+  )}&daddr=${encodeURIComponent(address)}&output=embed`;
+}
+
+function ticketLoadMs(ticket) {
+  if (!ticket?.load_time) return 0;
+  const ms = new Date(ticket.load_time).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function getCurrentPortalTicket(tickets) {
+  const pending = tickets
+    .filter((ticket) => String(ticket.status || "pending").toLowerCase() !== "signed")
+    .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+
+  if (pending.length > 0) return pending[0];
+
+  const sorted = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+  return sorted[0] || null;
+}
+
+function findTruckForTicket(activeTrucks, ticket) {
+  if (!ticket) return null;
+
+  const ticketTruck = String(ticket.truck_number || "").trim();
+
+  return (
+    activeTrucks.find(
+      (truck) => String(truck.truck_number || "").trim() === ticketTruck
+    ) || null
+  );
+}
+
+function getCustomerTicketStatus(ticket) {
+  const status = String(ticket?.status || "pending").toLowerCase();
+  const acceptance = String(ticket?.ticket_acceptance || "").toLowerCase();
+
+  if (acceptance.includes("rejected")) return "Rejected";
+  if (status === "signed") return "Delivered";
+  if (!ticket?.load_time) return "Waiting on Load";
+  return "In Transit";
+}
+
+function statusClass(ticket) {
+  const status = getCustomerTicketStatus(ticket);
+
+  if (status === "Delivered") return "portal-status-pill portal-status-delivered";
+  if (status === "Rejected") return "portal-status-pill portal-status-rejected";
+  if (status === "Waiting on Load") return "portal-status-pill portal-status-waiting";
+  return "portal-status-pill portal-status-active";
+}
+
+function InfoItem({ label, value }) {
+  return (
+    <div className="portal-info-item">
+      <div className="portal-label">{label}</div>
+      <div className="portal-value">{value || "-"}</div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="portal-stat">
+      <div className="portal-label">{label}</div>
+      <div className="portal-stat-value">{value}</div>
+    </div>
+  );
+}
+
+function buildActivityItems(tickets) {
+  return [...tickets]
+    .sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a))
+    .slice(0, 8)
+    .map((ticket) => ({
+      id: ticket.id || ticket.ticket_number,
+      title: `${getCustomerTicketStatus(ticket)} ? Truck ${ticket.truck_number || "-"}`,
+      meta: `Ticket #${ticket.ticket_number || "-"} ? ${formatCys(ticket.quantity)} ? ${formatLoadTime(ticket.load_time)}`,
+    }));
+}
+
+export default function CustomerJobPortal({ accessType = "job" }) {
+  const portalToken = useMemo(() => {
+    const parts = window.location.pathname.split("/");
+    return parts[parts.length - 1] || "";
+  }, []);
+
+  const isFieldAccess =
+    accessType === "field" || window.location.pathname.includes("/customer/live/");
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAllTickets, setShowAllTickets] = useState(false);
+
+  async function loadPortal() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const endpoint = isFieldAccess
+        ? `/api/customer/live/${portalToken}`
+        : `/api/customer/jobs/${portalToken}`;
+
+      const result = await apiFetch(endpoint);
+      setData(result);
+    } catch (err) {
+      setError(err.message || "Could not load customer portal.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (portalToken) {
+      loadPortal();
+    }
+  }, [portalToken, isFieldAccess]);
+
+  useEffect(() => {
+    if (!portalToken) return;
+
+    const timer = setInterval(() => {
+      loadPortal();
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [portalToken, isFieldAccess]);
+
+  if (loading) {
+    return <div className="full-screen-center">Loading customer portal...</div>;
+  }
+
+  if (error) {
+    return <div className="full-screen-center">{error}</div>;
+  }
+
+  const job = data?.job || {};
+  const tickets = data?.tickets || [];
+  const documents = data?.documents || [];
+  const activeTrucks = data?.active_trucks || [];
+  const currentTicket = getCurrentPortalTicket(tickets);
+  const currentTruck = findTruckForTicket(activeTrucks, currentTicket);
+
+  let customerAuth = null;
+  try {
+    customerAuth = JSON.parse(localStorage.getItem("btc_customer_auth") || "null");
+  } catch {
+    customerAuth = null;
+  }
+
+  const loggedInCustomerName = String(customerAuth?.customer?.customer_name || "")
+    .trim()
+    .toLowerCase();
+
+  const portalCustomerName = String(job.customer_name || "")
+    .trim()
+    .toLowerCase();
+
+  const canBackToDashboard =
+    Boolean(customerAuth?.token) &&
+    loggedInCustomerName &&
+    portalCustomerName &&
+    loggedInCustomerName === portalCustomerName;
+
+  const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+  const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 8);
+  const finalTicketCount = tickets.filter((ticket) => ticket.final_pdf_url).length;
+
+  const orderTotal = Number(job.order_total || 0);
+  const deliveredTotal = Number(job.delivered_total || 0);
+  const remainingTotal = Number(job.remaining_total || 0);
+  const progressPercent =
+    orderTotal > 0 ? Math.max(0, Math.min(100, (deliveredTotal / orderTotal) * 100)) : 0;
+
+  const isComplete = remainingTotal <= 0;
+  const showNextDelivery =
+    !isComplete &&
+    currentTicket &&
+    String(currentTicket.status || "pending").toLowerCase() !== "signed";
+
+  const activityItems = buildActivityItems(tickets);
+  const packageToken = data?.job?.job_portal_token || portalToken;
+  const accessExpiration = data?.access?.expires_at;
+
+  return (
+    <div className="customer-portal-page">
+      <header className="customer-portal-topbar">
+        <div>
+          <div className="customer-portal-brand">BTC Customer Portal</div>
+          <div className="customer-portal-subtitle">
+            {isFieldAccess ? "Field operations live access" : "Customer admin job view"}
+          </div>
+        </div>
+
+        <div className="customer-portal-actions">
+          {canBackToDashboard ? (
+            <button
+              className="portal-btn portal-btn-light"
+              type="button"
+              onClick={() => {
+                window.location.href = "/customer/dashboard";
+              }}
+            >
+              Back to All Orders
+            </button>
+          ) : null}
+
+          <button className="portal-btn portal-btn-light" type="button" onClick={loadPortal}>
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <main className="customer-portal-main">
+        <section className="portal-hero">
+          <div>
+            <div className="portal-kicker">
+              {isComplete ? "Delivery Complete" : "Live Delivery"}
+            </div>
+            <h1 className="portal-title">
+              {job.address || `Order #${job.order_number || "-"}`}
+            </h1>
+            <div className="portal-meta">
+              {job.customer_name || "-"} � Order #{job.order_number || "-"}
+              {accessExpiration ? (
+                <div className="portal-expire-note">
+                  This field link expires {new Date(accessExpiration).toLocaleString()}.
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="portal-live-card">
+            <div className="portal-live-label">
+              {isComplete ? "Final Delivered" : "Next Delivery"}
+            </div>
+            <div className="portal-live-value">
+              {isComplete ? formatCys(job.delivered_total) : currentTicket?.truck_number || "-"}
+            </div>
+            {!isComplete ? (
+              <div className="portal-live-details">
+                <span>Ticket #{currentTicket?.ticket_number || "-"}</span>
+                <span>{formatCys(currentTicket?.quantity)}</span>
+                <span>{getCustomerTicketStatus(currentTicket)}</span>
+              </div>
+            ) : null}
+            <div>
+              Remaining: <strong>{formatCys(job.remaining_total)}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="portal-grid">
+          <div>
+            <div className="portal-card">
+              <div className="portal-section-header">
+                <div className="portal-section-title">Delivery Summary</div>
+                <strong>{progressPercent.toFixed(0)}% delivered</strong>
+              </div>
+
+              <div className="portal-stats">
+                <StatCard label="Order Total" value={formatCys(job.order_total)} />
+                <StatCard label="Delivered" value={formatCys(job.delivered_total)} />
+                <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
+              </div>
+
+              <div style={{ marginTop: 18 }}>
+                <div className="portal-progress-track">
+                  <div
+                    className={`portal-progress-fill ${isComplete ? "complete" : ""}`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="portal-card">
+              <div className="portal-section-title">Ticket Activity</div>
+
+              {tickets.length === 0 ? (
+                <div className="portal-empty">No tickets found for this job.</div>
+              ) : (
+                <>
+                  <div className="portal-table-wrap">
+                    <table className="portal-table">
+                      <thead>
+                        <tr>
+                          <th>Ticket</th>
+                          <th>Truck</th>
+                          <th>Load Time</th>
+                          <th>Qty</th>
+                          <th>Status</th>
+                          <th>Final Ticket</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleTickets.map((ticket) => (
+                          <tr key={ticket.id || ticket.ticket_number}>
+                            <td>#{ticket.ticket_number || "-"}</td>
+                            <td>{ticket.truck_number || "-"}</td>
+                            <td>{formatLoadTime(ticket.load_time)}</td>
+                            <td>{formatCys(ticket.quantity)}</td>
+                            <td>
+                              <span className={statusClass(ticket)}>
+                                {getCustomerTicketStatus(ticket)}
+                              </span>
+                            </td>
+                            <td>
+                              {ticket.final_pdf_url ? (
+                                <a
+                                  className="portal-btn portal-btn-navy"
+                                  href={ticket.final_pdf_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Download
+                                </a>
+                              ) : (
+                                <span className="portal-empty">Pending</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {tickets.length > 8 ? (
+                    <button
+                      className="portal-btn portal-btn-navy"
+                      type="button"
+                      onClick={() => setShowAllTickets((v) => !v)}
+                      style={{ marginTop: 14 }}
+                    >
+                      {showAllTickets ? "Show Less" : `Show All Tickets (${tickets.length})`}
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+
+          <aside>
+            <div className="portal-card">
+              <div className="portal-section-title">Project Overview</div>
+              <div className="portal-info-grid" style={{ marginTop: 16 }}>
+                <InfoItem label="Customer" value={job.customer_name} />
+                <InfoItem label="Order #" value={job.order_number} />
+                <InfoItem label="Address" value={job.address} />
+                <InfoItem label="Tickets" value={job.ticket_count} />
+              </div>
+            </div>
+
+            {showNextDelivery ? (
+              <div className="portal-card">
+                <div className="portal-section-title">Next Delivery</div>
+
+                {currentTicket ? (
+                  <>
+                    <div className="next-delivery-card">
+                      <div>
+                        <span>Truck</span>
+                        <strong>{currentTicket.truck_number || "-"}</strong>
+                      </div>
+                      <div>
+                        <span>Ticket</span>
+                        <strong>#{currentTicket.ticket_number || "-"}</strong>
+                      </div>
+                      <div>
+                        <span>Load</span>
+                        <strong>{formatCys(currentTicket.quantity)}</strong>
+                      </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{getCustomerTicketStatus(currentTicket)}</strong>
+                      </div>
+                      <div>
+                        <span>Load Time</span>
+                        <strong>{formatLoadTime(currentTicket.load_time)}</strong>
+                      </div>
+                    </div>
+
+                    {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
+                      <>
+                        <div className="portal-map">
+                          <iframe
+                            title={`Route for truck ${currentTruck.truck_number}`}
+                            src={buildDirectionsEmbedUrl(
+                              currentTruck.latitude,
+                              currentTruck.longitude,
+                              job.address
+                            )}
+                            width="100%"
+                            height="290"
+                            style={{ border: 0, display: "block" }}
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+
+                        <a
+                          href={buildDirectionsUrl(
+                            currentTruck.latitude,
+                            currentTruck.longitude,
+                            job.address
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="portal-btn portal-btn-orange"
+                          style={{ width: "100%", marginTop: 12 }}
+                        >
+                          Open Route / ETA
+                        </a>
+                      </>
+                    ) : (
+                      <div className="portal-empty" style={{ marginTop: 14 }}>
+                        Truck location is not available yet.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="portal-empty">No active delivery ticket found yet.</div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="portal-card">
+              <div className="portal-section-title">Activity Feed</div>
+
+              {activityItems.length > 0 ? (
+                <div className="portal-activity-feed">
+                  {activityItems.map((item) => (
+                    <div className="portal-activity-item" key={item.id}>
+                      <div className="portal-activity-dot"></div>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.meta}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="portal-empty" style={{ marginTop: 16 }}>
+                  No activity yet.
+                </div>
+              )}
+            </div>
+
+            <div className="portal-card">
+              <div className="portal-section-title">Documents</div>
+
+              {finalTicketCount > 0 ? (
+                <a
+                  href={`https://btc-fleet-backend.onrender.com/api/customer/jobs/${packageToken}/final-ticket-package`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="portal-btn portal-btn-navy"
+                  style={{ width: "100%", marginTop: 16 }}
+                >
+                  Download Final Ticket Package ({finalTicketCount})
+                </a>
+              ) : (
+                <div className="portal-empty" style={{ marginTop: 16 }}>
+                  Final ticket package will be available after tickets are signed.
+                </div>
+              )}
+
+              {documents.length > 0 ? (
+                <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                  {documents.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={`https://btc-fleet-backend.onrender.com${doc.download_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="portal-btn portal-btn-light"
+                    >
+                      {doc.file_name}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+============================================================
+FILE: .\src\pages\CustomerDashboardPage.jsx
+============================================================
+import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
+import "./customer-portal.css";
+import ProjectCard from "./ProjectCard";
+
+function formatCys(value) {
+  const num = Number(value || 0);
+  return `${num.toFixed(1)} cys`;
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+
+  try {
+    const dt = new Date(value);
+    dt.setHours(dt.getHours() - 11);
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(dt);
+  } catch {
+    return value;
+  }
+}
+
+function getCustomerAuth() {
+  try {
+    const raw = localStorage.getItem("btc_customer_auth");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function DashboardStat({ label, value }) {
+  return (
+    <div className="portal-stat">
+      <div className="portal-label">{label}</div>
+      <div className="portal-stat-value">{value}</div>
+    </div>
+  );
+}
+
+function JobStatusBadge({ complete }) {
+  return (
+    <span
+      className={
+        complete
+          ? "portal-status-pill portal-status-delivered"
+          : "portal-status-pill portal-status-active"
+      }
+    >
+      {complete ? "Complete" : "In Progress"}
+    </span>
+  );
+}
+
+export default function CustomerDashboardPage() {
+  const [auth, setAuth] = useState(() => getCustomerAuth());
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [message, setMessage] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  async function loadDashboard() {
+    setError("");
+    setLoading(true);
+
+    try {
+      if (!auth?.token) {
+        window.location.href = "/customer/login";
+        return;
+      }
+
+      const result = await apiFetch("/api/customer/dashboard", {
+        headers: {
+          "X-Customer-Token": auth.token,
+        },
+      });
+
+      setData(result);
+    } catch (err) {
+      localStorage.removeItem("btc_customer_auth");
+      setAuth(null);
+      setError(err.message || "Could not load dashboard.");
+      window.location.href = "/customer/login";
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  async function changePassword() {
+    setChangingPassword(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const currentPassword = passwordForm.current_password.trim();
+      const newPassword = passwordForm.new_password.trim();
+      const confirmPassword = passwordForm.confirm_password.trim();
+
+      if (!currentPassword) throw new Error("Current password is required");
+      if (newPassword.length < 8) throw new Error("New password must be at least 8 characters");
+      if (newPassword !== confirmPassword) throw new Error("New passwords do not match");
+
+      const savedAuth = getCustomerAuth();
+      if (!savedAuth?.token) throw new Error("Please log in again.");
+
+      await apiFetch("/api/customer/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Customer-Token": savedAuth.token,
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      setMessage("Password changed successfully.");
+      setPasswordForm({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      });
+      setShowPasswordForm(false);
+    } catch (err) {
+      setError(err.message || "Could not change password");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("btc_customer_auth");
+    window.location.href = "/customer/login";
+  }
+
+  const customer = data?.customer || auth?.customer || {};
+  const jobs = data?.jobs || [];
+
+  const dashboardStats = useMemo(() => {
+    const activeJobs = jobs.filter(
+      (job) => String(job.status || "").toLowerCase() !== "complete"
+    ).length;
+
+    const ticketCount = jobs.reduce((sum, job) => sum + Number(job.ticket_count || 0), 0);
+    const deliveredTotal = jobs.reduce(
+      (sum, job) => sum + Number(job.delivered_total || 0),
+      0
+    );
+    const remainingTotal = jobs.reduce(
+      (sum, job) => sum + Number(job.remaining_total || 0),
+      0
+    );
+
+    const latestLoadMs = jobs.reduce((latest, job) => {
+      const ms = job.latest_load_time ? new Date(job.latest_load_time).getTime() : 0;
+      return Number.isFinite(ms) && ms > latest ? ms : latest;
+    }, 0);
+
+    return {
+      activeJobs,
+      ticketCount,
+      deliveredTotal,
+      remainingTotal,
+      latestLoadMs,
+    };
+  }, [jobs]);
+
+  const attentionItems = useMemo(() => {
+    const inProgressJobs = jobs.filter(
+      (job) => String(job.status || "").toLowerCase() !== "complete"
+    );
+
+    const jobsWithRemaining = jobs.filter(
+      (job) => Number(job.remaining_total || 0) > 0
+    );
+
+    const items = [];
+
+    if (inProgressJobs.length > 0) {
+      items.push({
+        label: `${inProgressJobs.length} active project${inProgressJobs.length === 1 ? "" : "s"} currently in progress`,
+        tone: "warning",
+      });
+    }
+
+    if (jobsWithRemaining.length > 0) {
+      items.push({
+        label: `${jobsWithRemaining.length} project${jobsWithRemaining.length === 1 ? "" : "s"} still have remaining yardage`,
+        tone: "warning",
+      });
+    }
+
+    if (dashboardStats.remainingTotal > 0) {
+      items.push({
+        label: `${formatCys(dashboardStats.remainingTotal)} remaining across active projects`,
+        tone: "info",
+      });
+    }
+
+    if (dashboardStats.latestLoadMs > 0) {
+      items.push({
+        label: `Most recent load activity: ${formatDate(new Date(dashboardStats.latestLoadMs).toISOString())}`,
+        tone: "info",
+      });
+    }
+
+    if (!items.length) {
+      items.push({
+        label: "No active project alerts right now",
+        tone: "success",
+      });
+    }
+
+    return items;
+  }, [jobs, dashboardStats]);
+
+  const filteredJobs = jobs.filter((job) => {
+    const search = orderSearch.trim().toLowerCase();
+    const isComplete = String(job.status || "").toLowerCase() === "complete";
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "complete" && isComplete) ||
+      (statusFilter === "in_progress" && !isComplete);
+
+    const matchesSearch =
+      !search ||
+      String(job.order_number || "").toLowerCase().includes(search) ||
+      String(job.address || "").toLowerCase().includes(search) ||
+      String(job.customer_name || "").toLowerCase().includes(search);
+
+    return matchesStatus && matchesSearch;
+  });
+
+  if (loading) {
+    return <div className="full-screen-center">Loading customer dashboard...</div>;
+  }
+
+  return (
+    <div className="customer-portal-page">
+      <header className="customer-portal-topbar">
+        <div>
+          <div className="customer-portal-brand">BTC Customer Portal</div>
+          <div className="customer-portal-subtitle">
+            {customer.customer_name || "Customer"} dashboard
+          </div>
+        </div>
+
+        <div className="portal-menu-wrap">
+          <button
+            className="portal-menu-button"
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Open menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          {menuOpen ? (
+            <div className="portal-menu">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  loadDashboard();
+                }}
+              >
+                Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowPasswordForm((v) => !v);
+                }}
+              >
+                Change Password
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  logout();
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </header>
+
+      <main className="customer-portal-main">
+        <section className="portal-hero portal-hero-premium">
+          <div className="portal-hero-left">
+            <div className="portal-kicker">
+              {new Date().getHours() < 12
+                ? "Good Morning"
+                : new Date().getHours() < 18
+                ? "Good Afternoon"
+                : "Good Evening"}
+            </div>
+
+            <h1 className="portal-title">
+              Welcome back,
+              <br />
+              {customer.customer_name || "Customer"}
+            </h1>
+
+            <div className="portal-meta portal-hero-copy">
+              Track deliveries, download signed tickets, and monitor every active concrete project.
+            </div>
+          </div>
+
+          <div className="portal-live-card portal-live-card-premium">
+            <div className="portal-live-label">Live Status</div>
+            <div className="portal-live-value">{dashboardStats.activeJobs}</div>
+            <div className="portal-live-subtext">Active Projects</div>
+
+            <div className="portal-live-divider" />
+
+            <div className="portal-live-row">
+              <span>{dashboardStats.ticketCount}</span>
+              <small>Tickets</small>
+            </div>
+
+            <div className="portal-live-row">
+              <span>{formatCys(dashboardStats.remainingTotal)}</span>
+              <small>Remaining</small>
+            </div>
+          </div>
+        </section>
+
+        {error ? <div className="portal-alert portal-alert-error">{error}</div> : null}
+        {message ? <div className="portal-alert portal-alert-success">{message}</div> : null}
+
+        <section className="portal-card portal-attention-card">
+          <div className="portal-section-header">
+            <div>
+              <div className="portal-section-title">Needs Attention</div>
+              <div className="portal-meta">
+                Quick view of active delivery items and recent activity.
+              </div>
+            </div>
+          </div>
+
+          <div className="portal-attention-list">
+            {attentionItems.map((item, index) => (
+              <div
+                key={`${item.label}-${index}`}
+                className={`portal-attention-item portal-attention-${item.tone}`}
+              >
+                <span className="portal-attention-dot" />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="portal-card">
+          <div className="portal-section-header">
+            <div className="portal-section-title">Today's Overview</div>
+          </div>
+
+          <div className="portal-stats portal-stats-four">
+            <DashboardStat label="Active Jobs" value={dashboardStats.activeJobs} />
+            <DashboardStat label="Tickets" value={dashboardStats.ticketCount} />
+            <DashboardStat label="Delivered" value={formatCys(dashboardStats.deliveredTotal)} />
+            <DashboardStat label="Remaining" value={formatCys(dashboardStats.remainingTotal)} />
+          </div>
+        </section>
+
+        {showPasswordForm ? (
+          <section className="portal-card">
+            <div className="portal-section-title">Change Password</div>
+
+            <div className="portal-form-grid" style={{ marginTop: 16 }}>
+              <div>
+                <div className="portal-label">Current Password</div>
+                <input
+                  className="portal-input"
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, current_password: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <div className="portal-label">New Password</div>
+                <input
+                  className="portal-input"
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, new_password: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <div className="portal-label">Confirm New Password</div>
+                <input
+                  className="portal-input"
+                  type="password"
+                  value={passwordForm.confirm_password}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, confirm_password: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="customer-portal-actions" style={{ marginTop: 16 }}>
+              <button
+                className="portal-btn portal-btn-navy"
+                type="button"
+                onClick={changePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? "Saving..." : "Save New Password"}
+              </button>
+
+              <button
+                className="portal-btn portal-btn-light"
+                type="button"
+                onClick={() => setShowPasswordForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="portal-card">
+          <div className="portal-section-header">
+            <div>
+              <div className="portal-section-title">Project Center</div>
+              <div className="portal-meta">
+                Showing {filteredJobs.length} of {jobs.length} order(s)
+              </div>
+            </div>
+          </div>
+
+          <div className="portal-filter-bar">
+            <input
+              className="portal-input"
+              type="text"
+              value={orderSearch}
+              onChange={(e) => setOrderSearch(e.target.value)}
+              placeholder="Search by order #, address, or customer"
+            />
+
+            <select
+              className="portal-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Orders</option>
+              <option value="in_progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+
+            <button
+              className="portal-btn portal-btn-navy"
+              type="button"
+              onClick={() => {
+                setOrderSearch("");
+                setStatusFilter("all");
+              }}
+            >
+              Clear
+            </button>
+          </div>
+
+          {filteredJobs.length === 0 ? (
+            <div className="portal-empty" style={{ marginTop: 16 }}>
+              No matching orders found.
+            </div>
+          ) : (
+            <div className="project-card-grid">
+              {filteredJobs.map((job) => (
+                <ProjectCard
+                  key={job.job_portal_token || job.portal_job_key}
+                  job={job}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+============================================================
+FILE: .\src\App.jsx
+============================================================
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import TruckMap from "./components/TruckMap";
+import LoginPage from "./components/LoginPage";
+import AdminPage from "./components/AdminPage";
+import ETicketsPage from "./components/ETicketsPage";
+import ETicketPage from "./pages/ETicketPage";
+import CustomerJobPortal from "./pages/CustomerJobPortal";
+import CustomerLoginPage from "./pages/CustomerLoginPage";
+import CustomerDashboardPage from "./pages/CustomerDashboardPage";
+import { apiFetch } from "./lib/api";
+import "./index.css";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/eticket/:token" element={<ETicketPage />} />
+        <Route path="/customer/jobs/:jobToken" element={<CustomerJobPortal />} />
+        <Route path="/customer/live/:fieldToken" element={<CustomerJobPortal accessType="field" />} />
+        <Route path="/customer/login" element={<CustomerLoginPage />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
+        <Route path="/*" element={<ProtectedApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function ProtectedApp() {
+  const [auth, setAuth] = useState(() => {
+    const raw = localStorage.getItem("btc_admin_auth");
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("btc_active_tab") || "operations";
+  });
+  const [loading, setLoading] = useState(true);
+  const isMobile = window.innerWidth <= 768;
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+  });
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  useEffect(() => {
+    async function validate() {
+      if (!auth?.token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        await apiFetch("/admin/me", {
+          headers: { "X-Admin-Token": auth.token },
+        });
+      } catch {
+        localStorage.removeItem("btc_admin_auth");
+        setAuth(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validate();
+  }, [auth?.token]);
+
+  useEffect(() => {
+    localStorage.setItem("btc_active_tab", activeTab);
+  }, [activeTab]);
+
+  async function changePassword() {
+    setPasswordMessage("");
+    setPasswordError("");
+
+    try {
+      if (!passwordForm.current_password.trim()) {
+        throw new Error("Current password is required");
+      }
+
+      if (passwordForm.new_password.trim().length < 8) {
+        throw new Error("New password must be at least 8 characters");
+      }
+
+      await apiFetch("/admin/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": auth.token,
+        },
+        body: JSON.stringify(passwordForm),
+      });
+
+      setPasswordMessage("Password updated successfully");
+      setPasswordForm({ current_password: "", new_password: "" });
+      setShowPasswordForm(false);
+    } catch (err) {
+      setPasswordError(err.message || "Could not update password");
+    }
+  }
+
+  function handleLogin(nextAuth) {
+    localStorage.setItem("btc_admin_auth", JSON.stringify(nextAuth));
+    setAuth(nextAuth);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("btc_admin_auth");
+    setAuth(null);
+    localStorage.removeItem("btc_active_tab");
+    setActiveTab("operations");
+  }
+
+  if (loading) {
+    return <div className="full-screen-center">Loading...</div>;
+  }
+
+  if (!auth) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  return (
+    <div className="app-shell">
+      <div className="top-nav">
+        <div className="top-nav-left">
+          <div className="app-title">BTC</div>
+
+          {!isMobile ? (
+            <>
+              <button
+                className={`tab-btn ${activeTab === "operations" ? "active" : ""}`}
+                onClick={() => setActiveTab("operations")}
+              >
+                Operations
+              </button>
+
+              <button
+                className={`tab-btn ${activeTab === "admin" ? "active" : ""}`}
+                onClick={() => setActiveTab("admin")}
+              >
+                Admin
+              </button>
+            </>
+          ) : null}
+
+          <button
+            className={`tab-btn ${activeTab === "etickets" ? "active" : ""}`}
+            onClick={() => setActiveTab("etickets")}
+          >
+            eTickets
+          </button>
+        </div>
+
+        <div className="top-nav-right">
+          <span className="logged-in-as">{auth.admin?.name}</span>
+
+          <div className="admin-menu-wrap">
+            <button
+              className="admin-menu-button"
+              type="button"
+              onClick={() => setAdminMenuOpen((v) => !v)}
+              aria-label="Open admin menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+
+            {adminMenuOpen ? (
+              <div className="admin-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminMenuOpen(false);
+                    setShowPasswordForm((v) => !v);
+                  }}
+                >
+                  Change Password
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Log Out
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {showPasswordForm ? (
+        <div
+          style={{
+            background: "var(--panel)",
+            borderBottom: "1px solid var(--border)",
+            padding: 14,
+          }}
+        >
+          {passwordError ? (
+            <div style={{ color: "#fecaca", marginBottom: 10, fontWeight: 700 }}>
+              {passwordError}
+            </div>
+          ) : null}
+
+          {passwordMessage ? (
+            <div style={{ color: "#d1fae5", marginBottom: 10, fontWeight: 700 }}>
+              {passwordMessage}
+            </div>
+          ) : null}
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "1fr 1fr auto",
+              gap: 10,
+              alignItems: "end",
+            }}
+          >
+            <div>
+              <label>Current Password</label>
+              <input
+                type="password"
+                value={passwordForm.current_password}
+                onChange={(e) =>
+                  setPasswordForm((p) => ({
+                    ...p,
+                    current_password: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div>
+              <label>New Password</label>
+              <input
+                type="password"
+                value={passwordForm.new_password}
+                onChange={(e) =>
+                  setPasswordForm((p) => ({
+                    ...p,
+                    new_password: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <button className="primary-btn" type="button" onClick={changePassword}>
+              Save Password
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {isMobile ? (
+        <ETicketsPage token={auth.token} />
+      ) : activeTab === "operations" ? (
+        <TruckMap />
+      ) : activeTab === "admin" ? (
+        <AdminPage token={auth.token} />
+      ) : (
+        <ETicketsPage token={auth.token} />
+      )}
+    </div>
+  );
+}

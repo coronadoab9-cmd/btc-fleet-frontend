@@ -24,7 +24,6 @@ const UI_TEXT = {
     ticketNumber: "Ticket #",
     customer: "Customer",
     address: "Address",
-    jobInstructions: "Job Instructions",
     truck: "Truck",
     signedBy: "Signed By",
     acceptance: "Acceptance",
@@ -98,7 +97,6 @@ const UI_TEXT = {
     ticketNumber: "Ticket #",
     customer: "Cliente",
     address: "Dirección",
-    jobInstructions: "Instrucciones del trabajo",
     truck: "Camión",
     signedBy: "Firmado por",
     acceptance: "Aceptación",
@@ -207,6 +205,15 @@ function drawPremiumStroke(canvas, from, to) {
   ctx.stroke();
 }
 
+function drawSignatureDot(canvas, point) {
+  if (!canvas || !point) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, 0.7, 0, Math.PI * 2);
+  ctx.fill();
+}
 
 function formatSlump(value) {
   const raw = String(value || "").trim();
@@ -350,14 +357,11 @@ function parseMixDetails(ticket = {}) {
       "-"
     ),
 
-    airContent: String(
+    airContent:
       ticket?.air_content ||
       ticket?.air ||
       ticket?.air_target ||
-      "1.5% \u00B1 1.5%"
-    )
-      .replace(/\u00C3\u0082\u00C2\u00B1/g, "\u00B1")
-      .replace(/\u00C2\u00B1/g, "\u00B1"),
+      "1.5% ± 1.5%",
   };
 }
 
@@ -915,6 +919,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     const ctx = canvas.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(pt.x, pt.y);
+    drawSignatureDot(canvas, pt);
   }
 
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
@@ -1038,6 +1043,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         const ctx = canvas.getContext("2d");
         ctx.beginPath();
         ctx.moveTo(pt.x, pt.y);
+        drawSignatureDot(canvas, pt);
       }
 
       function move(e) {
@@ -1657,50 +1663,6 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
               <SummaryRow label={t("ticketNumber")} value={ticket.ticket_number} />
               <SummaryRow label={t("customer")} value={ticket.customer_name} />
               <SummaryRow label={t("address")} value={ticket.address} />
-
-              {String(ticket?.driver_instructions || "").trim() && (
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: isPhone ? "18px 16px" : "20px 24px",
-                    background: "#163B5C",
-                    border: "1px solid #4380AA",
-                    borderRadius: 14,
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.20)",
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "#B8D9F0",
-                      fontSize: isPhone ? 16 : 18,
-                      fontWeight: 900,
-                      marginBottom: 10,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.6,
-                      textAlign: "center",
-                    }}
-                  >
-                    {t("jobInstructions")}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#F1F6FA",
-                      fontSize: isPhone ? 17 : 19,
-                      fontWeight: 750,
-                      lineHeight: 1.55,
-                      textAlign: "center",
-                      whiteSpace: "pre-line",
-                      overflowWrap: "anywhere",
-                      maxWidth: 760,
-                      margin: "0 auto",
-                    }}
-                  >
-                    {ticket.driver_instructions}
-                  </div>
-                </div>
-              )}
 
               <div
                 style={{

@@ -207,6 +207,15 @@ function drawPremiumStroke(canvas, from, to) {
   ctx.stroke();
 }
 
+function drawSignatureDot(canvas, point) {
+  if (!canvas || !point) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, 0.7, 0, Math.PI * 2);
+  ctx.fill();
+}
 
 function formatSlump(value) {
   const raw = String(value || "").trim();
@@ -350,14 +359,11 @@ function parseMixDetails(ticket = {}) {
       "-"
     ),
 
-    airContent: String(
+    airContent:
       ticket?.air_content ||
       ticket?.air ||
       ticket?.air_target ||
-      "1.5% \u00B1 1.5%"
-    )
-      .replace(/\u00C3\u0082\u00C2\u00B1/g, "\u00B1")
-      .replace(/\u00C2\u00B1/g, "\u00B1"),
+      "1.5% ± 1.5%",
   };
 }
 
@@ -915,6 +921,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
     const ctx = canvas.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(pt.x, pt.y);
+    drawSignatureDot(canvas, pt);
   }
 
   function moveSignature(event, canvasRef, drawingRef, lastPointRef, setDrawn) {
@@ -1038,6 +1045,7 @@ function setupCanvas(canvas, bg = "#0b1a2b", existingDataUrl = "") {
         const ctx = canvas.getContext("2d");
         ctx.beginPath();
         ctx.moveTo(pt.x, pt.y);
+        drawSignatureDot(canvas, pt);
       }
 
       function move(e) {
