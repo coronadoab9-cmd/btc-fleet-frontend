@@ -1414,7 +1414,7 @@ select {
 }
 
 /* =========================================================
-   CUSTOMER JOB PORTAL — MOBILE PROJECT VIEW FIX
+   CUSTOMER JOB PORTAL - MOBILE PROJECT VIEW FIX
    Keeps desktop unchanged
    ========================================================= */
 
@@ -1591,7 +1591,7 @@ select {
     border: 0 !important;
   }
 
-  /* Ticket Activity — turn desktop table rows into mobile cards */
+  /* Ticket Activity - turn desktop table rows into mobile cards */
   .portal-table-wrap {
     width: 100% !important;
     max-width: 100% !important;
@@ -1709,7 +1709,7 @@ select {
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--portal-navy, #163a5f);
+  color: #dbeafe;
   font: inherit;
   font-weight: 800;
   text-decoration: underline;
