@@ -155,8 +155,8 @@ function buildActivityItems(tickets) {
     .slice(0, 8)
     .map((ticket) => ({
       id: ticket.id || ticket.ticket_number,
-      title: `${getCustomerTicketStatus(ticket)} ? Truck ${ticket.truck_number || "-"}`,
-      meta: `Ticket #${ticket.ticket_number || "-"} ? ${formatCys(ticket.quantity)} ? ${formatLoadTime(ticket.load_time)}`,
+      title: `${getCustomerTicketStatus(ticket)} | Truck ${ticket.truck_number || "-"}`,
+      meta: `Ticket #${ticket.ticket_number || "-"} | ${formatCys(ticket.quantity)} | ${formatLoadTime(ticket.load_time)}`,
     }));
 }
 
@@ -185,7 +185,28 @@ export default function CustomerJobPortal({ accessType = "job" }) {
         ? `/api/customer/live/${portalToken}`
         : `/api/customer/jobs/${portalToken}`;
 
-      const result = await apiFetch(endpoint);
+      let options = {};
+      if (!isFieldAccess) {
+        let auth = null;
+        try {
+          auth = JSON.parse(localStorage.getItem("btc_customer_auth") || "null");
+        } catch {
+          auth = null;
+        }
+
+        if (!auth?.token) {
+          window.location.href = "/customer/login";
+          return;
+        }
+
+        options = {
+          headers: {
+            "X-Customer-Token": auth.token,
+          },
+        };
+      }
+
+      const result = await apiFetch(endpoint, options);
       setData(result);
 
       if (!silent) {
@@ -321,7 +342,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               {job.address || `Order #${job.order_number || "-"}`}
             </h1>
             <div className="portal-meta">
-              {job.customer_name || "-"} � Order #{job.order_number || "-"}
+              {job.customer_name || "-"} | Order #{job.order_number || "-"}
               {accessExpiration ? (
                 <div className="portal-expire-note">
                   This field link expires {new Date(accessExpiration).toLocaleString()}.

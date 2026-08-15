@@ -76,6 +76,17 @@ export default function CustomerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [companyUsers, setCompanyUsers] = useState([]);
+  const [loadingCompanyUsers, setLoadingCompanyUsers] = useState(false);
+  const [savingCompanyUser, setSavingCompanyUser] = useState(false);
+  const [userForm, setUserForm] = useState({
+    display_name: "",
+    email: "",
+    role: "job_site",
+    job_portal_tokens: [],
+  });
+
   async function loadDashboard() {
     setError("");
     setLoading(true);
@@ -92,8 +103,7 @@ export default function CustomerDashboardPage() {
         },
       });
 
-      setData(result);
-    } catch (err) {
+      setData(result);    } catch (err) {
       localStorage.removeItem("btc_customer_auth");
       setAuth(null);
       setError(err.message || "Could not load dashboard.");
@@ -106,6 +116,15 @@ export default function CustomerDashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (
+      showUserManagement &&
+      String(data?.customer?.role || "").toLowerCase() === "company_admin"
+    ) {
+      loadCompanyUsers();
+    }
+  }, [showUserManagement]);
 
   async function changePassword() {
     setChangingPassword(true);
@@ -150,6 +169,180 @@ export default function CustomerDashboardPage() {
     }
   }
 
+  function customerAuthHeaders() {
+    const savedAuth = getCustomerAuth();
+    if (!savedAuth?.token) {
+      throw new Error("Please log in again.");
+    }
+
+    return {
+      "Content-Type": "application/json",
+      "X-Customer-Token": savedAuth.token,
+    };
+  }
+
+  async function loadCompanyUsers() {
+    setLoadingCompanyUsers(true);
+    setError("");
+
+    try {
+      const savedAuth = getCustomerAuth();
+      if (!savedAuth?.token) throw new Error("Please log in again.");
+
+      const result = await apiFetch("/api/customer/company/users", {
+        headers: {
+          "X-Customer-Token": savedAuth.token,
+        },
+      });
+
+      setCompanyUsers(result.users || []);
+    } catch (err) {
+      setError(err.message || "Could not load company users.");
+    } finally {
+      setLoadingCompanyUsers(false);
+    }
+  }
+
+  function toggleNewUserJob(jobToken) {
+    setUserForm((prev) => {
+      const current = new Set(prev.job_portal_tokens || []);
+      if (current.has(jobToken)) {
+        current.delete(jobToken);
+      } else {
+        current.add(jobToken);
+      }
+      return {
+        ...prev,
+        job_portal_tokens: Array.from(current),
+      };
+    });
+  }
+
+  async function createCompanyUser() {
+    setSavingCompanyUser(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const displayName = userForm.display_name.trim();
+      const email = userForm.email.trim().toLowerCase();
+      const role = userForm.role;
+
+      if (!displayName) throw new Error("User name is required.");
+      if (!email || !email.includes("@")) throw new Error("Valid company email is required.");
+      if (role === "job_site" && userForm.job_portal_tokens.length === 0) {
+        throw new Error("Assign at least one project to a job site user.");
+      }
+
+      const result = await apiFetch("/api/customer/company/users", {
+        method: "POST",
+        headers: customerAuthHeaders(),
+        body: JSON.stringify({
+          display_name: displayName,
+          email,
+          role,
+          job_portal_tokens:
+            role === "job_site" ? userForm.job_portal_tokens : [],
+        }),
+      });
+
+      setUserForm({
+        display_name: "",
+        email: "",
+        role: "job_site",
+        job_portal_tokens: [],
+      });
+
+      setMessage(
+        result.email_sent
+          ? `Account created for ${email}. A secure password setup email was sent.`
+          : `Account created for ${email}, but the setup email could not be sent. Use Send Password Reset to try again.`
+      );
+
+      await loadCompanyUsers();
+    } catch (err) {
+      setError(err.message || "Could not create company user.");
+    } finally {
+      setSavingCompanyUser(false);
+    }
+  }
+
+  function updateCompanyUserLocal(userId, patch) {
+    setCompanyUsers((prev) =>
+      prev.map((user) =>
+        Number(user.id) === Number(userId)
+          ? { ...user, ...patch }
+          : user
+      )
+    );
+  }
+
+  function toggleExistingUserJob(userId, jobToken) {
+    setCompanyUsers((prev) =>
+      prev.map((user) => {
+        if (Number(user.id) !== Number(userId)) return user;
+
+        const current = new Set(user.job_portal_tokens || []);
+        if (current.has(jobToken)) {
+          current.delete(jobToken);
+        } else {
+          current.add(jobToken);
+        }
+
+        return {
+          ...user,
+          job_portal_tokens: Array.from(current),
+        };
+      })
+    );
+  }
+
+  async function saveCompanyUser(user) {
+    setSavingCompanyUser(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiFetch(`/api/customer/company/users/${user.id}`, {
+        method: "PUT",
+        headers: customerAuthHeaders(),
+        body: JSON.stringify({
+          display_name: user.display_name,
+          role: user.role,
+          active: Boolean(user.active),
+          job_portal_tokens:
+            user.role === "job_site" ? user.job_portal_tokens || [] : [],
+        }),
+      });
+
+      setMessage(`Saved access for ${user.email}.`);
+      await loadCompanyUsers();
+    } catch (err) {
+      setError(err.message || "Could not update company user.");
+    } finally {
+      setSavingCompanyUser(false);
+    }
+  }
+
+  async function sendCompanyUserPasswordReset(user) {
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await apiFetch(
+        `/api/customer/company/users/${user.id}/send-password-reset`,
+        {
+          method: "POST",
+          headers: customerAuthHeaders(),
+        }
+      );
+
+      setMessage(result.message || `Password reset email sent to ${user.email}.`);
+    } catch (err) {
+      setError(err.message || "Could not send password reset email.");
+    }
+  }
+
   function logout() {
     localStorage.removeItem("btc_customer_auth");
     window.location.href = "/customer/login";
@@ -157,6 +350,9 @@ export default function CustomerDashboardPage() {
 
   const customer = data?.customer || auth?.customer || {};
   const jobs = data?.jobs || [];
+  const isCompanyAdmin =
+    String(customer.role || "").toLowerCase() === "company_admin";
+  const allowedDomain = String(customer.allowed_email_domain || "").trim().toLowerCase();
 
   const dashboardStats = useMemo(() => {
     const activeJobs = jobs.filter(
@@ -264,7 +460,8 @@ export default function CustomerDashboardPage() {
         <div>
           <div className="customer-portal-brand">BTC Customer Portal</div>
           <div className="customer-portal-subtitle">
-            {customer.customer_name || "Customer"} dashboard
+            {customer.company_name || customer.customer_name || "Customer"} |{" "}
+            {isCompanyAdmin ? "Company Admin" : "Job Site Access"}
           </div>
         </div>
 
@@ -291,6 +488,18 @@ export default function CustomerDashboardPage() {
               >
                 Refresh
               </button>
+
+              {isCompanyAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowUserManagement((v) => !v);
+                  }}
+                >
+                  Manage Users
+                </button>
+              ) : null}
 
               <button
                 type="button"
@@ -330,11 +539,13 @@ export default function CustomerDashboardPage() {
             <h1 className="portal-title">
               Welcome back,
               <br />
-              {customer.customer_name || "Customer"}
+              {customer.display_name || customer.customer_name || "Customer"}
             </h1>
 
             <div className="portal-meta portal-hero-copy">
-              Track deliveries, download signed tickets, and monitor every active concrete project.
+              {isCompanyAdmin
+                ? "Track deliveries, download signed tickets, manage users, and monitor every company project."
+                : "View the assigned job, current delivery activity, and eTickets available to your account."}
             </div>
           </div>
 
@@ -455,6 +666,305 @@ export default function CustomerDashboardPage() {
               >
                 Cancel
               </button>
+            </div>
+          </section>
+        ) : null}
+
+        {isCompanyAdmin && showUserManagement ? (
+          <section className="portal-card portal-user-management">
+            <div className="portal-section-header">
+              <div>
+                <div className="portal-section-title">Company Users</div>
+                <div className="portal-meta">
+                  Add as many company users as needed. Company admins can see every project.
+                  Job site users only see the projects you assign to them.
+                </div>
+              </div>
+            </div>
+
+            <div className="portal-domain-banner">
+              <strong>Company email domain:</strong>{" "}
+              {allowedDomain ? `@${allowedDomain}` : "Not configured"}
+            </div>
+
+            {!allowedDomain ? (
+              <div className="portal-alert portal-alert-error" style={{ marginTop: 12 }}>
+                A company email domain must be configured before additional users can be created.
+                Contact BTC Fleet support to set the approved company domain.
+              </div>
+            ) : null}
+
+            <div className="portal-user-create">
+              <div className="portal-section-title portal-section-title-small">
+                Add User
+              </div>
+
+              <div className="portal-form-grid" style={{ marginTop: 14 }}>
+                <div>
+                  <div className="portal-label">Name</div>
+                  <input
+                    className="portal-input"
+                    type="text"
+                    value={userForm.display_name}
+                    onChange={(e) =>
+                      setUserForm((prev) => ({
+                        ...prev,
+                        display_name: e.target.value,
+                      }))
+                    }
+                    placeholder="Employee name"
+                  />
+                </div>
+
+                <div>
+                  <div className="portal-label">Company Email</div>
+                  <input
+                    className="portal-input"
+                    type="email"
+                    value={userForm.email}
+                    onChange={(e) =>
+                      setUserForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder={allowedDomain ? `name@${allowedDomain}` : "name@company.com"}
+                  />
+                </div>
+
+                <div>
+                  <div className="portal-label">Access Level</div>
+                  <select
+                    className="portal-input"
+                    value={userForm.role}
+                    onChange={(e) =>
+                      setUserForm((prev) => ({
+                        ...prev,
+                        role: e.target.value,
+                        job_portal_tokens:
+                          e.target.value === "company_admin"
+                            ? []
+                            : prev.job_portal_tokens,
+                      }))
+                    }
+                  >
+                    <option value="job_site">Job Site User</option>
+                    <option value="company_admin">Company Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              {userForm.role === "job_site" ? (
+                <div className="portal-job-access-box">
+                  <div className="portal-label">Assigned Projects / Orders</div>
+                  <div className="portal-meta" style={{ marginBottom: 10 }}>
+                    This user will only see the selections below.
+                  </div>
+
+                  {jobs.length === 0 ? (
+                    <div className="portal-empty">No company projects are available yet.</div>
+                  ) : (
+                    <div className="portal-job-access-grid">
+                      {jobs.map((job) => {
+                        const token = job.job_portal_token;
+                        const checked = userForm.job_portal_tokens.includes(token);
+                        return (
+                          <label
+                            key={`new-${token}`}
+                            className={`portal-job-access-option ${
+                              checked ? "portal-job-access-option-selected" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleNewUserJob(token)}
+                            />
+                            <span>
+                              <strong>
+                                {job.project_name || job.address || "Project"}
+                              </strong>
+                              <small>
+                                Order #{job.order_number || "-"} | {job.address || "-"}
+                              </small>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="portal-access-note">
+                  Company Admin access includes every current and historical company project,
+                  ticket, and portal file.
+                </div>
+              )}
+
+              <button
+                className="portal-btn portal-btn-navy"
+                type="button"
+                style={{ marginTop: 14 }}
+                disabled={savingCompanyUser || !allowedDomain}
+                onClick={createCompanyUser}
+              >
+                {savingCompanyUser ? "Creating..." : "Create User & Send Setup Email"}
+              </button>
+            </div>
+
+            <div className="portal-user-list">
+              <div className="portal-section-header" style={{ marginTop: 24 }}>
+                <div>
+                  <div className="portal-section-title portal-section-title-small">
+                    Existing Users
+                  </div>
+                  <div className="portal-meta">
+                    {loadingCompanyUsers
+                      ? "Loading users..."
+                      : `${companyUsers.length} user${companyUsers.length === 1 ? "" : "s"}`}
+                  </div>
+                </div>
+              </div>
+
+              {!loadingCompanyUsers && companyUsers.length === 0 ? (
+                <div className="portal-empty">No company users found.</div>
+              ) : null}
+
+              <div className="portal-user-card-grid">
+                {companyUsers.map((user) => {
+                  const isSelf = Number(user.id) === Number(customer.id);
+
+                  return (
+                    <div className="portal-user-card" key={user.id}>
+                      <div className="portal-user-card-top">
+                        <div>
+                          <div className="portal-user-name">
+                            {user.display_name || user.email}
+                            {isSelf ? " (You)" : ""}
+                          </div>
+                          <div className="portal-meta">{user.email}</div>
+                        </div>
+
+                        <span
+                          className={
+                            user.active
+                              ? "portal-status-pill portal-status-delivered"
+                              : "portal-status-pill portal-status-rejected"
+                          }
+                        >
+                          {user.active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+
+                      <div className="portal-form-grid" style={{ marginTop: 14 }}>
+                        <div>
+                          <div className="portal-label">Name</div>
+                          <input
+                            className="portal-input"
+                            type="text"
+                            value={user.display_name || ""}
+                            onChange={(e) =>
+                              updateCompanyUserLocal(user.id, {
+                                display_name: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <div className="portal-label">Access Level</div>
+                          <select
+                            className="portal-input"
+                            value={user.role || "job_site"}
+                            disabled={isSelf}
+                            onChange={(e) =>
+                              updateCompanyUserLocal(user.id, {
+                                role: e.target.value,
+                                job_portal_tokens:
+                                  e.target.value === "company_admin"
+                                    ? []
+                                    : user.job_portal_tokens || [],
+                              })
+                            }
+                          >
+                            <option value="job_site">Job Site User</option>
+                            <option value="company_admin">Company Admin</option>
+                          </select>
+                        </div>
+
+                        <label className="portal-active-toggle">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(user.active)}
+                            disabled={isSelf}
+                            onChange={(e) =>
+                              updateCompanyUserLocal(user.id, {
+                                active: e.target.checked,
+                              })
+                            }
+                          />
+                          <span>Account Active</span>
+                        </label>
+                      </div>
+
+                      {user.role === "job_site" ? (
+                        <div className="portal-job-access-box">
+                          <div className="portal-label">Project Access</div>
+                          <div className="portal-job-access-grid">
+                            {jobs.map((job) => {
+                              const token = job.job_portal_token;
+                              const checked = (user.job_portal_tokens || []).includes(token);
+                              return (
+                                <label
+                                  key={`${user.id}-${token}`}
+                                  className={`portal-job-access-option ${
+                                    checked ? "portal-job-access-option-selected" : ""
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleExistingUserJob(user.id, token)}
+                                  />
+                                  <span>
+                                    <strong>
+                                      {job.project_name || job.address || "Project"}
+                                    </strong>
+                                    <small>Order #{job.order_number || "-"}</small>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="portal-access-note">
+                          Full company access to all projects and portal files.
+                        </div>
+                      )}
+
+                      <div className="customer-portal-actions" style={{ marginTop: 14 }}>
+                        <button
+                          className="portal-btn portal-btn-navy"
+                          type="button"
+                          disabled={savingCompanyUser}
+                          onClick={() => saveCompanyUser(user)}
+                        >
+                          Save User
+                        </button>
+
+                        <button
+                          className="portal-btn portal-btn-light"
+                          type="button"
+                          onClick={() => sendCompanyUserPasswordReset(user)}
+                        >
+                          Send Password Reset
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </section>
         ) : null}

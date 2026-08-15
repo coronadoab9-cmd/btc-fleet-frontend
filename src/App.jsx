@@ -9,6 +9,7 @@ import ETicketPage from "./pages/ETicketPage";
 import CustomerJobPortal from "./pages/CustomerJobPortal";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerDashboardPage from "./pages/CustomerDashboardPage";
+import CustomerResetPasswordPage from "./pages/CustomerResetPasswordPage";
 import { apiFetch } from "./lib/api";
 import "./index.css";
 
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/customer/jobs/:jobToken" element={<CustomerJobPortal />} />
         <Route path="/customer/live/:fieldToken" element={<CustomerJobPortal accessType="field" />} />
         <Route path="/customer/login" element={<CustomerLoginPage />} />
+        <Route path="/customer/reset-password" element={<CustomerResetPasswordPage />} />
         <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
         <Route path="/*" element={<ProtectedApp />} />
       </Routes>

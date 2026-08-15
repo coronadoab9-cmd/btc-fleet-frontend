@@ -1700,3 +1700,159 @@ select {
     grid-column: 1 / -1 !important;
   }
 }
+
+/* =========================================================
+   Customer account management
+   ========================================================= */
+
+.portal-login-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--portal-navy, #163a5f);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.portal-domain-banner {
+  margin-top: 16px;
+  border: 1px solid var(--portal-border);
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--portal-text);
+}
+
+.portal-user-create {
+  margin-top: 18px;
+  border: 1px solid var(--portal-border);
+  border-radius: 14px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.portal-section-title-small {
+  font-size: 18px;
+}
+
+.portal-job-access-box {
+  margin-top: 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.portal-job-access-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.portal-job-access-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.portal-job-access-option-selected {
+  border-color: #163a5f;
+  box-shadow: 0 0 0 1px rgba(22, 58, 95, 0.12);
+}
+
+.portal-job-access-option input {
+  margin-top: 3px;
+}
+
+.portal-job-access-option span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.portal-job-access-option strong,
+.portal-job-access-option small {
+  overflow-wrap: anywhere;
+}
+
+.portal-job-access-option small {
+  color: var(--portal-muted);
+}
+
+.portal-access-note {
+  margin-top: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 11px 12px;
+  color: var(--portal-muted);
+  font-weight: 700;
+}
+
+.portal-user-list {
+  margin-top: 4px;
+}
+
+.portal-user-card-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.portal-user-card {
+  border: 1px solid var(--portal-border);
+  border-radius: 14px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.portal-user-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.portal-user-name {
+  color: var(--portal-text);
+  font-size: 17px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.portal-active-toggle {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 46px;
+  font-weight: 800;
+  color: var(--portal-text);
+}
+
+.portal-active-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 700px) {
+  .portal-user-card-top {
+    display: grid;
+  }
+
+  .portal-user-create,
+  .portal-user-card {
+    padding: 14px;
+  }
+
+  .portal-job-access-option {
+    padding: 10px;
+  }
+}
