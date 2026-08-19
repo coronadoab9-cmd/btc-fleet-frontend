@@ -10,6 +10,7 @@ import CustomerJobPortal from "./pages/CustomerJobPortal";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerDashboardPage from "./pages/CustomerDashboardPage";
 import CustomerResetPasswordPage from "./pages/CustomerResetPasswordPage";
+import DeliveryTermsPage from "./pages/DeliveryTermsPage";
 import { apiFetch } from "./lib/api";
 import "./index.css";
 
@@ -23,6 +24,8 @@ export default function App() {
         <Route path="/customer/login" element={<CustomerLoginPage />} />
         <Route path="/customer/reset-password" element={<CustomerResetPasswordPage />} />
         <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
+        <Route path="/terms" element={<DeliveryTermsPage />} />
+        <Route path="/terms/delivery/:version" element={<DeliveryTermsPage />} />
         <Route path="/*" element={<ProtectedApp />} />
       </Routes>
     </BrowserRouter>

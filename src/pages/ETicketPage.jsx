@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, buildEticketPdfUrl } from "../lib/api";
 
-const API_QR_TERMS = "https://btcfleet.app/qr/terms";
+const API_QR_TERMS = "https://app.btcfleet.app/terms/delivery/2026-08-field-test";
 const CENTRAL_TZ = "America/Chicago";
 
 

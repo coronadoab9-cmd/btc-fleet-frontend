@@ -362,6 +362,43 @@ export default function ETicketsPage({ token }) {
   }
 
 
+  async function openVerificationPhoto(ticket) {
+    setError("");
+    setMessage("");
+
+    try {
+      const res = await fetch(
+        `${getApiBase()}/admin/etickets/${ticket.id}/verification-photo`,
+        {
+          headers: {
+            "X-Admin-Token": token,
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Could not load verification photo");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const popup = window.open(url, "_blank", "noopener,noreferrer");
+
+      if (!popup) {
+        window.URL.revokeObjectURL(url);
+        throw new Error("Browser blocked the verification photo window");
+      }
+
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 60000);
+    } catch (err) {
+      setError(err.message || "Could not load verification photo");
+    }
+  }
+
   async function generateFieldLink(ticket) {
     setError("");
     setMessage("");
@@ -1085,6 +1122,16 @@ export default function ETicketsPage({ token }) {
                   {selectedTicket.status === "signed" ? (
                     <button style={styles.secondaryButton} onClick={() => window.open(buildEticketPdfUrl(selectedTicket.token), "_blank")}>
                       Open Signed PDF
+                    </button>
+                  ) : null}
+
+                  {selectedTicket.has_verification_photo ? (
+                    <button
+                      style={styles.secondaryButton}
+                      type="button"
+                      onClick={() => openVerificationPhoto(selectedTicket)}
+                    >
+                      View Verification Photo
                     </button>
                   ) : null}
                   {eticketTab === "archived" ? (
