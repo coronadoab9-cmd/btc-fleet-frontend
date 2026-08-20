@@ -86,6 +86,10 @@ export default function ETicketsPage({ token }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [generatingFieldLink, setGeneratingFieldLink] = useState(false);
+  const [fieldAccess, setFieldAccess] = useState(null);
+  const [fieldAccessLoading, setFieldAccessLoading] = useState(false);
+  const [fieldSmsSending, setFieldSmsSending] = useState(false);
+  const [fieldContactRefreshing, setFieldContactRefreshing] = useState(false);
   const [selectedArchivedIds, setSelectedArchivedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [reassignOptions, setReassignOptions] = useState({
@@ -226,6 +230,15 @@ export default function ETicketsPage({ token }) {
       setSelectedToken(filteredTickets[0].token);
     }
   }, [filteredTickets, selectedToken]);
+
+  useEffect(() => {
+    if (!selectedTicket?.job_portal_token) {
+      setFieldAccess(null);
+      return;
+    }
+
+    loadFieldAccess(selectedTicket);
+  }, [selectedTicket?.job_portal_token, selectedTicket?.id, token]);
 
 
   function formatDateOnly(value) {
@@ -399,6 +412,94 @@ export default function ETicketsPage({ token }) {
     }
   }
 
+  async function loadFieldAccess(ticket, refreshContact = false) {
+    if (!ticket?.job_portal_token) {
+      setFieldAccess(null);
+      return;
+    }
+
+    if (refreshContact) {
+      setFieldContactRefreshing(true);
+    } else {
+      setFieldAccess(null);
+      setFieldAccessLoading(true);
+    }
+
+    try {
+      const ticketQuery = `?ticket_number=${encodeURIComponent(ticket.ticket_number || "")}`;
+      const endpoint = refreshContact
+        ? `/admin/customer/jobs/${ticket.job_portal_token}/field-access/refresh-contact${ticketQuery}`
+        : `/admin/customer/jobs/${ticket.job_portal_token}/field-access${ticketQuery}`;
+
+      const data = await apiFetch(endpoint, {
+        method: refreshContact ? "POST" : "GET",
+        headers: { "X-Admin-Token": token },
+      });
+
+      setFieldAccess(data || null);
+      if (refreshContact) {
+        setMessage(
+          data?.contact?.phone_available
+            ? "Sysdyne jobsite contact refreshed"
+            : "Sysdyne contact refreshed, but no valid phone is available"
+        );
+      }
+    } catch (err) {
+      if (refreshContact) {
+        setError(err.message || "Could not refresh Sysdyne contact");
+      }
+    } finally {
+      setFieldAccessLoading(false);
+      setFieldContactRefreshing(false);
+    }
+  }
+
+  async function sendFieldSms(ticket, force = false) {
+    if (!ticket?.job_portal_token) return;
+
+    if (force) {
+      const confirmed = window.confirm(
+        "Send another 48-hour field-access text to this jobsite contact?"
+      );
+      if (!confirmed) return;
+    }
+
+    setError("");
+    setMessage("");
+    setFieldSmsSending(true);
+
+    try {
+      const data = await apiFetch(
+        `/admin/customer/jobs/${ticket.job_portal_token}/field-sms?ticket_number=${encodeURIComponent(ticket.ticket_number || "")}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Token": token,
+          },
+          body: JSON.stringify({ force }),
+        }
+      );
+
+      if (data?.dry_run && data?.field_url) {
+        await navigator.clipboard.writeText(data.field_url);
+        setMessage(
+          "Twilio dry run passed. No text was sent; the 48-hour test link was copied."
+        );
+      } else if (data?.already_sent) {
+        setMessage("This order/contact has already received its field-access text.");
+      } else {
+        setMessage(`Field-access text submitted. Status: ${data?.status || "queued"}`);
+      }
+
+      await loadFieldAccess(ticket);
+    } catch (err) {
+      setError(err.message || "Could not send field-access text");
+    } finally {
+      setFieldSmsSending(false);
+    }
+  }
+
   async function generateFieldLink(ticket) {
     setError("");
     setMessage("");
@@ -411,13 +512,13 @@ export default function ETicketsPage({ token }) {
     setGeneratingFieldLink(true);
 
     try {
-      const data = await apiFetch(`/admin/customer/jobs/${ticket.job_portal_token}/field-link`, {
+      const data = await apiFetch(`/admin/customer/jobs/${ticket.job_portal_token}/field-link?ticket_number=${encodeURIComponent(ticket.ticket_number || "")}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Token": token,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ expires_hours: 48 }),
       });
 
       if (!data?.field_url) {
@@ -425,7 +526,8 @@ export default function ETicketsPage({ token }) {
       }
 
       await navigator.clipboard.writeText(data.field_url);
-      setMessage(`Field operations link copied. Expires: ${new Date(data.expires_at).toLocaleString()}`);
+      setMessage(`48-hour field link copied. Expires: ${new Date(data.expires_at).toLocaleString()}`);
+      await loadFieldAccess(ticket);
     } catch (err) {
       setError(err.message || "Could not generate field operations link");
     } finally {
@@ -1086,6 +1188,117 @@ export default function ETicketsPage({ token }) {
 
                 <InfoWide label="Weather Summary" value={selectedTicket.weather_summary || "-"} />
 
+                {selectedTicket.job_portal_token ? (
+                  <div style={styles.fieldAccessCard}>
+                    <div style={styles.fieldAccessHeader}>
+                      <div>
+                        <div style={styles.fieldAccessKicker}>FIELD ACCESS</div>
+                        <div style={styles.fieldAccessTitle}>48-Hour Jobsite Link + SMS</div>
+                      </div>
+                      <div style={styles.fieldAccessMode}>
+                        {fieldAccess?.settings?.test_override_active
+                          ? "TEST OVERRIDE ACTIVE"
+                          : fieldAccess?.settings?.twilio_dry_run
+                          ? "TWILIO DRY RUN"
+                          : !fieldAccess?.settings?.production_send_enabled
+                          ? "REAL SMS LOCKED"
+                          : fieldAccess?.settings?.twilio_configured
+                          ? "TWILIO READY"
+                          : "TWILIO NOT CONFIGURED"}
+                      </div>
+                    </div>
+
+                    {fieldAccessLoading && !fieldAccess ? (
+                      <div style={styles.fieldAccessMuted}>Loading Sysdyne field contact...</div>
+                    ) : (
+                      <>
+                        <div style={styles.fieldAccessGrid}>
+                          <Info
+                            label="Jobsite Contact"
+                            value={fieldAccess?.contact?.name || "Not entered in Sysdyne"}
+                          />
+                          <Info
+                            label="Phone"
+                            value={fieldAccess?.contact?.phone || "No phone available"}
+                          />
+                          <Info
+                            label="Order #"
+                            value={fieldAccess?.order_number || selectedTicket.job_number || "-"}
+                          />
+                          <Info
+                            label="Text Status"
+                            value={
+                              fieldAccess?.sms?.status
+                                ? `${String(fieldAccess.sms.status).replaceAll("_", " ")} (${fieldAccess.sms.send_mode || ""})`
+                                : "Not sent"
+                            }
+                          />
+                        </div>
+
+                        {fieldAccess?.settings?.test_override_active ? (
+                          <div style={styles.fieldAccessTestBanner}>
+                            TEST MODE: Sysdyne contact data is still shown above, but every SMS is redirected to {fieldAccess.settings.test_override_phone}. The real customer will not be texted.
+                          </div>
+                        ) : null}
+
+                        <div style={styles.fieldAccessNote}>
+                          {fieldAccess?.contact?.phone_available
+                            ? fieldAccess?.settings?.production_send_enabled
+                              ? "BTCFleet can send this contact one secure link for this order. The link expires 48 hours after creation."
+                              : "Real customer SMS is locked. Use the test override for field testing; production customer sending requires a separate explicit go-live setting."
+                            : "No valid Ordered By phone is available. You can still create and copy a 48-hour field link manually."}
+                        </div>
+
+                        <div style={styles.actionRow}>
+                          <button
+                            style={styles.primaryButton}
+                            type="button"
+                            disabled={generatingFieldLink}
+                            onClick={() => generateFieldLink(selectedTicket)}
+                          >
+                            {generatingFieldLink ? "Generating..." : "Create 48-Hour Link"}
+                          </button>
+
+                          <button
+                            style={styles.secondaryButton}
+                            type="button"
+                            disabled={fieldContactRefreshing}
+                            onClick={() => loadFieldAccess(selectedTicket, true)}
+                          >
+                            {fieldContactRefreshing ? "Refreshing..." : "Refresh Contact"}
+                          </button>
+
+                          {fieldAccess?.contact?.phone_available ? (
+                            <button
+                              style={styles.primaryButton}
+                              type="button"
+                              disabled={fieldSmsSending}
+                              onClick={() =>
+                                sendFieldSms(
+                                  selectedTicket,
+                                  Boolean(
+                                    fieldAccess?.sms &&
+                                      fieldAccess.sms.send_mode !== "dry_run" &&
+                                      !["failed", "undelivered"].includes(
+                                        String(fieldAccess.sms.status || "").toLowerCase()
+                                      )
+                                  )
+                                )
+                              }
+                            >
+                              {fieldSmsSending
+                                ? "Sending..."
+                                : fieldAccess?.sms && fieldAccess.sms.send_mode !== "dry_run"
+                                ? "Resend Field Text"
+                                : "Send Field Text"}
+                            </button>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : null}
+
                 <div style={styles.actionRow}>
                   <button style={styles.primaryButton} onClick={() => window.open(buildEticketUrl(selectedTicket.token), "_blank")}>
                     Open eTicket
@@ -1097,20 +1310,11 @@ export default function ETicketsPage({ token }) {
                   {selectedTicket.job_portal_token ? (
                     <>
                       <button
-                        style={styles.primaryButton}
-                        type="button"
-                        disabled={generatingFieldLink}
-                        onClick={() => generateFieldLink(selectedTicket)}
-                      >
-                        {generatingFieldLink ? "Generating..." : "Generate Field Link"}
-                      </button>
-
-                      <button
                         style={styles.secondaryButton}
                         type="button"
                         onClick={() =>
                           window.open(
-                            `https://app.btcfleet.app/customer/jobs/${selectedTicket.job_portal_token}`,
+                            `https://app.btcfleet.app/customer/jobs/${fieldAccess?.job_portal_token || selectedTicket.job_portal_token}`,
                             "_blank"
                           )
                         }
@@ -1192,6 +1396,62 @@ function InfoWide({ label, value }) {
 }
 
 const styles = {
+
+  fieldAccessCard: {
+    background: "#0d2744",
+    border: "1px solid #315b84",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+  },
+  fieldAccessHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+    flexWrap: "wrap",
+    marginBottom: 14,
+  },
+  fieldAccessKicker: {
+    color: "#8fc7ff",
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: "0.12em",
+    marginBottom: 5,
+  },
+  fieldAccessTitle: { color: "#fff", fontSize: 20, fontWeight: 900 },
+  fieldAccessMode: {
+    background: "#173d65",
+    border: "1px solid #315b84",
+    borderRadius: 999,
+    color: "#dbeafe",
+    padding: "7px 10px",
+    fontSize: 11,
+    fontWeight: 900,
+  },
+  fieldAccessGrid: {
+    display: "grid",
+    gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "1fr 1fr",
+    gap: 10,
+    marginBottom: 12,
+  },
+  fieldAccessTestBanner: {
+    background: "#fff4ce",
+    border: "1px solid #ffd666",
+    borderRadius: 10,
+    color: "#5f4300",
+    fontSize: 13,
+    fontWeight: 800,
+    lineHeight: 1.5,
+    marginBottom: 12,
+    padding: "10px 12px",
+  },
+  fieldAccessNote: {
+    color: "#c7def5",
+    lineHeight: 1.55,
+    marginBottom: 14,
+  },
+  fieldAccessMuted: { color: "#c7def5", padding: "12px 0" },
 
   reassignBox: {
     background: "var(--bg-soft)",
