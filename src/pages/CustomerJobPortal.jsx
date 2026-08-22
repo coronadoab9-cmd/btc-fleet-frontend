@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import "./customer-portal.css";
 
@@ -292,6 +292,31 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     loggedInCustomerName === portalCustomerName;
 
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
+
+  const cumulativeQtyByTicket = useMemo(() => {
+    const chronologicalTickets = [...tickets].sort((a, b) => {
+      const timeDiff = ticketLoadMs(a) - ticketLoadMs(b);
+      if (timeDiff !== 0) return timeDiff;
+
+      return String(a.ticket_number || "").localeCompare(
+        String(b.ticket_number || ""),
+        undefined,
+        { numeric: true }
+      );
+    });
+
+    let runningTotal = 0;
+    const result = new Map();
+
+    chronologicalTickets.forEach((ticket) => {
+      runningTotal += Number(ticket.quantity || 0);
+      const key = String(ticket.id || ticket.ticket_number || "");
+      result.set(key, runningTotal);
+    });
+
+    return result;
+  }, [tickets]);
+
   const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 8);
   const finalTicketCount = tickets.filter((ticket) => ticket.final_pdf_url).length;
 
@@ -421,7 +446,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
             </div>
 
             <div className="portal-card">
-              <div className="portal-section-title">Ticket Activity</div>
+              <div className="portal-section-title">Delivery Tickets</div>
 
               {tickets.length === 0 ? (
                 <div className="portal-empty">No tickets found for this job.</div>
@@ -434,7 +459,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                           <th>Ticket</th>
                           <th>Truck</th>
                           <th>Load Time</th>
-                          <th>Qty</th>
+                          <th>Load / Order</th>
                           {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? <th>Status</th> : null}
                           <th>Final Ticket</th>
                         </tr>
@@ -445,7 +470,14 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                             <td>#{ticket.ticket_number || "-"}</td>
                             <td>{ticket.truck_number || "-"}</td>
                             <td>{formatLoadTime(ticket.load_time)}</td>
-                            <td>{formatCys(ticket.quantity)}</td>
+                            <td>
+                              {formatCys(
+                                cumulativeQtyByTicket.get(
+                                  String(ticket.id || ticket.ticket_number || "")
+                                ) || 0
+                              )}{" "}
+                              / {formatCys(job.order_total)}
+                            </td>
                             {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? (
                               <td>
                                 <span className={statusClass(ticket)}>
@@ -464,7 +496,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                                   Download
                                 </a>
                               ) : (
-                                <span className="portal-empty">Pending</span>
+                                <span className="portal-empty">Awaiting Signature</span>
                               )}
                             </td>
                           </tr>
@@ -657,3 +689,4 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     </div>
   );
 }
+
