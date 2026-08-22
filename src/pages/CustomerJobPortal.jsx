@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import "./customer-portal.css";
 
@@ -293,7 +293,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
   const sortedTickets = [...tickets].sort((a, b) => ticketLoadMs(b) - ticketLoadMs(a));
 
-  const cumulativeQtyByTicket = useMemo(() => {
+  const cumulativeQtyByTicket = (() => {
     const chronologicalTickets = [...tickets].sort((a, b) => {
       const timeDiff = ticketLoadMs(a) - ticketLoadMs(b);
       if (timeDiff !== 0) return timeDiff;
@@ -315,7 +315,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     });
 
     return result;
-  }, [tickets]);
+  })();
 
   const visibleTickets = showAllTickets ? sortedTickets : sortedTickets.slice(0, 8);
   const finalTicketCount = tickets.filter((ticket) => ticket.final_pdf_url).length;
