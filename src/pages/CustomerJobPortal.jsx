@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import "./customer-portal.css";
 
+// Customer-facing portal feature visibility.
+// Keep these features in the codebase so they can be restored later.
+const CUSTOMER_PORTAL_SHOW_TICKET_STATUS = false;
+const CUSTOMER_PORTAL_SHOW_HERO_NEXT_DELIVERY = false;
+const CUSTOMER_PORTAL_SHOW_NEXT_DELIVERY = false;
+const CUSTOMER_PORTAL_SHOW_ROUTE_ETA = false;
+const CUSTOMER_PORTAL_SHOW_ACTIVITY_FEED = false;
+
 function formatCys(value) {
   const num = Number(value || 0);
   return `${num.toFixed(1)} cys`;
@@ -352,22 +360,39 @@ export default function CustomerJobPortal({ accessType = "job" }) {
           </div>
 
           <div className="portal-live-card">
-            <div className="portal-live-label">
-              {isComplete ? "Final Delivered" : "Next Delivery"}
-            </div>
-            <div className="portal-live-value">
-              {isComplete ? formatCys(job.delivered_total) : currentTicket?.truck_number || "-"}
-            </div>
-            {!isComplete ? (
-              <div className="portal-live-details">
-                <span>Ticket #{currentTicket?.ticket_number || "-"}</span>
-                <span>{formatCys(currentTicket?.quantity)}</span>
-                <span>{getCustomerTicketStatus(currentTicket)}</span>
-              </div>
-            ) : null}
-            <div>
-              Remaining: <strong>{formatCys(job.remaining_total)}</strong>
-            </div>
+            {CUSTOMER_PORTAL_SHOW_HERO_NEXT_DELIVERY ? (
+              <>
+                <div className="portal-live-label">
+                  {isComplete ? "Final Delivered" : "Next Delivery"}
+                </div>
+                <div className="portal-live-value">
+                  {isComplete
+                    ? formatCys(job.delivered_total)
+                    : currentTicket?.truck_number || "-"}
+                </div>
+                {!isComplete ? (
+                  <div className="portal-live-details">
+                    <span>Ticket #{currentTicket?.ticket_number || "-"}</span>
+                    <span>{formatCys(currentTicket?.quantity)}</span>
+                    <span>{getCustomerTicketStatus(currentTicket)}</span>
+                  </div>
+                ) : null}
+                <div>
+                  Remaining: <strong>{formatCys(job.remaining_total)}</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="portal-live-label">Order Progress</div>
+                <div className="portal-live-value">
+                  {formatCys(job.delivered_total)} / {formatCys(job.order_total)}
+                </div>
+                <div>Delivered</div>
+                <div>
+                  Remaining: <strong>{formatCys(job.remaining_total)}</strong>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -410,7 +435,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                           <th>Truck</th>
                           <th>Load Time</th>
                           <th>Qty</th>
-                          <th>Status</th>
+                          {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? <th>Status</th> : null}
                           <th>Final Ticket</th>
                         </tr>
                       </thead>
@@ -421,11 +446,13 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                             <td>{ticket.truck_number || "-"}</td>
                             <td>{formatLoadTime(ticket.load_time)}</td>
                             <td>{formatCys(ticket.quantity)}</td>
-                            <td>
-                              <span className={statusClass(ticket)}>
-                                {getCustomerTicketStatus(ticket)}
-                              </span>
-                            </td>
+                            {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? (
+                              <td>
+                                <span className={statusClass(ticket)}>
+                                  {getCustomerTicketStatus(ticket)}
+                                </span>
+                              </td>
+                            ) : null}
                             <td>
                               {ticket.final_pdf_url ? (
                                 <a
@@ -472,7 +499,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               </div>
             </div>
 
-            {showNextDelivery ? (
+            {CUSTOMER_PORTAL_SHOW_NEXT_DELIVERY && showNextDelivery ? (
               <div className="portal-card">
                 <div className="portal-section-title">Next Delivery</div>
 
@@ -518,7 +545,10 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                       </div>
                     </div>
 
-                    {currentTruck?.latitude && currentTruck?.longitude && job.address ? (
+                    {CUSTOMER_PORTAL_SHOW_ROUTE_ETA &&
+                    currentTruck?.latitude &&
+                    currentTruck?.longitude &&
+                    job.address ? (
                       <>
                         <div className="portal-map">
                           <iframe
@@ -550,11 +580,11 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                           Open Route / ETA
                         </a>
                       </>
-                    ) : (
+                    ) : CUSTOMER_PORTAL_SHOW_ROUTE_ETA ? (
                       <div className="portal-empty" style={{ marginTop: 14 }}>
                         Truck location is not available yet.
                       </div>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <div className="portal-empty">No active delivery ticket found yet.</div>
@@ -562,27 +592,29 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               </div>
             ) : null}
 
-            <div className="portal-card">
-              <div className="portal-section-title">Activity Feed</div>
+            {CUSTOMER_PORTAL_SHOW_ACTIVITY_FEED ? (
+              <div className="portal-card">
+                <div className="portal-section-title">Activity Feed</div>
 
-              {activityItems.length > 0 ? (
-                <div className="portal-activity-feed">
-                  {activityItems.map((item) => (
-                    <div className="portal-activity-item" key={item.id}>
-                      <div className="portal-activity-dot"></div>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span>{item.meta}</span>
+                {activityItems.length > 0 ? (
+                  <div className="portal-activity-feed">
+                    {activityItems.map((item) => (
+                      <div className="portal-activity-item" key={item.id}>
+                        <div className="portal-activity-dot"></div>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <span>{item.meta}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="portal-empty" style={{ marginTop: 16 }}>
-                  No activity yet.
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="portal-empty" style={{ marginTop: 16 }}>
+                    No activity yet.
+                  </div>
+                )}
+              </div>
+            ) : null}
 
             <div className="portal-card">
               <div className="portal-section-title">Documents</div>
