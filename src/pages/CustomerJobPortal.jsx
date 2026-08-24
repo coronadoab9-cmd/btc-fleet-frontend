@@ -10,18 +10,97 @@ const CUSTOMER_PORTAL_SHOW_NEXT_DELIVERY = false;
 const CUSTOMER_PORTAL_SHOW_ROUTE_ETA = false;
 const CUSTOMER_PORTAL_SHOW_ACTIVITY_FEED = false;
 
+const CUSTOMER_PORTAL_TRANSLATIONS = {
+  en: {
+    brand: "BTC Customer Portal",
+    fieldAccess: "Field operations live access",
+    adminView: "Customer admin job view",
+    backToOrders: "Back to All Orders",
+    refresh: "Refresh",
+    deliveryComplete: "Delivery Complete",
+    liveDelivery: "Live Delivery",
+    orderNumber: "Order #",
+    fieldLinkExpires: "This field link expires",
+    orderProgress: "Order Progress",
+    delivered: "Delivered",
+    deliveredLower: "delivered",
+    remaining: "Remaining",
+    deliverySummary: "Delivery Summary",
+    orderTotal: "Order Total",
+    deliveryTickets: "Delivery Tickets",
+    noTickets: "No tickets found for this job.",
+    ticket: "Ticket",
+    truck: "Truck",
+    loadTime: "Load Time",
+    loadOrder: "Load / Order",
+    status: "Status",
+    finalTicket: "Final Ticket",
+    download: "Download",
+    awaitingSignature: "Awaiting Signature",
+    showLess: "Show Less",
+    showAllTickets: "Show All Tickets",
+    projectOverview: "Project Overview",
+    customer: "Customer",
+    address: "Address",
+    tickets: "Tickets",
+    documents: "Documents",
+    downloadFinalPackage: "Download Final Ticket Package",
+    finalPackagePending: "Final ticket package will be available after tickets are signed.",
+    loadingPortal: "Loading customer portal...",
+    loadError: "Could not load customer portal.",
+  },
+  es: {
+    brand: "Portal del Cliente BTC",
+    fieldAccess: "Acceso en vivo para operaciones de campo",
+    adminView: "Vista del proyecto para administrador del cliente",
+    backToOrders: "Volver a Todos los Pedidos",
+    refresh: "Actualizar",
+    deliveryComplete: "Entrega Completa",
+    liveDelivery: "Entrega en Vivo",
+    orderNumber: "Pedido #",
+    fieldLinkExpires: "Este enlace de campo vence",
+    orderProgress: "Progreso del Pedido",
+    delivered: "Entregado",
+    deliveredLower: "entregado",
+    remaining: "Restante",
+    deliverySummary: "Resumen de Entrega",
+    orderTotal: "Total del Pedido",
+    deliveryTickets: "Tickets de Entrega",
+    noTickets: "No se encontraron tickets para este trabajo.",
+    ticket: "Ticket",
+    truck: "Camión",
+    loadTime: "Hora de Carga",
+    loadOrder: "Carga / Pedido",
+    status: "Estado",
+    finalTicket: "Ticket Final",
+    download: "Descargar",
+    awaitingSignature: "Esperando Firma",
+    showLess: "Mostrar Menos",
+    showAllTickets: "Mostrar Todos los Tickets",
+    projectOverview: "Resumen del Proyecto",
+    customer: "Cliente",
+    address: "Dirección",
+    tickets: "Tickets",
+    documents: "Documentos",
+    downloadFinalPackage: "Descargar Paquete de Tickets Finales",
+    finalPackagePending: "El paquete de tickets finales estará disponible después de que se firmen los tickets.",
+    loadingPortal: "Cargando portal del cliente...",
+    loadError: "No se pudo cargar el portal del cliente.",
+  },
+};
+
 function formatCys(value) {
   const num = Number(value || 0);
   return `${num.toFixed(1)} cys`;
 }
 
-function formatLoadTime(value) {
+function formatLoadTime(value, locale = "en-US") {
   if (!value) return "-";
 
   try {
     const dt = new Date(value);
 
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(locale, {
       month: "2-digit",
       day: "2-digit",
       year: "numeric",
@@ -181,6 +260,30 @@ export default function CustomerJobPortal({ accessType = "job" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAllTickets, setShowAllTickets] = useState(false);
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem("btc_customer_portal_language") === "es" ? "es" : "en";
+    } catch {
+      return "en";
+    }
+  });
+
+  const tr = (key) =>
+    CUSTOMER_PORTAL_TRANSLATIONS[language]?.[key] ||
+    CUSTOMER_PORTAL_TRANSLATIONS.en[key] ||
+    key;
+
+  const portalLocale = language === "es" ? "es-US" : "en-US";
+
+  function setPortalLanguage(nextLanguage) {
+    const normalized = nextLanguage === "es" ? "es" : "en";
+    setLanguage(normalized);
+    try {
+      localStorage.setItem("btc_customer_portal_language", normalized);
+    } catch {
+      // The toggle still works for the current page if storage is unavailable.
+    }
+  }
 
   async function loadPortal({ silent = false } = {}) {
     if (!silent) {
@@ -222,7 +325,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
       }
     } catch (err) {
       if (!silent) {
-        setError(err.message || "Could not load customer portal.");
+        setError(err.message || tr("loadError"));
       } else {
         console.error("Customer portal background refresh failed:", err);
       }
@@ -256,7 +359,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
   }, [portalToken, isFieldAccess, data?.job?.remaining_total]);
 
   if (loading) {
-    return <div className="full-screen-center">Loading customer portal...</div>;
+    return <div className="full-screen-center">{tr("loadingPortal")}</div>;
   }
 
   if (error) {
@@ -340,9 +443,9 @@ export default function CustomerJobPortal({ accessType = "job" }) {
     <div className="customer-portal-page">
       <header className="customer-portal-topbar">
         <div>
-          <div className="customer-portal-brand">BTC Customer Portal</div>
+          <div className="customer-portal-brand">{tr("brand")}</div>
           <div className="customer-portal-subtitle">
-            {isFieldAccess ? "Field operations live access" : "Customer admin job view"}
+            {isFieldAccess ? tr("fieldAccess") : tr("adminView")}
           </div>
         </div>
 
@@ -355,12 +458,41 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                 window.location.href = "/customer/dashboard";
               }}
             >
-              Back to All Orders
+              {tr("backToOrders")}
             </button>
           ) : null}
 
+          <div
+            role="group"
+            aria-label="Language / Idioma"
+            style={{ display: "flex", gap: 6, alignItems: "center" }}
+          >
+            <button
+              className={`portal-btn ${
+                language === "en" ? "portal-btn-orange" : "portal-btn-light"
+              }`}
+              type="button"
+              aria-pressed={language === "en"}
+              onClick={() => setPortalLanguage("en")}
+              style={{ padding: "10px 12px" }}
+            >
+              English
+            </button>
+            <button
+              className={`portal-btn ${
+                language === "es" ? "portal-btn-orange" : "portal-btn-light"
+              }`}
+              type="button"
+              aria-pressed={language === "es"}
+              onClick={() => setPortalLanguage("es")}
+              style={{ padding: "10px 12px" }}
+            >
+              Español
+            </button>
+          </div>
+
           <button className="portal-btn portal-btn-light" type="button" onClick={loadPortal}>
-            Refresh
+            {tr("refresh")}
           </button>
         </div>
       </header>
@@ -369,16 +501,16 @@ export default function CustomerJobPortal({ accessType = "job" }) {
         <section className="portal-hero">
           <div>
             <div className="portal-kicker">
-              {isComplete ? "Delivery Complete" : "Live Delivery"}
+              {isComplete ? tr("deliveryComplete") : tr("liveDelivery")}
             </div>
             <h1 className="portal-title">
-              {job.address || `Order #${job.order_number || "-"}`}
+              {job.address || `${tr("orderNumber")}${job.order_number || "-"}`}
             </h1>
             <div className="portal-meta">
-              {job.customer_name || "-"} | Order #{job.order_number || "-"}
+              {job.customer_name || "-"} | {tr("orderNumber")}{job.order_number || "-"}
               {accessExpiration ? (
                 <div className="portal-expire-note">
-                  This field link expires {new Date(accessExpiration).toLocaleString()}.
+                  {tr("fieldLinkExpires")} {new Date(accessExpiration).toLocaleString(portalLocale)}.
                 </div>
               ) : null}
             </div>
@@ -408,13 +540,13 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               </>
             ) : (
               <>
-                <div className="portal-live-label">Order Progress</div>
+                <div className="portal-live-label">{tr("orderProgress")}</div>
                 <div className="portal-live-value">
                   {formatCys(job.delivered_total)} / {formatCys(job.order_total)}
                 </div>
-                <div>Delivered</div>
+                <div>{tr("delivered")}</div>
                 <div>
-                  Remaining: <strong>{formatCys(job.remaining_total)}</strong>
+                  {tr("remaining")}: <strong>{formatCys(job.remaining_total)}</strong>
                 </div>
               </>
             )}
@@ -425,14 +557,16 @@ export default function CustomerJobPortal({ accessType = "job" }) {
           <div>
             <div className="portal-card">
               <div className="portal-section-header">
-                <div className="portal-section-title">Delivery Summary</div>
-                <strong>{progressPercent.toFixed(0)}% delivered</strong>
+                <div className="portal-section-title">{tr("deliverySummary")}</div>
+                <strong>
+                  {progressPercent.toFixed(0)}% {tr("deliveredLower")}
+                </strong>
               </div>
 
               <div className="portal-stats">
-                <StatCard label="Order Total" value={formatCys(job.order_total)} />
-                <StatCard label="Delivered" value={formatCys(job.delivered_total)} />
-                <StatCard label="Remaining" value={formatCys(job.remaining_total)} />
+                <StatCard label={tr("orderTotal")} value={formatCys(job.order_total)} />
+                <StatCard label={tr("delivered")} value={formatCys(job.delivered_total)} />
+                <StatCard label={tr("remaining")} value={formatCys(job.remaining_total)} />
               </div>
 
               <div style={{ marginTop: 18 }}>
@@ -446,22 +580,22 @@ export default function CustomerJobPortal({ accessType = "job" }) {
             </div>
 
             <div className="portal-card">
-              <div className="portal-section-title">Delivery Tickets</div>
+              <div className="portal-section-title">{tr("deliveryTickets")}</div>
 
               {tickets.length === 0 ? (
-                <div className="portal-empty">No tickets found for this job.</div>
+                <div className="portal-empty">{tr("noTickets")}</div>
               ) : (
                 <>
                   <div className="portal-table-wrap">
                     <table className="portal-table">
                       <thead>
                         <tr>
-                          <th>Ticket</th>
-                          <th>Truck</th>
-                          <th>Load Time</th>
-                          <th>Load / Order</th>
-                          {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? <th>Status</th> : null}
-                          <th>Final Ticket</th>
+                          <th>{tr("ticket")}</th>
+                          <th>{tr("truck")}</th>
+                          <th>{tr("loadTime")}</th>
+                          <th>{tr("loadOrder")}</th>
+                          {CUSTOMER_PORTAL_SHOW_TICKET_STATUS ? <th>{tr("status")}</th> : null}
+                          <th>{tr("finalTicket")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -469,7 +603,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                           <tr key={ticket.id || ticket.ticket_number}>
                             <td>#{ticket.ticket_number || "-"}</td>
                             <td>{ticket.truck_number || "-"}</td>
-                            <td>{formatLoadTime(ticket.load_time)}</td>
+                            <td>{formatLoadTime(ticket.load_time, portalLocale)}</td>
                             <td>
                               {formatCys(
                                 cumulativeQtyByTicket.get(
@@ -493,10 +627,10 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                                   target="_blank"
                                   rel="noreferrer"
                                 >
-                                  Download
+                                  {tr("download")}
                                 </a>
                               ) : (
-                                <span className="portal-empty">Awaiting Signature</span>
+                                <span className="portal-empty">{tr("awaitingSignature")}</span>
                               )}
                             </td>
                           </tr>
@@ -512,7 +646,9 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                       onClick={() => setShowAllTickets((v) => !v)}
                       style={{ marginTop: 14 }}
                     >
-                      {showAllTickets ? "Show Less" : `Show All Tickets (${tickets.length})`}
+                      {showAllTickets
+                        ? tr("showLess")
+                        : `${tr("showAllTickets")} (${tickets.length})`}
                     </button>
                   ) : null}
                 </>
@@ -522,12 +658,12 @@ export default function CustomerJobPortal({ accessType = "job" }) {
 
           <aside>
             <div className="portal-card">
-              <div className="portal-section-title">Project Overview</div>
+              <div className="portal-section-title">{tr("projectOverview")}</div>
               <div className="portal-info-grid" style={{ marginTop: 16 }}>
-                <InfoItem label="Customer" value={job.customer_name} />
-                <InfoItem label="Order #" value={job.order_number} />
-                <InfoItem label="Address" value={job.address} />
-                <InfoItem label="Tickets" value={job.ticket_count} />
+                <InfoItem label={tr("customer")} value={job.customer_name} />
+                <InfoItem label={tr("orderNumber")} value={job.order_number} />
+                <InfoItem label={tr("address")} value={job.address} />
+                <InfoItem label={tr("tickets")} value={job.ticket_count} />
               </div>
             </div>
 
@@ -649,7 +785,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
             ) : null}
 
             <div className="portal-card">
-              <div className="portal-section-title">Documents</div>
+              <div className="portal-section-title">{tr("documents")}</div>
 
               {finalTicketCount > 0 ? (
                 <a
@@ -659,11 +795,11 @@ export default function CustomerJobPortal({ accessType = "job" }) {
                   className="portal-btn portal-btn-navy"
                   style={{ width: "100%", marginTop: 16 }}
                 >
-                  Download Final Ticket Package ({finalTicketCount})
+                  {tr("downloadFinalPackage")} ({finalTicketCount})
                 </a>
               ) : (
                 <div className="portal-empty" style={{ marginTop: 16 }}>
-                  Final ticket package will be available after tickets are signed.
+                  {tr("finalPackagePending")}
                 </div>
               )}
 
