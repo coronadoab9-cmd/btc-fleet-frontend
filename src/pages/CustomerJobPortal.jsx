@@ -74,7 +74,7 @@ const CUSTOMER_PORTAL_TRANSLATIONS = {
     status: "Estado",
     finalTicket: "Ticket Final",
     download: "Descargar",
-    awaitingSignature: "Esperando Firma",
+    awaitingSignature: "Pendiente de Firma",
     showLess: "Mostrar Menos",
     showAllTickets: "Mostrar Todos los Tickets",
     projectOverview: "Resumen del Proyecto",
@@ -510,7 +510,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               {job.customer_name || "-"} | {tr("orderNumber")}{job.order_number || "-"}
               {accessExpiration ? (
                 <div className="portal-expire-note">
-                  {tr("fieldLinkExpires")} {new Date(accessExpiration).toLocaleString(portalLocale)}.
+                  {tr("fieldLinkExpires")} {new Date(accessExpiration).toLocaleString(portalLocale)}
                 </div>
               ) : null}
             </div>
