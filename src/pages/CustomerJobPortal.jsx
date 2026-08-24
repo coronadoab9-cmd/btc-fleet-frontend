@@ -40,6 +40,7 @@ const CUSTOMER_PORTAL_TRANSLATIONS = {
     showLess: "Show Less",
     showAllTickets: "Show All Tickets",
     projectOverview: "Project Overview",
+    project: "Project",
     customer: "Customer",
     address: "Address",
     tickets: "Tickets",
@@ -78,6 +79,7 @@ const CUSTOMER_PORTAL_TRANSLATIONS = {
     showLess: "Mostrar Menos",
     showAllTickets: "Mostrar Todos los Tickets",
     projectOverview: "Resumen del Proyecto",
+    project: "Proyecto",
     customer: "Cliente",
     address: "Dirección",
     tickets: "Tickets",
@@ -504,10 +506,10 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               {isComplete ? tr("deliveryComplete") : tr("liveDelivery")}
             </div>
             <h1 className="portal-title">
-              {job.address || `${tr("orderNumber")}${job.order_number || "-"}`}
+              {job.address || job.project_name || "-"}
             </h1>
             <div className="portal-meta">
-              {job.customer_name || "-"} | {tr("orderNumber")}{job.order_number || "-"}
+              {job.customer_name || "-"} | {job.project_name || job.address || "-"}
               {accessExpiration ? (
                 <div className="portal-expire-note">
                   {tr("fieldLinkExpires")} {new Date(accessExpiration).toLocaleString(portalLocale)}
@@ -661,7 +663,7 @@ export default function CustomerJobPortal({ accessType = "job" }) {
               <div className="portal-section-title">{tr("projectOverview")}</div>
               <div className="portal-info-grid" style={{ marginTop: 16 }}>
                 <InfoItem label={tr("customer")} value={job.customer_name} />
-                <InfoItem label={tr("orderNumber")} value={job.order_number} />
+                <InfoItem label={tr("project")} value={job.project_name || job.address} />
                 <InfoItem label={tr("address")} value={job.address} />
                 <InfoItem label={tr("tickets")} value={job.ticket_count} />
               </div>
