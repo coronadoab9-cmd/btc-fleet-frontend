@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 
 import TruckMap from "./components/TruckMap";
 import LoginPage from "./components/LoginPage";
@@ -14,12 +14,24 @@ import DeliveryTermsPage from "./pages/DeliveryTermsPage";
 import { apiFetch } from "./lib/api";
 import "./index.css";
 
+function ShortFieldLink() {
+  const { fieldToken } = useParams();
+
+  return (
+    <Navigate
+      to={`/customer/live/${encodeURIComponent(fieldToken || "")}`}
+      replace
+    />
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/eticket/:token" element={<ETicketPage />} />
         <Route path="/customer/jobs/:jobToken" element={<CustomerJobPortal />} />
+        <Route path="/l/:fieldToken" element={<ShortFieldLink />} />
         <Route path="/customer/live/:fieldToken" element={<CustomerJobPortal accessType="field" />} />
         <Route path="/customer/login" element={<CustomerLoginPage />} />
         <Route path="/customer/reset-password" element={<CustomerResetPasswordPage />} />

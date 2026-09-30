@@ -457,12 +457,33 @@ export default function ETicketsPage({ token }) {
   async function sendFieldSms(ticket, force = false) {
     if (!ticket?.job_portal_token) return;
 
-    if (force) {
-      const confirmed = window.confirm(
-        "Send another 48-hour field-access text to this jobsite contact?"
-      );
-      if (!confirmed) return;
-    }
+    const testOverrideActive = Boolean(
+      fieldAccess?.settings?.test_override_active
+    );
+
+    const destinationPhone = testOverrideActive
+      ? fieldAccess?.settings?.test_override_phone
+      : fieldAccess?.contact?.phone;
+
+    const contactName =
+      fieldAccess?.contact?.name || "Jobsite contact";
+
+    const projectName =
+      ticket?.project_name ||
+      ticket?.address ||
+      `Order #${fieldAccess?.order_number || ticket?.job_number || ""}`;
+
+    const confirmed = window.confirm(
+      `${force ? "Send another" : "Send"} 48-hour customer field-access text?\n\n` +
+        `Jobsite Contact: ${contactName}\n` +
+        `Destination: ${destinationPhone || "No phone available"}\n` +
+        `Project: ${projectName}\n\n` +
+        (testOverrideActive
+          ? "TEST OVERRIDE is active. The real customer will NOT be texted."
+          : "This will send directly to the customer number shown above.")
+    );
+
+    if (!confirmed) return;
 
     setError("");
     setMessage("");
@@ -1289,8 +1310,8 @@ export default function ETicketsPage({ token }) {
                               {fieldSmsSending
                                 ? "Sending..."
                                 : fieldAccess?.sms && fieldAccess.sms.send_mode !== "dry_run"
-                                ? "Resend Field Text"
-                                : "Send Field Text"}
+                                ? "Resend Customer Text"
+                                : "Send Customer Text"}
                             </button>
                           ) : null}
                         </div>
